@@ -8,14 +8,21 @@ from typing import Annotated, cast
 import typer
 
 from quantforge.config import get_settings
-from quantforge.domain import EventEnvelope
+from quantforge.domain import DataGap, EventEnvelope
 from quantforge.exchange.upbit.public_ws import UpbitPublicWebSocketClient
 from quantforge.exchange.upbit.subscriptions import PublicStreamType, UpbitSubscription
-from quantforge.runtime import LiveSubmissionGuard
-from quantforge.storage import ParquetRawEventWriter, cleanup_orphan_temp_files
+from quantforge.replay import ReplayEngine, VirtualClock
+from quantforge.runtime import DataQualitySnapshot, LiveSubmissionGuard, write_data_quality_snapshot
+from quantforge.storage import (
+    ParquetRawEventWriter,
+    cleanup_orphan_temp_files,
+    read_raw_events,
+)
 
 app = typer.Typer(no_args_is_help=True, help="QuantForge research and operations CLI")
 DEFAULT_RAW_OUTPUT = Path("data/raw")
+DEFAULT_REPLAY_INPUT = Path("data/raw")
+DEFAULT_DATA_QUALITY_OUTPUT = Path("runtime_exports/data_quality")
 
 
 @app.callback()
@@ -87,6 +94,46 @@ def collect_public(
                 "parquet_files": len(manifests),
                 "orphan_temp_files_removed": removed_orphans,
                 "output": str(output.resolve()),
+                "authentication_used": False,
+                "order_submission_available": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("replay-raw")
+def replay_raw(
+    input_root: Annotated[
+        Path, typer.Option(help="Checksummed raw Parquet root")
+    ] = DEFAULT_REPLAY_INPUT,
+    output_root: Annotated[
+        Path, typer.Option(help="Redacted data-quality snapshot directory")
+    ] = DEFAULT_DATA_QUALITY_OUTPUT,
+) -> None:
+    """Verify and deterministically replay stored public events without network access."""
+
+    events = read_raw_events(input_root)
+    if not events:
+        raise typer.BadParameter("no verified raw events were found", param_hint="--input-root")
+
+    def fingerprint_output(item: EventEnvelope | DataGap, clock: VirtualClock) -> str:
+        del clock
+        return item.fingerprint() if isinstance(item, DataGap) else item.raw_payload_hash
+
+    replay = ReplayEngine().run(events, fingerprint_output)
+    snapshot = DataQualitySnapshot.from_phase2(replay, [], [])
+    snapshot_path = write_data_quality_snapshot(snapshot, output_root)
+    typer.echo(
+        json.dumps(
+            {
+                "dataset_hash": replay.dataset_hash,
+                "output_hash": replay.output_hash,
+                "verified_inputs": replay.total_inputs,
+                "delivered_events": replay.delivered_events,
+                "skipped_duplicates": replay.skipped_duplicates,
+                "snapshot": str(snapshot_path.resolve()),
+                "network_used": False,
                 "authentication_used": False,
                 "order_submission_available": False,
             },

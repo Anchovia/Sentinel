@@ -76,34 +76,34 @@ class UpbitTrade(UpbitWireModel):
     trade_date: date
     trade_time: str = Field(pattern=r"^\d{2}:\d{2}:\d{2}$")
     trade_timestamp: int = Field(gt=0)
-    trade_price: MonetaryDecimal
-    trade_volume: MonetaryDecimal
+    trade_price: MonetaryDecimal = Field(gt=0)
+    trade_volume: MonetaryDecimal = Field(gt=0)
     ask_bid: AskBid
     prev_closing_price: MonetaryDecimal
     change: ChangeDirection
     change_price: MonetaryDecimal
     sequential_id: int = Field(gt=0)
-    best_ask_price: MonetaryDecimal
-    best_ask_size: MonetaryDecimal
-    best_bid_price: MonetaryDecimal
-    best_bid_size: MonetaryDecimal
+    best_ask_price: MonetaryDecimal = Field(gt=0)
+    best_ask_size: MonetaryDecimal = Field(ge=0)
+    best_bid_price: MonetaryDecimal = Field(gt=0)
+    best_bid_size: MonetaryDecimal = Field(ge=0)
 
 
 class UpbitOrderbookUnit(BaseModel):
     model_config = ConfigDict(frozen=True, extra="allow")
 
-    ask_price: MonetaryDecimal
-    bid_price: MonetaryDecimal
-    ask_size: MonetaryDecimal
-    bid_size: MonetaryDecimal
+    ask_price: MonetaryDecimal = Field(gt=0)
+    bid_price: MonetaryDecimal = Field(gt=0)
+    ask_size: MonetaryDecimal = Field(ge=0)
+    bid_size: MonetaryDecimal = Field(ge=0)
 
 
 class UpbitOrderbook(UpbitWireModel):
     type: Literal["orderbook"]
-    total_ask_size: MonetaryDecimal
-    total_bid_size: MonetaryDecimal
+    total_ask_size: MonetaryDecimal = Field(ge=0)
+    total_bid_size: MonetaryDecimal = Field(ge=0)
     orderbook_units: list[UpbitOrderbookUnit] = Field(min_length=1, max_length=30)
-    level: MonetaryDecimal
+    level: MonetaryDecimal = Field(ge=0)
 
 
 type UpbitPublicMessage = UpbitTicker | UpbitTrade | UpbitOrderbook

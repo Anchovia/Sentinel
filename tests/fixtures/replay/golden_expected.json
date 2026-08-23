@@ -1,0 +1,11 @@
+{
+  "total_inputs": 6,
+  "delivered_events": 4,
+  "delivered_gaps": 1,
+  "skipped_duplicates": 1,
+  "out_of_order_events": 1,
+  "reconnect_boundaries": 1,
+  "dataset_hash": "15b434a093325a8e365b17e26bb270ed52c9e90a9e0522d14b384ac28fa58adf",
+  "config_hash": "51dae65564b3baa443b17a4c2dec6ebf20eb1ac165ed95a516f0992e83542a9f",
+  "output_hash": "937945e3e64d943980e24d3c17e7b481ed01a1ac1e1a3855706d5523863cc753"
+}

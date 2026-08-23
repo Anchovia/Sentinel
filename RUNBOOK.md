@@ -33,6 +33,25 @@ The command writes immutable ZSTD Parquet files and adjacent JSON manifests belo
 Review rejected-message and reconnect metrics, preserve the malformed raw input outside logs if
 needed for incident analysis, and refresh official capability documentation before schema changes.
 
+## Offline verified replay
+
+Verify all manifests and raw-payload digests, replay by availability time, and write a redacted data
+quality snapshot:
+
+```text
+uv run quantforge replay-raw \
+  --input-root data/raw \
+  --output-root runtime_exports/data_quality
+```
+
+Repeating the command over unchanged files must return identical dataset and output hashes. A
+checksum, row-count, schema, raw-payload, latency, or event-contract mismatch stops replay. Never
+skip integrity checks to recover a dataset; preserve the file and open a data incident.
+
+Bar materialization requires explicit `CoverageWindow` evidence. Missing coverage becomes
+`data_gap`, not `no_trade`. Features may use only events/bars whose `available_at_utc` is no later
+than the requested as-of time.
+
 Infrastructure, when Docker Compose is available:
 
 ```text

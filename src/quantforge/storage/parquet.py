@@ -5,15 +5,16 @@ from collections import defaultdict
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
-from typing import Annotated
-from uuid import uuid4
+from typing import Annotated, cast
+from uuid import UUID, uuid4
 
 import orjson
 import pyarrow as pa  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
 from pydantic import BaseModel, ConfigDict, Field
 
-from quantforge.domain import EventEnvelope
+from quantforge.domain import EventEnvelope, EventType
+from quantforge.exchange.upbit.schemas import decode_json_object
 
 RAW_EVENT_SCHEMA = pa.schema(
     [
@@ -59,6 +60,10 @@ class RawFileManifest(BaseModel):
     max_exchange_timestamp: datetime
     created_at_utc: datetime
     compression: str = "zstd"
+
+
+class RawDataIntegrityError(ValueError):
+    """A raw file, manifest, or row failed immutable lineage validation."""
 
 
 def _event_row(event: EventEnvelope) -> dict[str, object]:
@@ -208,3 +213,75 @@ def cleanup_orphan_temp_files(root: Path) -> int:
         resolved.unlink()
         removed += 1
     return removed
+
+
+def read_raw_events(root: Path) -> list[EventEnvelope]:
+    """Verify every manifest/checksum and reconstruct immutable envelopes."""
+
+    events: list[EventEnvelope] = []
+    for manifest_path in sorted(root.rglob("*.manifest.json")):
+        try:
+            manifest = RawFileManifest.model_validate_json(manifest_path.read_bytes())
+        except ValueError as exc:
+            raise RawDataIntegrityError(f"invalid raw manifest: {manifest_path}") from exc
+        try:
+            checksum_valid = verify_manifest_checksum(root, manifest)
+        except ValueError as exc:
+            raise RawDataIntegrityError(f"unsafe raw manifest path: {manifest.data_file}") from exc
+        if not checksum_valid:
+            raise RawDataIntegrityError(f"raw checksum mismatch: {manifest.data_file}")
+        data_path = root / manifest.data_file
+        parquet_file = pq.ParquetFile(data_path)
+        metadata = parquet_file.schema_arrow.metadata or {}
+        if (
+            metadata.get(b"quantforge_schema_version")
+            != str(manifest.event_schema_version).encode()
+        ):
+            raise RawDataIntegrityError(f"raw schema version mismatch: {manifest.data_file}")
+        table = parquet_file.read()
+        if table.num_rows != manifest.row_count:
+            raise RawDataIntegrityError(f"raw row count mismatch: {manifest.data_file}")
+        for row in table.to_pylist():
+            raw_text = row["raw_payload"]
+            if not isinstance(raw_text, str):
+                raise RawDataIntegrityError("raw payload column must contain text")
+            digest = sha256(raw_text.encode()).hexdigest()
+            if digest != row["raw_payload_hash"]:
+                raise RawDataIntegrityError("raw payload digest does not match its row")
+            try:
+                event = EventEnvelope(
+                    event_id=UUID(row["event_id"]),
+                    event_type=cast(EventType, row["event_type"]),
+                    schema_version=row["schema_version"],
+                    source=row["source"],
+                    market=row["market"],
+                    exchange_timestamp=row["exchange_timestamp"],
+                    received_at_utc=row["received_at_utc"],
+                    received_monotonic_ns=row["received_monotonic_ns"],
+                    connection_id=UUID(row["connection_id"]),
+                    subscription_id=row["subscription_id"],
+                    local_sequence=row["local_sequence"],
+                    raw_payload=decode_json_object(raw_text),
+                    raw_payload_text=raw_text,
+                    raw_payload_hash=digest,
+                    normalization_version=row["normalization_version"],
+                    is_snapshot=row["is_snapshot"],
+                    is_realtime=row["is_realtime"],
+                    is_duplicate=row["is_duplicate"],
+                    quality_flags=tuple(row["quality_flags"]),
+                )
+            except (TypeError, ValueError) as exc:
+                raise RawDataIntegrityError("raw row failed event-envelope validation") from exc
+            if event.ingress_latency_us != row["ingress_latency_us"]:
+                raise RawDataIntegrityError("raw row ingress latency does not match timestamps")
+            events.append(event)
+    return sorted(
+        events,
+        key=lambda event: (
+            event.received_at_utc,
+            event.received_monotonic_ns,
+            str(event.connection_id),
+            event.local_sequence,
+            str(event.event_id),
+        ),
+    )

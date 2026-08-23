@@ -17,6 +17,13 @@ All notable changes are recorded here. The project follows semantic versioning o
   market-data metrics, and bounded public collection CLI.
 - Atomic append-only ZSTD Parquet partitions with row/time statistics, JSON manifests, and SHA-256
   verification.
+- Verified Parquet-to-EventEnvelope reader and offline `replay-raw` command.
+- Availability-ordered virtual clock, deterministic replay sorting, duplicate/out-of-order and
+  reconnect accounting, resumable checksummed checkpoints, and frozen golden hashes.
+- Explicit `CoverageWindow`/`DataGap` contracts and deterministic Decimal 1s/5s/15s/1m trade bars
+  that never encode missing data as zero volume.
+- Versioned causal orderbook, trade-flow, and volatility feature calculators, stable feature
+  registry, leakage guards, and atomic Secret-free data-quality runtime snapshots.
 
 ### Security
 

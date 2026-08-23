@@ -28,6 +28,40 @@ time_range, market_universe, checksum, known_gaps
 
 No-trade intervals and data gaps are distinct. A gap is never silently filled as a zero-volume bar.
 
+## Replay checkpoint
+
+```text
+dataset_hash, config_hash, cursor, virtual_time_utc, chain_hash
+delivered_events, delivered_gaps, skipped_duplicates
+out_of_order_events, reconnect_boundaries
+```
+
+Replay order follows input availability (`received_at_utc`), not idealized exchange time. The
+checkpoint hash chain can resume without changing the final golden output hash.
+
+## Time bars
+
+Phase 2 bar intervals are 1s, 5s, 15s, and 1m. A traded bar carries Decimal OHLC, base/quote volume,
+trade count, aggressive buy/sell volume, VWAP, trade timestamps, source hash, and availability.
+
+- `no_trade=true`: complete collector coverage, exact zero volume/count, and null prices.
+- `data_gap=true`: incomplete or explicit gap; prices, volume, and count are null.
+
+No-trade status requires positive collector-health coverage for the full bucket. A gap always wins
+over observed partial trades.
+
+## Feature snapshot
+
+```text
+feature_set, feature_version, market
+event_time_utc, available_at_utc, computed_at_utc
+values, input_hash, quality_flags
+```
+
+Feature values may use binary floating point as analytical model inputs; money, orders, bars,
+accounting, and risk limits remain Decimal. Every feature calculator filters by availability and
+fails on future inputs.
+
 ## Transactional entities
 
 Minimum PostgreSQL entities:

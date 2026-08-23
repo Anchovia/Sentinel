@@ -2,9 +2,9 @@
 
 ## Current implementation status
 
-- A keyless Upbit public WebSocket adapter and append-only Parquet raw store exist. No private
-  adapter, replay engine, feature pipeline, model, strategy, risk calculation engine, paper broker,
-  ledger, or dashboard exists yet.
+- A keyless Upbit public WebSocket adapter, append-only Parquet raw store, deterministic replay,
+  time bars, and baseline feature pipeline exist. No private adapter, trained model, strategy, risk
+  calculation engine, paper broker, ledger, or dashboard exists yet.
 - The API exposes health, non-secret safety status, and process metrics. Public collection currently
   runs as a bounded CLI process rather than a supervised long-running Compose service.
 - No live adapter or real-order endpoint exists.
@@ -26,5 +26,12 @@
 - The official Python SDK `0.9.0` was not installed because its declared `websockets <16` constraint
   conflicts with the reviewed transport version. ADR-005 records the isolated direct-transport
   decision.
-- Public L2 data will not reveal exact queue position or individual order events; future fill simulations remain approximations.
+- The bounded collector does not yet persist continuous `CoverageWindow` records automatically.
+  Bar construction therefore requires separately reviewed positive coverage input and safely emits
+  data gaps when it is absent.
+- Phase 2 implements 1s/5s/15s/1m bars. Longer timeframes and event/volume/imbalance bars remain
+  pending.
+- Public L2 data does not reveal exact queue position or individual order events. Snapshot-derived
+  order-flow imbalance and future fill simulations remain approximations.
+- Baseline features are not trading signals and have no profitability claim.
 - No strategy/model profitability, capacity, latency, recovery objective, or live readiness is claimed.

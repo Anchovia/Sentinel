@@ -51,6 +51,7 @@ packages = ["src/quantforge"]
 [tool.pytest.ini_options]
 addopts = "--strict-config --strict-markers -ra"
 testpaths = ["tests"]
+pythonpath = ["tests"]
 asyncio_mode = "auto"
 markers = [
   "integration: tests that cross process, storage, or network-adapter boundaries",

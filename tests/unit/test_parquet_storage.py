@@ -7,8 +7,10 @@ import pyarrow.parquet as pq
 from quantforge.exchange.upbit.mapper import map_public_message
 from quantforge.storage import (
     ParquetRawEventWriter,
+    RawDataIntegrityError,
     RawFileManifest,
     cleanup_orphan_temp_files,
+    read_raw_events,
     verify_manifest_checksum,
 )
 
@@ -52,6 +54,11 @@ def test_zstd_partition_manifest_and_checksum(tmp_path: Path) -> None:
     manifest_path = data_path.with_suffix(".manifest.json")
     restored = RawFileManifest.model_validate_json(manifest_path.read_bytes())
     assert restored == manifest
+    restored_events = read_raw_events(tmp_path)
+    assert len(restored_events) == 2
+    assert all(
+        event.raw_payload_hash == restored_events[0].raw_payload_hash for event in restored_events
+    )
     assert writer.close() == []
 
 
@@ -70,6 +77,12 @@ def test_checksum_detects_corruption(tmp_path: Path) -> None:
     with path.open("ab") as stream:
         stream.write(b"corruption")
     assert verify_manifest_checksum(tmp_path, manifest) is False
+    try:
+        read_raw_events(tmp_path)
+    except RawDataIntegrityError as exc:
+        assert "checksum" in str(exc)
+    else:
+        raise AssertionError("expected corrupted raw data to fail replay loading")
 
 
 def test_manifest_cannot_escape_root(tmp_path: Path) -> None:
@@ -110,3 +123,15 @@ def test_invalid_writer_buffer_is_rejected(tmp_path: Path) -> None:
         assert "positive" in str(exc)
     else:
         raise AssertionError("expected invalid buffer size to fail")
+
+
+def test_reader_handles_empty_root_and_rejects_bad_manifest(tmp_path: Path) -> None:
+    assert read_raw_events(tmp_path) == []
+    manifest_path = tmp_path / "bad.manifest.json"
+    manifest_path.write_text("{}", encoding="utf-8")
+    try:
+        read_raw_events(tmp_path)
+    except RawDataIntegrityError as exc:
+        assert "invalid raw manifest" in str(exc)
+    else:
+        raise AssertionError("expected malformed manifest to fail")

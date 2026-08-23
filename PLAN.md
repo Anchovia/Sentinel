@@ -26,13 +26,13 @@ Exit criteria:
 - Implement public ticker/trade/orderbook streams, dynamic subscriptions, heartbeat, reconnect/backoff, normalizer, raw envelope, append-only writer, fixtures, and metrics.
 - Validate keyless collection, malformed-message isolation, latency/clock-skew measurement, checksum manifests, and reconnect recovery.
 
-## Phase 2 — Replay, Bars, and Features (`IN_PROGRESS`)
+## Phase 2 — Replay, Bars, and Features (`COMPLETE`)
 
 - Deterministic virtual clock and replay checkpoints.
 - 1s/5s/15s/1m bars, data-gap semantics, L2/trade/volatility features, feature registry, quality checks, and runtime snapshots.
 - Golden replay and look-ahead/leakage tests.
 
-## Phase 3 — Backtest and Paper Broker (`PENDING`)
+## Phase 3 — Backtest and Paper Broker (`IN_PROGRESS`)
 
 - Event-driven backtest and conservative L2 paper execution.
 - Fees, spread, latency, slippage, partial/non-fill, cancellation, adverse selection, ledger, accounting invariants, and reports.

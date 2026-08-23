@@ -12,9 +12,10 @@ The project is safety-first:
 
 ## Current status
 
-Phase 1 (public market data) is complete. QuantForge can collect keyless Upbit ticker, trade, and
-orderbook streams into checksummed ZSTD Parquet partitions. No private API or real orders are
-implemented or executed.
+Phase 2 (replay, bars, and causal baseline features) is complete. QuantForge can collect keyless
+Upbit ticker, trade, and orderbook streams into checksummed ZSTD Parquet partitions, verify and
+deterministically replay them, build explicit-coverage 1s/5s/15s/1m bars, and compute versioned L2,
+trade-flow, and volatility features. No private API or real orders are implemented or executed.
 
 See [SPEC.md](SPEC.md), [PLAN.md](PLAN.md), [PROGRESS.md](PROGRESS.md), and [RISK_POLICY.md](RISK_POLICY.md) before changing behavior.
 
@@ -33,6 +34,7 @@ uv run ruff check .
 uv run mypy src
 uv run quantforge safety-status
 uv run quantforge collect-public --max-messages 100
+uv run quantforge replay-raw --input-root data/raw
 ```
 
 `make bootstrap`, `make test`, `make lint`, and `make typecheck` wrap the same commands on systems with Make installed.
