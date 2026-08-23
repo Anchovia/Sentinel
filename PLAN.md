@@ -58,12 +58,12 @@ Exit criteria:
 - Authenticated read-oriented dashboard, metrics, incidents, audit log, runtime exports, backups, and runbooks.
 - Emergency controls require confirmation, idempotency, result verification, and audit records.
 
-## Phase 8 — Work/Codex Automation Support (`IN_PROGRESS`)
+## Phase 8 — Work/Codex Automation Support (`COMPLETE`)
 
 - Project skills, automation prompts, report/trigger schemas, write allowlists, worktree guidance, and manual dry runs.
 - Register schedules only after required exports exist and manual trials pass.
 
-## Phase 9 — Live Readiness (`PENDING`)
+## Phase 9 — Live Readiness (`IN_PROGRESS`)
 
 - Readiness validator for paper duration/trades, regime coverage, reconciliation, incidents, model/cost stability, restore tests, security, operator procedures, and locks.
 - Output only `NOT_READY`, `CONDITIONALLY_READY`, or `READY_FOR_MANUAL_CANARY_REVIEW`.

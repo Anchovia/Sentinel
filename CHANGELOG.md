@@ -68,6 +68,15 @@ All notable changes are recorded here. The project follows semantic versioning o
   Secrets, symlinks, path traversal, unmanifested files, and checksum damage.
 - Secret-free `export-operations` CLI output and expanded Prometheus incident, control, exposure,
   reconciliation, backup, disk, kill-switch, and authentication metrics.
+- Nine repository-local Work/Codex skills and ten standalone scheduled-task prompts with an explicit
+  unregistered Asia/Seoul schedule catalog, narrow network defaults, and first-run review policy.
+- Closed `automation-report-1` and `automation-trigger-1` contracts, deny-first write allowlists,
+  credential-shaped content rejection, path/symlink guards, and non-ordering validation commands.
+- Actual linked-worktree inspection that rejects Codex scheduled reports from the primary checkout
+  and requires a non-main candidate branch plus evidence/validation before a source-change result.
+- Official scheduled-task setup and worktree cleanup guidance with report-only Work, draft-PR-only
+  Codex, valid no-op/blocked outcomes, and no automatic merge, deployment, model promotion, risk
+  change, live activation, Secret access, or order path.
 
 ### Security
 

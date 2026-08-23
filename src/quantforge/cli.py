@@ -9,6 +9,14 @@ from typing import Annotated, cast
 
 import typer
 
+from quantforge.automation import (
+    AutomationActor,
+    assert_paths_allowed,
+    assert_report_boundary,
+    load_report,
+    load_trigger,
+    load_write_allowlist,
+)
 from quantforge.config import get_settings
 from quantforge.domain import DataGap, EventEnvelope
 from quantforge.exchange.upbit.public_ws import UpbitPublicWebSocketClient
@@ -32,6 +40,7 @@ DEFAULT_REPLAY_INPUT = Path("data/raw")
 DEFAULT_DATA_QUALITY_OUTPUT = Path("runtime_exports/data_quality")
 DEFAULT_OPERATIONS_OUTPUT = Path("runtime_exports")
 DEFAULT_BACKUP_ROOT = Path("data/backups")
+DEFAULT_AUTOMATION_ALLOWLIST = Path("automation/write-allowlist.yaml")
 
 
 @app.callback()
@@ -261,6 +270,66 @@ def restore_drill(
                 "backup_id": manifest.backup_id,
                 "target": str(target.resolve()),
                 "paper_only_marker": str((target / "RESTORE_PAPER_ONLY").resolve()),
+                "network_used": False,
+                "order_submission_available": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("validate-automation-report")
+def validate_automation_report(
+    report: Annotated[Path, typer.Option(help="Automation report manifest JSON")],
+    workspace_root: Annotated[
+        Path, typer.Option(help="Checkout root used for worktree verification")
+    ] = Path("."),
+    allowlist: Annotated[
+        Path, typer.Option(help="Reviewed automation write allowlist")
+    ] = DEFAULT_AUTOMATION_ALLOWLIST,
+) -> None:
+    """Validate a Secret-free report and its actor/worktree write boundary."""
+
+    parsed = load_report(report)
+    contract = load_write_allowlist(allowlist)
+    worktree = assert_report_boundary(parsed, contract, workspace_root)
+    typer.echo(
+        json.dumps(
+            {
+                "actor": parsed.actor,
+                "outcome": parsed.outcome,
+                "report": parsed.report_path,
+                "schema_version": parsed.schema_version,
+                "writes_allowed": True,
+                "dedicated_worktree": worktree.dedicated if worktree else False,
+                "branch": worktree.branch if worktree else None,
+                "network_used": False,
+                "order_submission_available": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("validate-automation-trigger")
+def validate_automation_trigger(
+    trigger: Annotated[Path, typer.Option(help="Work-to-Codex trigger JSON")],
+    allowlist: Annotated[
+        Path, typer.Option(help="Reviewed automation write allowlist")
+    ] = DEFAULT_AUTOMATION_ALLOWLIST,
+) -> None:
+    """Validate a structured trigger without executing its untrusted evidence."""
+
+    parsed = load_trigger(trigger)
+    contract = load_write_allowlist(allowlist)
+    assert_paths_allowed(AutomationActor.CODEX, parsed.requested_write_paths, contract)
+    typer.echo(
+        json.dumps(
+            {
+                "schema_version": parsed.schema_version,
+                "requested_skill": parsed.requested_skill,
+                "requested_writes_allowed": True,
+                "operator_approval_required": parsed.operator_approval_required,
                 "network_used": False,
                 "order_submission_available": False,
             },

@@ -175,3 +175,30 @@ The restore target must be new or empty. The drill writes `RESTORE_PAPER_ONLY` a
 credential or order capability. The manifest deliberately reports external encryption false and
 RPO/RTO unmeasured, so this artifact is not a production backup. A checksum failure, extra file,
 symlink, Secret-shaped file, or non-paper manifest invalidates the entire proof.
+
+## Work and Codex scheduled-task setup
+
+Follow `automation/SCHEDULED_TASK_SETUP.md`; the catalog is `not_registered` by default. Manually run
+the exact prompt before scheduling it, inspect its report, validate the matching JSON manifest, and
+confirm the write boundary:
+
+```text
+uv run quantforge validate-automation-report \
+  --report <same-stem-report.json> \
+  --workspace-root <checkout> \
+  --allowlist automation/write-allowlist.yaml
+
+uv run quantforge validate-automation-trigger \
+  --trigger <trigger.json> \
+  --allowlist automation/write-allowlist.yaml
+```
+
+Work local-file tasks must be created from the desktop project and may write only report/proposal
+paths. Record `git diff -- src configs ops migrations dashboard` before and after. Do not undo an
+unexpected change; preserve and report it as a critical boundary violation.
+
+Codex code tasks must use the dedicated background worktree option. A no-finding result writes only
+its report. Reproduce before editing; add regression evidence; run all checks; stop without a PR on
+failure. A passing result may create a draft non-main candidate, but never merge, deploy, promote,
+change risk/live state, or call an order path. Review or archive the task before deliberately
+cleaning its worktree.

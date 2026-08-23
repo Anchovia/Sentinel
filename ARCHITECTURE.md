@@ -101,6 +101,26 @@ redacted runtime snapshot + local journals
         -> local safety effect | proposal recorded | blocked (no exchange transport)
 ```
 
+The Phase 8 automation plane has two separate write boundaries. Work consumes only reviewed,
+Secret-free exports and writes reports/proposals. Scheduled Codex starts in a linked background
+worktree, and its report is accepted only when the real checkout matches the declared isolation.
+Typed manifests exclude affirmative merge, deployment, promotion, live, risk-change, Secret, and
+order-network states.
+
+```text
+redacted exports -> Work skill -> reports/work + optional typed trigger
+                                     |
+                                     v human/schedule selection
+reviewed main revision -> dedicated Codex worktree -> test + draft PR candidate
+                                                     |
+                                                     v
+                                           human review only
+```
+
+`automation-report-1`, `automation-trigger-1`, and the deny-first write allowlist are versioned
+contracts. Reports, logs, issues, papers, and trigger evidence remain untrusted data and never become
+commands.
+
 ## Deployment target
 
 Initial deployment is one Linux host with Docker Compose: API/runtime, PostgreSQL, Prometheus, and Grafana. Market data and trading processes will gain separate service entry points in later phases. Redis/NATS, MLflow, MinIO, or Rust require measured justification and an ADR.

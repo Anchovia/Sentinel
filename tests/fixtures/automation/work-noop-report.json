@@ -1,0 +1,34 @@
+{
+  "schema_version": "automation-report-1",
+  "run_id": "manual-work-noop-001",
+  "task_id": "work.ops-audit-6h",
+  "actor": "work",
+  "skill": "quantforge-ops-audit",
+  "started_at_utc": "2026-08-23T00:00:00Z",
+  "completed_at_utc": "2026-08-23T00:00:01Z",
+  "source_revision": "1111111",
+  "severity": "NORMAL",
+  "outcome": "NO_ACTION",
+  "summary": "No material operational change was found in the supplied paper-only fixture.",
+  "report_path": "reports/work/ops/2026/08/23/manual-ops-audit.md",
+  "writes": [
+    "reports/work/ops/2026/08/23/manual-ops-audit.md",
+    "reports/work/ops/2026/08/23/manual-ops-audit.json"
+  ],
+  "evidence": [],
+  "validation": ["fixture schema validated"],
+  "requires_operator": false,
+  "requires_codex": false,
+  "first_three_runs_review": true,
+  "worktree": null,
+  "safety": {
+    "real_orders_executed": false,
+    "order_network_used": false,
+    "production_secrets_accessed": false,
+    "live_mode_changed": false,
+    "risk_limits_changed": false,
+    "model_promoted": false,
+    "auto_merge_performed": false,
+    "auto_deploy_performed": false
+  }
+}

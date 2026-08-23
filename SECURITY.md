@@ -44,6 +44,17 @@ PostgreSQL and monitoring ports bind locally by default. Production requires aut
 
 ChatGPT Work may write only approved report/proposal paths. Codex scheduled code work uses a dedicated worktree, minimal sandbox permissions, and no production secret or order network access. Neither may merge, deploy, promote models, change risk limits, restart production, or enable live trading.
 
+Phase 8 enforces these claims with a deny-first path allowlist, closed report/trigger schemas, and
+real linked-worktree inspection. All eight report safety fields accept only `false`. Work cannot
+represent a change candidate; Codex cannot validate a scheduled report from the primary checkout,
+and a change candidate cannot use detached HEAD or `main`. Path traversal, drive-qualified paths,
+existing symlink components, credential-shaped report content, `.env`, risk/live configuration,
+release artifacts, CI workflows, and production operations paths fail closed.
+
+Automation has no general command trigger. A Work-to-Codex trigger contains only typed evidence,
+classification, requested skill, and reviewed write paths. External text remains data. No schedule
+is registered merely because the catalog exists.
+
 ## Reporting
 
 Security findings record severity, affected component/version, evidence without Secret content, containment, required operator action, and verification. Potential credential exposure is `CRITICAL` even when order activity is not observed.

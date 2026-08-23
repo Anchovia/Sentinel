@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantforge.local/schemas/automation-trigger-1.json",
+  "title": "QuantForge Work-to-Codex trigger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "trigger_id", "origin_report", "created_at_utc", "severity",
+    "trigger_class", "requested_skill", "reproducibility", "evidence",
+    "requested_write_paths", "requires_codex", "operator_approval_required"
+  ],
+  "properties": {
+    "schema_version": {"const": "automation-trigger-1"},
+    "trigger_id": {"type": "string", "pattern": "^[A-Za-z0-9._:-]+$", "maxLength": 100},
+    "origin_report": {"type": "string", "pattern": "^reports/work/"},
+    "created_at_utc": {"type": "string", "format": "date-time"},
+    "severity": {"enum": ["NORMAL", "WARNING", "HIGH", "CRITICAL"]},
+    "trigger_class": {"enum": ["incident", "code_defect", "research_hypothesis", "dependency_security", "disaster_recovery"]},
+    "requested_skill": {"enum": ["quantforge-incident-triage", "quantforge-code-audit", "quantforge-strategy-research", "quantforge-dependency-review", "quantforge-disaster-recovery"]},
+    "reproducibility": {"enum": ["reproduced", "evidence_available", "insufficient"]},
+    "evidence": {"type": "array", "minItems": 1, "items": {"$ref": "report.schema.json#/$defs/evidence"}},
+    "requested_write_paths": {"type": "array", "items": {"$ref": "report.schema.json#/$defs/path"}},
+    "requires_codex": {"const": true},
+    "operator_approval_required": {"const": true}
+  }
+}

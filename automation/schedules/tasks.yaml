@@ -1,0 +1,96 @@
+schema_version: automation-schedule-catalog-1
+timezone: Asia/Seoul
+registration_status: not_registered
+registration_rule: Register only after the matching manual trial passes and a human reviews it.
+standalone: true
+sandbox: workspace-write
+first_runs_requiring_review: 3
+real_orders_allowed: false
+production_secrets_allowed: false
+automatic_merge: false
+automatic_deploy: false
+automatic_model_promotion: false
+automatic_live_activation: false
+
+tasks:
+  - id: work.ops-audit-6h
+    name: QuantForge — 6H Operations Audit
+    actor: work
+    skill: quantforge-ops-audit
+    rrule: RRULE:FREQ=DAILY;BYHOUR=0,6,12,18;BYMINUTE=10
+    prompt: automation/work/ops-audit-6h.md
+    checkout: local_project
+    network: disabled
+  - id: work.performance-review-12h
+    name: QuantForge — 12H Performance Review
+    actor: work
+    skill: quantforge-performance-review
+    rrule: RRULE:FREQ=DAILY;BYHOUR=1,13;BYMINUTE=0
+    prompt: automation/work/performance-review-12h.md
+    checkout: local_project
+    network: disabled
+  - id: work.data-model-health-daily
+    name: QuantForge — Daily Data and Model Health
+    actor: work
+    skill: quantforge-data-quality
+    secondary_skill: quantforge-model-drift
+    rrule: RRULE:FREQ=DAILY;BYHOUR=8;BYMINUTE=30
+    prompt: automation/work/data-quality-daily.md
+    checkout: local_project
+    network: disabled
+  - id: work.strategy-research-weekly
+    name: QuantForge — Weekly Strategy Research
+    actor: work
+    skill: quantforge-strategy-research
+    rrule: RRULE:FREQ=WEEKLY;BYDAY=MO;BYHOUR=9;BYMINUTE=30
+    prompt: automation/work/research-weekly.md
+    checkout: local_project
+    network: disabled
+  - id: work.governance-monthly
+    name: QuantForge — Monthly Governance Review
+    actor: work
+    skill: quantforge-ops-audit
+    rrule: RRULE:FREQ=MONTHLY;BYMONTHDAY=1;BYHOUR=10;BYMINUTE=0
+    prompt: automation/work/governance-monthly.md
+    checkout: local_project
+    network: disabled
+  - id: codex.incident-triage-6h
+    name: QuantForge — 6H Incident Triage
+    actor: codex
+    skill: quantforge-incident-triage
+    rrule: RRULE:FREQ=DAILY;BYHOUR=2,8,14,20;BYMINUTE=20
+    prompt: automation/codex/incident-triage.md
+    checkout: dedicated_background_worktree
+    network: disabled_by_default
+  - id: codex.code-audit-daily
+    name: QuantForge — Daily Code Audit
+    actor: codex
+    skill: quantforge-code-audit
+    rrule: RRULE:FREQ=DAILY;BYHOUR=3;BYMINUTE=30
+    prompt: automation/codex/code-audit-daily.md
+    checkout: dedicated_background_worktree
+    network: disabled_by_default
+  - id: codex.challenger-weekly
+    name: QuantForge — Weekly Challenger Experiment
+    actor: codex
+    skill: quantforge-strategy-research
+    rrule: RRULE:FREQ=WEEKLY;BYDAY=SA;BYHOUR=2;BYMINUTE=0
+    prompt: automation/codex/challenger-weekly.md
+    checkout: dedicated_background_worktree
+    network: disabled_by_default
+  - id: codex.dependency-review-weekly
+    name: QuantForge — Weekly Dependency and Security Review
+    actor: codex
+    skill: quantforge-dependency-review
+    rrule: RRULE:FREQ=WEEKLY;BYDAY=SU;BYHOUR=5;BYMINUTE=0
+    prompt: automation/codex/dependency-review-weekly.md
+    checkout: dedicated_background_worktree
+    network: official_sources_only_when_required
+  - id: codex.disaster-recovery-monthly
+    name: QuantForge — Monthly Disaster Recovery Test
+    actor: codex
+    skill: quantforge-disaster-recovery
+    rrule: RRULE:FREQ=MONTHLY;BYDAY=1SU;BYHOUR=7;BYMINUTE=0
+    prompt: automation/codex/disaster-recovery-monthly.md
+    checkout: dedicated_background_worktree
+    network: disabled

@@ -1,37 +1,46 @@
 # Known Limitations
 
-## Current implementation status
+## Trading and exchange boundary
 
-- A keyless Upbit public WebSocket adapter, append-only Parquet raw store, deterministic replay,
-  time bars, and baseline feature pipeline exist. No private adapter, trained model, strategy, risk
-  calculation engine, paper broker, ledger, or dashboard exists yet.
-- The API exposes health, non-secret safety status, and process metrics. Public collection currently
-  runs as a bounded CLI process rather than a supervised long-running Compose service.
-- No live adapter or real-order endpoint exists.
+- Default mode is paper. There is no credential provider, JWT signer, authenticated exchange
+  transport, real/test order call, real cancellation, or usable live adapter.
+- Private order/asset and order-policy behavior is fixture/fake-port evidence only. Public WebSocket
+  collection is bounded rather than a supervised long-running service.
+- Upbit capability observations were reviewed on 2026-08-23 and are not an automatic semantic diff.
+  The official Python SDK remains excluded because its declared WebSocket constraint conflicts with
+  the reviewed direct transport.
+- Public L2 snapshots cannot reveal exact queue position or hidden liquidity. Paper fills, slippage,
+  and adverse-selection estimates are conservative approximations and remain uncalibrated.
 
-## Tooling and deployment
+## Research and readiness
 
-- Local uv was not preinstalled at project start; validation used a project-isolated bootstrap.
-- Docker build, application smoke, and Compose rendering passed; the full infrastructure stack has not yet had a sustained health/backup test.
-- Container images are pinned to verified manifest digests, but routine digest refresh and SBOM policy are not yet automated.
-- Committed PostgreSQL/Grafana credentials are development-only examples.
-- GitHub CLI is unavailable; automated PR creation is not configured.
-- The repository currently uses a restrictive all-rights-reserved placeholder license pending an owner-selected license.
+- Baselines use synthetic/fixture-scale evidence. No strategy/model profitability, capacity,
+  production latency, promotion, canary eligibility, or live readiness is claimed.
+- Continuous coverage records, longer/event/volume/imbalance bars, full production feature/model
+  families, sustained paper history, and representative performance/model exports are incomplete.
+- Final-holdout controls and experiment retention exist, but they do not remove selection bias,
+  multiple testing, regime change, or limited sample risk.
 
-## Market and research
+## Operations and recovery
 
-- Public Upbit capabilities, SDK support, request limits, and stream schemas were snapshotted on
-  2026-08-23. There is not yet an automated semantic documentation-diff job; every behavior change
-  still requires a fresh official-source review.
-- The official Python SDK `0.9.0` was not installed because its declared `websockets <16` constraint
-  conflicts with the reviewed transport version. ADR-005 records the isolated direct-transport
-  decision.
-- The bounded collector does not yet persist continuous `CoverageWindow` records automatically.
-  Bar construction therefore requires separately reviewed positive coverage input and safely emits
-  data gaps when it is absent.
-- Phase 2 implements 1s/5s/15s/1m bars. Longer timeframes and event/volume/imbalance bars remain
-  pending.
-- Public L2 data does not reveal exact queue position or individual order events. Snapshot-derived
-  order-flow imbalance and future fill simulations remain approximations.
-- Baseline features are not trading signals and have no profitability claim.
-- No strategy/model profitability, capacity, latency, recovery objective, or live readiness is claimed.
+- The dashboard has one bearer-authenticated operator role and no RBAC/SSO/TLS ingress/application
+  rate limiter. Runtime producers do not yet populate every read view.
+- Incident, control, order, experiment, risk, and attribution journals are local single-writer proofs,
+  not transactional replicated production storage.
+- Backups are unencrypted, local development restore proofs with no PostgreSQL/off-host/raw-tick/
+  credential recovery and no measured RPO/RTO. Production recovery is unimplemented.
+- Cancel-only and incident acknowledgement are local. Strategy pause is proposal-only, and
+  cancel-all is blocked because no authenticated cancellation transport exists.
+
+## Automation and delivery
+
+- Repository skills, prompts, schemas, allowlists, and an RRULE catalog exist, but no Work/Codex
+  scheduled task is registered. Missing representative exports should return `BLOCKED`.
+- The write allowlist and validator are repository controls, not operating-system path ACLs. Work
+  requires before/after Git evidence; every Codex candidate still needs human diff/PR review.
+- Only a detached no-op background worktree was exercised. No automated branch, PR, merge, deploy,
+  model promotion, risk change, live activation, or order path exists.
+- Local-file schedules require the computer and desktop app to remain running. The catalog does not
+  claim account-specific task capacity or next-run calculations.
+- Docker/Compose validation passes, but the full stack has no sustained production health or backup
+  test. Development credentials and the restrictive placeholder license are not production choices.

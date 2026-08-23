@@ -13,5 +13,6 @@
 | ADR-009 | Keep strategy proposals separate from independent risk authority | Accepted | 2026-08-23 |
 | ADR-010 | Keep private execution mock-only and recover uncertain orders by identifier | Accepted | 2026-08-23 |
 | ADR-011 | Keep operations read-oriented with proposal-only remote controls | Accepted | 2026-08-23 |
+| ADR-012 | Schema-guard report automation and isolate code automation | Accepted | 2026-08-23 |
 
 Consequential changes require a new ADR; do not silently rewrite accepted rationale.

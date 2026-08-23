@@ -1,0 +1,69 @@
+schema_version: automation-write-allowlist-1
+
+work:
+  allowed:
+    - reports/work/**
+    - runtime_exports/research/proposals/**
+  denied:
+    - src/**
+    - tests/**
+    - configs/**
+    - ops/**
+    - migrations/**
+    - dashboard/**
+    - automation/**
+    - .agents/**
+    - .github/**
+    - .env
+    - .env.*
+    - secrets/**
+    - RISK_POLICY.md
+    - AGENTS.md
+
+codex:
+  allowed:
+    - src/**
+    - tests/**
+    - docs/**
+    - research/**
+    - reports/codex/**
+    - runtime_exports/research/proposals/**
+    - automation/**
+    - .agents/skills/**
+    - configs/**
+    - migrations/**
+    - ops/backup/**
+    - ops/restore/**
+    - scripts/**
+    - pyproject.toml
+    - uv.lock
+    - Dockerfile
+    - docker-compose.yml
+    - docker-compose.paper.yml
+    - ARCHITECTURE.md
+    - CHANGELOG.md
+    - DATA_MODEL.md
+    - PLAN.md
+    - PROGRESS.md
+    - DISASTER_RECOVERY.md
+    - RESEARCH_METHOD.md
+    - RUNBOOK.md
+    - SECURITY.md
+    - SPEC.md
+    - THREAT_MODEL.md
+  denied:
+    - .git/**
+    - .github/**
+    - .env
+    - .env.*
+    - secrets/**
+    - AGENTS.md
+    - RISK_POLICY.md
+    - configs/risk*.yaml
+    - configs/live*.yaml
+    - runtime_exports/releases/**
+    - artifacts/**
+    - data/**
+    - ops/prometheus/**
+    - ops/grafana/**
+    - ops/systemd/**

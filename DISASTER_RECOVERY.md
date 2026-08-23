@@ -57,3 +57,8 @@ This local artifact is deliberately marked `encrypted_by_external_storage=false`
 PostgreSQL-native backup/restore, off-host encrypted retention, key management, full raw-data policy,
 private-stream replay, credential restoration, and measured recovery objectives remain
 unimplemented. No restore drill may receive an exchange credential or order-capable network path.
+
+The Phase 8 monthly recovery prompt remains unregistered until a manual isolated run has a valid
+`automation-report-1` manifest. A scheduled run must use a dedicated background worktree and a new
+or empty temporary target. Missing production-grade backup evidence is `BLOCKED`, not permission to
+reuse the local development proof or touch production storage.

@@ -1,0 +1,25 @@
+{
+  "schema_version": "automation-trigger-1",
+  "trigger_id": "work-trigger-001",
+  "origin_report": "reports/work/ops/2026/08/23/manual-ops-audit.md",
+  "created_at_utc": "2026-08-23T00:00:01Z",
+  "severity": "HIGH",
+  "trigger_class": "code_defect",
+  "requested_skill": "quantforge-incident-triage",
+  "reproducibility": "evidence_available",
+  "evidence": [
+    {
+      "evidence_id": "incident:synthetic-1",
+      "source_path": "runtime_exports/incidents/open.json",
+      "source_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "observation": "The fixture declares a repeated parser failure without executable instructions."
+    }
+  ],
+  "requested_write_paths": [
+    "tests/unit/test_automation.py",
+    "src/quantforge/automation/contracts.py",
+    "reports/codex/incidents/2026/08/23/manual-triage.md"
+  ],
+  "requires_codex": true,
+  "operator_approval_required": true
+}

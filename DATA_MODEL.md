@@ -206,3 +206,16 @@ The `operations-backup-1` manifest records creation time, source revision, paper
 RPO/RTO targets, external-encryption status, canonical relative paths, byte counts, per-object
 SHA-256, and an aggregate hash. A local manifest with encryption false is restore-drill evidence,
 not a production backup claim.
+
+## Automation evidence
+
+`automation-report-1` binds a run/task/actor/skill, UTC interval, source revision, severity, outcome,
+human/Codex escalation flags, report/write paths, evidence, validation, and optional dedicated-
+worktree proof. Its safety object can record only false for orders, order network, production Secret
+access, live/risk/model changes, merge, and deployment. Work cannot emit `CHANGE_CANDIDATE`; Codex
+reports require a linked-worktree proof.
+
+`automation-trigger-1` is a Work-to-Codex evidence envelope with no command field. It identifies the
+origin report, severity/class, requested Codex skill, reproducibility level, evidence hashes, and
+reviewed requested write paths. Both contracts reject unknown fields, non-UTC timestamps, path
+traversal, and credential-shaped content before use.

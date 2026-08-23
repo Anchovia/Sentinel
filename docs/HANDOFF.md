@@ -8,14 +8,15 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 ## Current state
 
 - Date: 2026-08-23 KST
-- Completed phase: 7 — Dashboard and Operations
-- Current phase: 8 — Work/Codex Automation Support (`IN_PROGRESS`)
+- Completed phase: 8 — Work/Codex Automation Support
+- Current phase: 9 — Live Readiness (`IN_PROGRESS`)
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
 - Live network capability: false
 - Actual/private/test orders: none
 - Production Secrets: not requested or accessed
+- Scheduled tasks registered: none
 - Phase 0: `cfc1617 feat: QuantForge 안전 기반 구축`
 - Phase 1: `136295c feat: 업비트 공개 데이터 파이프라인 구축`
 - Phase 2: `41b64d1 feat: 결정적 재생과 인과 특징 구축`
@@ -24,63 +25,79 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - README cleanup: `74a2bee chore: 공개 README 간소화`
 - Phase 5: `91962b9 feat: 전략 라우팅과 위험 게이트 구축`
 - Phase 6: `ac7798b feat: 모의 비공개 주문 안전 경계 구축`
+- Phase 7: `b71424e feat: 운영 대시보드와 감사 경계 구축`
 
-## Implemented through Phase 7
+## Implemented through Phase 8
 
-- Safety-first Python modular monolith, six live gates, Decimal domain boundary, structured
-  redaction, CI/Compose/container skeleton, and public health/safety/metrics.
-- Keyless Upbit public transport, immutable raw lineage and Parquet manifests, deterministic replay,
-  explicit gaps/bars/causal features, runtime data-quality snapshots, and public metrics.
-- Conservative event-driven paper execution and exact FIFO portfolio accounting, deterministic
-  backtests, chronological preregistered model research, sealed holdout, immutable model registry,
-  proposal-only strategies, independent risk gateway, attribution, and manual-release kill switch.
-- Mock-only private order/event contracts, deterministic burned identifiers, fsynced order journal,
-  identifier-first timeout/restart recovery, exact reconciliation, and disabled live adapter.
-- Versioned operations read model and atomic Secret-rejecting export; authenticated JSON/HTML
-  dashboard; operations Prometheus metrics and Grafana health dashboard.
-- Fsynced hash-chain incident/audit/control records; confirmation, CSRF, idempotency, result
-  verification, duplicate suppression, and interrupted-request UNKNOWN handling.
-- Local-only cancel-only activation and incident acknowledgement. Strategy pause is proposal-only;
-  cancel-all is blocked and no control can release/flatten/edit risk/models/live state/send orders.
-- Checksummed explicit-source local backup and empty-target paper restore drill with Secret, symlink,
-  traversal, extra-file, and tamper rejection. Production backup is not claimed.
+- Safety-first modular monolith, six closed live gates, Decimal boundary, keyless public pipeline,
+  immutable raw lineage, deterministic replay/features/backtests, conservative paper execution,
+  exact portfolio ledger, chronological preregistered research, and immutable model registry.
+- Proposal-only strategies, independent risk gateway, attribution, manual-release kill switch,
+  mock-only private contracts, burned identifiers, fsynced journal, identifier-first recovery,
+  reconciliation, and a disabled live adapter with no order network.
+- Secret-rejecting operations export, authenticated read dashboard, Prometheus/Grafana health views,
+  hash-chain incident/audit/control records, local cancel-only and incident acknowledgement, and
+  checksummed paper restore drills. Production backup/recovery is not claimed.
+- Nine repository-local skills cover the requested Work/Codex roles. Ten independent prompts and an
+  Asia/Seoul RRULE catalog exist, but registration is deliberately `not_registered`.
+- `automation-report-1` and `automation-trigger-1` are closed evidence contracts. Safety flags can
+  only be false, Work cannot emit a change candidate, and triggers contain no command field.
+- A deny-first allowlist limits Work to report/proposal paths and excludes Codex writes to Secret,
+  risk/live/release/CI/production/data/artifact boundaries. Traversal, drive paths, symlink
+  components, and credential-shaped report text fail closed.
+- Offline validation commands check manifests, requested writes, and the actual linked-worktree
+  state. Codex scheduled reports fail in the primary checkout; source candidates require evidence,
+  validation, and a non-main branch. There is no merge/deploy/promote/live/order function.
+- An actual detached worktree no-op passed at Phase 7 `main` without creating a branch. The temporary
+  clean worktree was deliberately removed; the primary `main` checkout is the only remaining one.
+- ADR-012 records the isolation decision. Official current OpenAI scheduled-task, Work, skill, and
+  worktree guidance is linked from the setup guide and ADR.
 
 ## Latest validation
 
 ```text
-ruff + format: PASS (169 files)
-mypy: PASS (98 source files)
-pytest: PASS (254 tests, 87.17% branch coverage)
-Secret scan: PASS (244 text files)
+Python 3.13.15; no Phase 8 dependency added
+ruff + format: PASS (195 files)
+mypy: PASS (101 source files)
+pytest: PASS (278 tests, 87.04% branch coverage)
+repository skills: PASS (9/9)
+manual report envelopes: PASS (all skill actor modes)
+main-checkout rejection + detached worktree no-op: PASS
+Secret scan: PASS (289 text files)
 pip-audit: PASS (no known vulnerabilities)
 Compose config: PASS
-Phase 7 API/control/export/backup tests: PASS
-Phase 7 image: PASS (quantforge:phase7, sha256:c52ccccf...5ae6a)
-Container safety: paper, live=false, six gates closed
-Container operations: dashboard auth false by default; control/live network false
-Container export: operations-dashboard-1; auth/network/order use false
+real/private/test orders: none
+automation network/order capability: false
+automatic merge/deploy/promotion/live activation: false
+schedules: not registered
 ```
 
 ## Important constraints
 
-- The dashboard has a single bearer operator role and no RBAC/SSO/TLS ingress/application rate
-  limiter. External dashboard Secret delivery is required; default operations access is closed.
-- Operations journals are single-writer files, not a transactional or replicated database.
-- Runtime producers do not yet populate every dashboard view. Exports are generated manually.
-- Local backups are unencrypted restore proofs; PostgreSQL/off-host/credential/raw-tick recovery and
-  measured RPO/RTO are absent.
-- No authenticated exchange transport, real cancellation, test-order call, or live adapter exists.
-- Work/Codex scheduled skills, schemas, prompts, allowlists, and schedules are not implemented yet.
-- The owner requires one concise Korean Conventional Commit per completed phase, committed and
-  pushed directly on `main`. Keep the public README extremely minimal.
+- Real Work/Codex schedules have not been created. Follow `automation/SCHEDULED_TASK_SETUP.md`; test
+  manually and review the first three runs. Local tasks require the computer and desktop app.
+- Performance/model/open-incident exports are not yet populated with representative runtime data.
+  Missing evidence should yield a short `BLOCKED` report, not invented findings.
+- The repository validator and prompt write allowlist are not OS-level per-path ACLs. Preserve
+  before/after Git evidence and keep task sandbox/network permissions narrow.
+- No Codex change candidate or PR was needed in Phase 8. The no-op worktree proof does not validate a
+  future patch's correctness; every future candidate still needs reproduction, regression tests,
+  full checks, and human review.
+- The dashboard, single-writer journals, local backup proof, and incomplete runtime producers retain
+  the Phase 7 limitations documented in `PROGRESS.md` and `docs/KNOWN_LIMITATIONS.md`.
+- No authenticated exchange transport, production Secret provider, live/test order endpoint,
+  production recovery, or profitable/promotable strategy/model evidence exists.
+- The owner requires one concise Korean Conventional Commit per phase, committed and pushed directly
+  on `main`. Keep the public README extremely minimal.
 
 ## Next actions
 
-1. Read the official OpenAI/Codex scheduled-task guidance through the repository's required
-   documentation workflow before implementing Phase 8 support.
-2. Add repository-local Work and Codex skills, prompts, schemas, output allowlists, and dedicated
-   scheduled-worktree rules from the supplied second and third prompts.
-3. Generate representative redacted exports and run every skill manually, including clean no-op,
-   failed-test, untrusted-input, and forbidden-write cases.
-4. Keep Work report-only and Codex PR-candidate-only. Do not register a schedule until manual trials
-   pass; do not auto-merge, deploy, promote, change risk, access Secrets, or call order paths.
+1. Implement a deterministic, read-only Phase 9 readiness evidence contract and evaluator. Keep all
+   missing evidence fail-closed as `NOT_READY`.
+2. Cover paper duration/trade count, reconciliation, data availability, incidents, model/drawdown/
+   cost stability, order-test evidence, backup/restore, security, runbooks, all six live locks, and
+   human approvals without executing an order or changing state.
+3. Add fixtures for contradictory, stale, tampered, missing, conditionally ready, and fully evidenced
+   manual-canary-review cases. `READY_FOR_MANUAL_CANARY_REVIEW` must not activate live.
+4. Run all validation, update ADR/progress/handoff, then commit and push Phase 9 on `main` with a
+   concise Korean Conventional Commit.

@@ -1,0 +1,40 @@
+{
+  "schema_version": "automation-report-1",
+  "run_id": "manual-codex-noop-001",
+  "task_id": "codex.code-audit-daily",
+  "actor": "codex",
+  "skill": "quantforge-code-audit",
+  "started_at_utc": "2026-08-23T00:00:00Z",
+  "completed_at_utc": "2026-08-23T00:00:01Z",
+  "source_revision": "1111111",
+  "severity": "NORMAL",
+  "outcome": "NO_ACTION",
+  "summary": "No reproducible code defect was detected in the supplied fixture.",
+  "report_path": "reports/codex/code-audit/2026/08/23/manual-code-audit.md",
+  "writes": [
+    "reports/codex/code-audit/2026/08/23/manual-code-audit.md",
+    "reports/codex/code-audit/2026/08/23/manual-code-audit.json"
+  ],
+  "evidence": [],
+  "validation": ["fixture schema validated"],
+  "requires_operator": false,
+  "requires_codex": false,
+  "first_three_runs_review": true,
+  "worktree": {
+    "dedicated_worktree": true,
+    "main_checkout_modified": false,
+    "base_branch": "main",
+    "base_revision": "1111111",
+    "candidate_branch": null
+  },
+  "safety": {
+    "real_orders_executed": false,
+    "order_network_used": false,
+    "production_secrets_accessed": false,
+    "live_mode_changed": false,
+    "risk_limits_changed": false,
+    "model_promoted": false,
+    "auto_merge_performed": false,
+    "auto_deploy_performed": false
+  }
+}

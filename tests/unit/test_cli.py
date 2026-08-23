@@ -78,3 +78,46 @@ def test_export_operations_is_secret_free_and_non_ordering(tmp_path: Path, monke
     assert payload["order_submission_available"] is False
     snapshot = read_dashboard_snapshot(output / "ops" / "dashboard.json")
     assert snapshot.system.disk_free_bytes is not None
+
+
+def test_validate_work_automation_report_is_non_ordering() -> None:
+    root = Path(__file__).resolve().parents[2]
+    result = runner.invoke(
+        app,
+        [
+            "validate-automation-report",
+            "--report",
+            str(root / "tests/fixtures/automation/work-noop-report.json"),
+            "--workspace-root",
+            str(root),
+            "--allowlist",
+            str(root / "automation/write-allowlist.yaml"),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["actor"] == "work"
+    assert payload["writes_allowed"] is True
+    assert payload["network_used"] is False
+    assert payload["order_submission_available"] is False
+
+
+def test_validate_automation_trigger_is_operator_reviewed() -> None:
+    root = Path(__file__).resolve().parents[2]
+    result = runner.invoke(
+        app,
+        [
+            "validate-automation-trigger",
+            "--trigger",
+            str(root / "tests/fixtures/automation/codex-trigger.json"),
+            "--allowlist",
+            str(root / "automation/write-allowlist.yaml"),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["operator_approval_required"] is True
+    assert payload["requested_writes_allowed"] is True
+    assert payload["order_submission_available"] is False
