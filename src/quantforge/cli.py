@@ -46,6 +46,13 @@ from quantforge.readiness import (
     write_readiness_report,
 )
 from quantforge.replay import ReplayEngine, VirtualClock
+from quantforge.research.scalping import (
+    blocked_experiment_ledger,
+    create_blocked_scalping_report,
+    evaluate_scalping_data_sufficiency,
+    load_scalping_experiment_plan,
+    write_scalping_research_bundle,
+)
 from quantforge.runtime import (
     DataQualitySnapshot,
     LiveSubmissionGuard,
@@ -67,6 +74,7 @@ from quantforge.storage import (
     RawStoragePolicy,
     cleanup_orphan_temp_files,
     read_raw_events,
+    scan_raw_event_research_inventory,
 )
 
 app = typer.Typer(no_args_is_help=True, help="QuantForge research and operations CLI")
@@ -79,6 +87,8 @@ DEFAULT_BACKUP_ROOT = Path("data/backups")
 DEFAULT_AUTOMATION_ALLOWLIST = Path("automation/write-allowlist.yaml")
 DEFAULT_READINESS_POLICY = Path("configs/readiness.default.yaml")
 DEFAULT_PAPER_RUNTIME_SNAPSHOT = Path("runtime_exports/ops/paper-runtime.json")
+DEFAULT_SCALPING_PLAN = Path("research/experiments/2026-08-24-scalping-challenger-v1.json")
+DEFAULT_CODEX_RESEARCH_OUTPUT = Path("reports/codex/research")
 
 
 async def _run_paper_with_signals(
@@ -591,6 +601,89 @@ def replay_raw(
                 "network_used": False,
                 "authentication_used": False,
                 "order_submission_available": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("assess-scalping-research")
+def assess_scalping_research(
+    source_revision: Annotated[
+        str,
+        typer.Option(help="Exact committed source revision used for the research assessment"),
+    ],
+    plan_path: Annotated[
+        Path, typer.Option(help="Committed preregistered scalping experiment plan")
+    ] = DEFAULT_SCALPING_PLAN,
+    input_root: Annotated[
+        Path, typer.Option(help="Checksummed public raw Parquet root")
+    ] = DEFAULT_PAPER_RAW_OUTPUT,
+    output_root: Annotated[
+        Path, typer.Option(help="Codex research report root")
+    ] = DEFAULT_CODEX_RESEARCH_OUTPUT,
+) -> None:
+    """Fingerprint detailed public data and retain an insufficient-data result."""
+
+    plan = load_scalping_experiment_plan(plan_path)
+    inventory = scan_raw_event_research_inventory(
+        input_root,
+        maximum_exchange_timestamp_utc=(plan.dataset_selection.maximum_exchange_timestamp_utc),
+    )
+    sufficiency = evaluate_scalping_data_sufficiency(plan, inventory)
+    if sufficiency.meets_requirements:
+        typer.echo(
+            json.dumps(
+                {
+                    "dataset_hash": inventory.dataset_hash,
+                    "detailed_public_events": inventory.selected_event_count,
+                    "eligible_markets": list(sufficiency.eligible_markets),
+                    "meets_preregistered_minimum": True,
+                    "report_written": False,
+                    "final_holdout_used": False,
+                    "authentication_used": False,
+                    "order_network_used": False,
+                    "real_orders_executed": False,
+                },
+                sort_keys=True,
+            )
+        )
+        return
+
+    generated_at_utc = datetime.now(UTC)
+    report = create_blocked_scalping_report(
+        plan,
+        inventory,
+        sufficiency,
+        source_revision=source_revision,
+        generated_at_utc=generated_at_utc,
+    )
+    ledger = blocked_experiment_ledger(
+        plan,
+        inventory,
+        sufficiency,
+        source_revision=source_revision,
+        generated_at_utc=generated_at_utc,
+    )
+    markdown_path, json_path, ledger_path = write_scalping_research_bundle(
+        report, ledger, output_root
+    )
+    typer.echo(
+        json.dumps(
+            {
+                "decision": report.decision,
+                "dataset_hash": inventory.dataset_hash,
+                "detailed_public_events": inventory.selected_event_count,
+                "eligible_markets": list(sufficiency.eligible_markets),
+                "meets_preregistered_minimum": False,
+                "report": str(markdown_path.resolve()),
+                "manifest": str(json_path.resolve()),
+                "ledger": str(ledger_path.resolve()),
+                "trial_count": 0,
+                "final_holdout_used": False,
+                "authentication_used": False,
+                "order_network_used": False,
+                "real_orders_executed": False,
             },
             sort_keys=True,
         )

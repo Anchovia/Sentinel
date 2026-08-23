@@ -144,6 +144,15 @@ All notable changes are recorded here. The project follows semantic versioning o
   `paper-runtime-5`/Korean-monitor lifecycle evidence for compaction, pruning, reclaimed space, and
   actual filesystem capacity.
 - A 60-second Compose stop grace period for bounded queue flush and clean paper checkpoint closure.
+- A committed short-horizon experiment plan fixing three public-microstructure hypotheses, causal
+  availability, entry/exit thresholds, base/stress costs, data minimums, chronological folds,
+  multiplicity control, and a sealed final holdout before trial execution.
+- A checksummed detailed-event inventory plus deterministic long-only research engine that routes
+  entries, profit/stop/time exits, latency, partial/non-fills, and all cost attribution through the
+  conservative L2 paper broker and exact Decimal ledger.
+- Atomic blocked research reports and hash-chained experiment-ledger evidence when the registered
+  24-hour/three-market minimum is absent, with zero trials, no favorable-interval search, and no
+  final-holdout, authentication, order-network, real-order, model-promotion, or runtime-gate action.
 
 ### Security
 

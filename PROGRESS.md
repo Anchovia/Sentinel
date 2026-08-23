@@ -2,9 +2,9 @@
 
 ## Current checkpoint
 
-- Phase: 11.5 — Bounded D-Drive Paper Storage
+- Phase: 11.6 — Preregistered Short-Horizon Paper Research
 - Status: checkpoint `COMPLETE`; Phase 11 `IN_PROGRESS`
-- Planned implementation phases: 0–10 complete; Phase 11.1–11.5 checkpoints complete
+- Planned implementation phases: 0–10 complete; Phase 11.1–11.6 checkpoints complete
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; the live adapter has no network capability
@@ -14,6 +14,28 @@
 - Production Secrets accessed: no
 - Scheduled task registration: none
 - Automatic merge/deploy/model promotion/live activation: unavailable
+
+## Completed in Phase 11.6
+
+- Registered three falsifiable public-microstructure hypotheses before computation: five-second
+  trade continuation, snapshot-derived book pressure, and their intersection. Fixed entry, profit,
+  stop, time-stop, cooldown, base/stress cost, three-fold, sample, multiplicity, and sealed-holdout
+  rules were committed before implementation or trial execution.
+- Added a checksummed row-identity inventory for trade/orderbook data at the registered cutoff. It
+  reports per-market duration and event counts without decoding payloads or touching a credential,
+  private endpoint, order network, or final holdout.
+- Added a deterministic long-only research engine that consumes the causal real-time feature
+  contract and routes entries/exits through the existing latency-aware conservative L2 paper broker
+  and exact Decimal ledger. It attributes fees, spread, slippage, adverse selection, partial/non-
+  fills, turnover, drawdown, win rate, holding time, and round-trip PnL.
+- Added the always-neutral no-order baseline, fixed profit/stop/time/boundary exits, deterministic
+  hashes, strict base/stress plan validation, blocked experiment-ledger retention, atomic Markdown/
+  JSON reports, and the offline `assess-scalping-research` command.
+- The registered gate requires 24 hours and at least 20,000 trade plus 20,000 orderbook events in
+  each of three markets. Short data writes `BLOCKED` with zero trials and no final-holdout access;
+  it is never searched for a favorable interval.
+- Added ADR-021. The runtime model approval and independent paper-order gate remain closed, and the
+  public README remains unchanged.
 
 ## Completed in Phase 11.5
 
@@ -203,15 +225,17 @@
 ## Validation evidence
 
 ```text
-Python: PASS — 3.13.15; no Phase 11.5 dependency added
+Python: PASS — 3.13.15; no Phase 11.6 dependency added
 ruff: PASS — all checks passed
-format check: PASS — 221 files formatted
-mypy: PASS — 112 source files, no issues
-pytest: PASS — 354 tests, 85.85% branch coverage
-secret scan: PASS — 325 text files checked
+format check: PASS — 164 Python files formatted
+mypy: PASS — 113 source files, no issues
+pytest: PASS — 361 tests, 85.81% branch coverage
+secret scan: PASS — 330 text files checked
 dependency audit: PASS — no known vulnerabilities
-Compose config: PASS — base + paper overlays including healthy paper-runtime
-container build: PASS — quantforge-paper-runtime sha256:d250811d...8d55142
+Compose config: PASS — base + paper overlays
+container build: PASS — quantforge:phase11-6 sha256:80d6854c...4cd555c1
+synthetic registered entry/exit: PASS — deterministic conservative fills, positive net round trip,
+  non-zero fees/slippage/adverse selection; neutral baseline orders/fills 0
 D-drive verified 10,000-event neutral replay: PASS — 2,132.31 events/s; feature p99 0.377ms;
   decision p99 0.812ms; combined p99 1.137ms; max 2.520ms; 3,328 inference frames
 D-drive all-KRW runtime: PASS — healthy after 517 seconds; 285/285 ticker coverage, rotating

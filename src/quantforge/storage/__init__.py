@@ -3,6 +3,8 @@
 from quantforge.storage.parquet import (
     ParquetRawEventWriter,
     RawDataIntegrityError,
+    RawEventMarketInventory,
+    RawEventResearchInventory,
     RawFileManifest,
     RawStorageCapacityError,
     RawStorageMaintenance,
@@ -13,6 +15,7 @@ from quantforge.storage.parquet import (
     maintain_raw_storage,
     read_raw_events,
     require_raw_storage_capacity,
+    scan_raw_event_research_inventory,
     summarize_raw_storage,
     verify_manifest_checksum,
 )
@@ -20,6 +23,8 @@ from quantforge.storage.parquet import (
 __all__ = [
     "ParquetRawEventWriter",
     "RawDataIntegrityError",
+    "RawEventMarketInventory",
+    "RawEventResearchInventory",
     "RawFileManifest",
     "RawStorageCapacityError",
     "RawStorageMaintenance",
@@ -30,6 +35,7 @@ __all__ = [
     "maintain_raw_storage",
     "read_raw_events",
     "require_raw_storage_capacity",
+    "scan_raw_event_research_inventory",
     "summarize_raw_storage",
     "verify_manifest_checksum",
 ]

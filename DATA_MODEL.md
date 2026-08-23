@@ -133,6 +133,22 @@ complete hyperparameter space, planned metrics/splits, cost model, and explicit 
 records retain parameters, seed, split/artifact hashes, metrics or failure, and holdout review. Close
 records reconcile trial/failure/holdout counts. All records form an append-only SHA-256 chain.
 
+Phase 11.6 adds three closed research contracts:
+
+- `scalping-experiment-plan-1` fixes the public-data cutoff, availability/leakage rules, three
+  hypotheses, feature thresholds, entry/exit lifecycle, two execution-cost scenarios, data
+  minimums, chronological folds, metrics, decision limits, random seed, and false-only safety state.
+- `raw-event-research-inventory-1` hashes selected detailed-event row identities and reports sorted
+  per-market trade/orderbook counts plus first/last availability time. Compaction does not change
+  the row identity hash.
+- `scalping-backtest-1` binds plan/code/data/execution hashes to one market/rule/cost/fold replay and
+  stores signals, orders, fills, closed trades, gross/net PnL, all execution costs, turnover,
+  drawdown, win rate, holding time, exact portfolio state, and false-only network/order capability.
+
+`scalping-research-report-1` combines the inventory, sample gate, retained trial cells, final
+decision, `final_holdout_used=false`, human-review requirement, and false-only safety state. A
+blocked result also receives a two-record preregistration/decision experiment ledger with no trial.
+
 ## Model artifacts and predictions
 
 Model metadata records model/family/version, training code, dataset/features/labels, chronological

@@ -19,6 +19,12 @@ from quantforge.runtime.paper_supervisor import (
 from quantforge.storage import ParquetRawEventWriter
 
 runner = CliRunner()
+SCALPING_PLAN = (
+    Path(__file__).parents[2]
+    / "research"
+    / "experiments"
+    / "2026-08-24-scalping-challenger-v1.json"
+)
 
 
 def test_safety_status_json_is_fail_closed() -> None:
@@ -68,6 +74,41 @@ def test_replay_raw_rejects_empty_input(tmp_path: Path) -> None:
     result = runner.invoke(app, ["replay-raw", "--input-root", str(tmp_path)])
     assert result.exit_code != 0
     assert "no verified raw events" in result.output
+
+
+def test_scalping_assessment_retains_insufficient_data_without_trials(tmp_path: Path) -> None:
+    raw_root = tmp_path / "raw"
+    writer = ParquetRawEventWriter(raw_root, max_rows=1)
+    writer.append(make_orderbook_event(sequence=1, received_offset_ms=0))
+    writer.append(make_trade_event(sequence=2, exchange_offset_ms=100, received_offset_ms=100))
+    output_root = tmp_path / "reports"
+
+    result = runner.invoke(
+        app,
+        [
+            "assess-scalping-research",
+            "--source-revision",
+            "1" * 40,
+            "--plan-path",
+            str(SCALPING_PLAN),
+            "--input-root",
+            str(raw_root),
+            "--output-root",
+            str(output_root),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["decision"] == "BLOCKED"
+    assert payload["trial_count"] == 0
+    assert payload["final_holdout_used"] is False
+    assert payload["authentication_used"] is False
+    assert payload["order_network_used"] is False
+    assert payload["real_orders_executed"] is False
+    assert Path(payload["report"]).is_file()
+    assert Path(payload["manifest"]).is_file()
+    assert Path(payload["ledger"]).is_file()
 
 
 def test_realtime_benchmark_is_verified_hold_only(tmp_path: Path) -> None:

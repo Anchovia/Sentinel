@@ -311,6 +311,30 @@ credential or order capability. The manifest deliberately reports external encry
 RPO/RTO unmeasured, so this artifact is not a production backup. A checksum failure, extra file,
 symlink, Secret-shaped file, or non-paper manifest invalidates the entire proof.
 
+## Short-horizon research assessment
+
+The experiment plan is already committed and must not be edited after seeing a result. Assess the
+registered public-data cutoff with an exact committed implementation revision:
+
+```text
+uv run quantforge assess-scalping-research \
+  --source-revision <exact-commit> \
+  --plan-path research/experiments/2026-08-24-scalping-challenger-v1.json \
+  --input-root <paper-data-root>/raw \
+  --output-root reports/codex/research
+```
+
+The command verifies detailed raw-file checksums, hashes selected row identities, and checks the
+per-market 24-hour/20,000-trade/20,000-orderbook minimum. If fewer than three markets qualify, it
+writes a `BLOCKED` Markdown report, JSON manifest, and hash-chained experiment ledger with zero
+trials and no final-holdout access. Do not shorten the threshold, move the cutoff, or select a more
+favorable subinterval. A checksum or concurrent-compaction failure invalidates the assessment;
+wait for storage maintenance to finish and start a new explicitly recorded attempt.
+
+This command has no authentication or exchange-order network. It cannot approve a model, enable
+the independent paper-order gate, change risk/live state, or send any order. A later qualifying
+trial result remains research evidence and requires separate human paper review.
+
 ## Work and Codex scheduled-task setup
 
 Follow `automation/SCHEDULED_TASK_SETUP.md`; the catalog is `not_registered` by default. Manually run

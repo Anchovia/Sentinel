@@ -129,6 +129,52 @@ class RawStorageCapacityError(RuntimeError):
     """Raised when the explicit paper-data filesystem crosses its safety floor."""
 
 
+class RawEventMarketInventory(BaseModel):
+    """Content-addressed research availability for one public market."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    market: str = Field(pattern=r"^KRW-[A-Z0-9]+$")
+    trade_events: Annotated[int, Field(ge=0)] = 0
+    orderbook_events: Annotated[int, Field(ge=0)] = 0
+    first_received_at_utc: datetime
+    last_received_at_utc: datetime
+
+    @model_validator(mode="after")
+    def validate_interval(self) -> "RawEventMarketInventory":
+        if self.last_received_at_utc < self.first_received_at_utc:
+            raise ValueError("raw market inventory interval is reversed")
+        return self
+
+    @property
+    def observed_span_seconds(self) -> float:
+        return (self.last_received_at_utc - self.first_received_at_utc).total_seconds()
+
+
+class RawEventResearchInventory(BaseModel):
+    """Verified row-level identity for a bounded public research selection."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    schema_version: Literal["raw-event-research-inventory-1"] = "raw-event-research-inventory-1"
+    dataset_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    maximum_exchange_timestamp_utc: datetime | None = None
+    selected_file_count: Annotated[int, Field(ge=0)]
+    selected_event_count: Annotated[int, Field(ge=0)]
+    markets: tuple[RawEventMarketInventory, ...]
+
+    @model_validator(mode="after")
+    def validate_market_order(self) -> "RawEventResearchInventory":
+        names = tuple(item.market for item in self.markets)
+        if names != tuple(sorted(names)) or len(names) != len(set(names)):
+            raise ValueError("raw research markets must be sorted and unique")
+        if self.selected_event_count != sum(
+            item.trade_events + item.orderbook_events for item in self.markets
+        ):
+            raise ValueError("raw research inventory counts do not reconcile")
+        return self
+
+
 @dataclass(frozen=True, slots=True)
 class _ManifestRecord:
     path: Path
@@ -664,12 +710,180 @@ def require_raw_storage_capacity(root: Path, policy: RawStoragePolicy) -> int:
     return free_bytes
 
 
-def read_raw_events(root: Path) -> list[EventEnvelope]:
-    """Verify every manifest/checksum and reconstruct immutable envelopes."""
+def scan_raw_event_research_inventory(
+    root: Path,
+    *,
+    maximum_exchange_timestamp_utc: datetime | None = None,
+) -> RawEventResearchInventory:
+    """Verify and fingerprint detailed public rows without decoding payloads into events."""
+
+    if maximum_exchange_timestamp_utc is not None and (
+        maximum_exchange_timestamp_utc.tzinfo is None
+        or maximum_exchange_timestamp_utc.utcoffset()
+        != UTC.utcoffset(maximum_exchange_timestamp_utc)
+    ):
+        raise ValueError("research inventory cutoff must be UTC-aware")
+
+    identities: list[tuple[datetime, int, str, int, str, str]] = []
+    seen_event_ids: set[str] = set()
+    counts: dict[str, dict[str, object]] = {}
+    selected_files = 0
+    columns = (
+        "event_id",
+        "event_type",
+        "market",
+        "exchange_timestamp",
+        "received_at_utc",
+        "received_monotonic_ns",
+        "connection_id",
+        "local_sequence",
+        "raw_payload_hash",
+    )
+    for record in _active_manifest_records(root):
+        manifest = record.manifest
+        if manifest.event_type not in {"trade", "orderbook"}:
+            continue
+        try:
+            checksum_valid = verify_manifest_checksum(root, manifest)
+        except ValueError as exc:
+            raise RawDataIntegrityError(f"unsafe raw manifest path: {manifest.data_file}") from exc
+        if not checksum_valid:
+            raise RawDataIntegrityError(f"raw checksum mismatch: {manifest.data_file}")
+        parquet_file = pq.ParquetFile(root / manifest.data_file)
+        metadata = parquet_file.schema_arrow.metadata or {}
+        if (
+            metadata.get(b"quantforge_schema_version")
+            != str(manifest.event_schema_version).encode()
+        ):
+            raise RawDataIntegrityError(f"raw schema version mismatch: {manifest.data_file}")
+        if parquet_file.metadata.num_rows != manifest.row_count:
+            raise RawDataIntegrityError(f"raw row count mismatch: {manifest.data_file}")
+
+        file_selected = False
+        for batch in parquet_file.iter_batches(batch_size=65_536, columns=columns):
+            for row in batch.to_pylist():
+                event_type = row["event_type"]
+                if event_type != manifest.event_type:
+                    raise RawDataIntegrityError("raw event type disagrees with its manifest")
+                exchange_timestamp = cast(datetime, row["exchange_timestamp"])
+                if (
+                    maximum_exchange_timestamp_utc is not None
+                    and exchange_timestamp > maximum_exchange_timestamp_utc
+                ):
+                    continue
+                event_id = cast(str, row["event_id"])
+                if event_id in seen_event_ids:
+                    raise RawDataIntegrityError("duplicate event identity in research selection")
+                seen_event_ids.add(event_id)
+                market = cast(str, row["market"])
+                if not market.startswith("KRW-"):
+                    raise RawDataIntegrityError("research selection contains a non-KRW market")
+                received_at = cast(datetime, row["received_at_utc"])
+                received_monotonic_ns = cast(int, row["received_monotonic_ns"])
+                connection_id = cast(str, row["connection_id"])
+                local_sequence = cast(int, row["local_sequence"])
+                payload_hash = cast(str, row["raw_payload_hash"])
+                if len(payload_hash) != 64:
+                    raise RawDataIntegrityError("raw payload hash is malformed")
+                identities.append(
+                    (
+                        received_at,
+                        received_monotonic_ns,
+                        connection_id,
+                        local_sequence,
+                        event_id,
+                        payload_hash,
+                    )
+                )
+                market_counts = counts.setdefault(
+                    market,
+                    {
+                        "trade": 0,
+                        "orderbook": 0,
+                        "first": received_at,
+                        "last": received_at,
+                    },
+                )
+                market_counts[event_type] = cast(int, market_counts[event_type]) + 1
+                market_counts["first"] = min(cast(datetime, market_counts["first"]), received_at)
+                market_counts["last"] = max(cast(datetime, market_counts["last"]), received_at)
+                file_selected = True
+        selected_files += int(file_selected)
+
+    digest = sha256()
+    for identity in sorted(identities):
+        digest.update(
+            "|".join(
+                (
+                    identity[0].isoformat(),
+                    str(identity[1]),
+                    identity[2],
+                    str(identity[3]),
+                    identity[4],
+                    identity[5],
+                )
+            ).encode()
+        )
+        digest.update(b"\n")
+    markets = tuple(
+        RawEventMarketInventory(
+            market=market,
+            trade_events=cast(int, values["trade"]),
+            orderbook_events=cast(int, values["orderbook"]),
+            first_received_at_utc=cast(datetime, values["first"]),
+            last_received_at_utc=cast(datetime, values["last"]),
+        )
+        for market, values in sorted(counts.items())
+    )
+    return RawEventResearchInventory(
+        dataset_hash=digest.hexdigest(),
+        maximum_exchange_timestamp_utc=maximum_exchange_timestamp_utc,
+        selected_file_count=selected_files,
+        selected_event_count=len(identities),
+        markets=markets,
+    )
+
+
+def read_raw_events(
+    root: Path,
+    *,
+    markets: frozenset[str] | None = None,
+    event_types: frozenset[str] | None = None,
+    maximum_exchange_timestamp_utc: datetime | None = None,
+    minimum_received_at_utc: datetime | None = None,
+    maximum_received_at_utc: datetime | None = None,
+) -> list[EventEnvelope]:
+    """Verify selected manifests/checksums and reconstruct bounded immutable envelopes."""
+
+    for bound in (
+        maximum_exchange_timestamp_utc,
+        minimum_received_at_utc,
+        maximum_received_at_utc,
+    ):
+        if bound is not None and (
+            bound.tzinfo is None or bound.utcoffset() != UTC.utcoffset(bound)
+        ):
+            raise ValueError("raw event selection timestamps must be UTC-aware")
+    if (
+        minimum_received_at_utc is not None
+        and maximum_received_at_utc is not None
+        and maximum_received_at_utc < minimum_received_at_utc
+    ):
+        raise ValueError("raw event selection interval is reversed")
+    if markets is not None and (
+        not markets or any(not item.startswith("KRW-") for item in markets)
+    ):
+        raise ValueError("raw event market selection must contain uppercase KRW markets")
+    if event_types is not None and (
+        not event_types or not event_types <= {"ticker", "trade", "orderbook"}
+    ):
+        raise ValueError("raw event type selection is invalid")
 
     events: list[EventEnvelope] = []
     for record in _active_manifest_records(root):
         manifest = record.manifest
+        if event_types is not None and manifest.event_type not in event_types:
+            continue
         try:
             checksum_valid = verify_manifest_checksum(root, manifest)
         except ValueError as exc:
@@ -688,6 +902,25 @@ def read_raw_events(root: Path) -> list[EventEnvelope]:
         if table.num_rows != manifest.row_count:
             raise RawDataIntegrityError(f"raw row count mismatch: {manifest.data_file}")
         for row in table.to_pylist():
+            if markets is not None and row["market"] not in markets:
+                continue
+            if event_types is not None and row["event_type"] not in event_types:
+                continue
+            if (
+                maximum_exchange_timestamp_utc is not None
+                and row["exchange_timestamp"] > maximum_exchange_timestamp_utc
+            ):
+                continue
+            if (
+                minimum_received_at_utc is not None
+                and row["received_at_utc"] < minimum_received_at_utc
+            ):
+                continue
+            if (
+                maximum_received_at_utc is not None
+                and row["received_at_utc"] > maximum_received_at_utc
+            ):
+                continue
             raw_text = row["raw_payload"]
             if not isinstance(raw_text, str):
                 raise RawDataIntegrityError("raw payload column must contain text")

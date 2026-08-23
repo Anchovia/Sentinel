@@ -23,6 +23,13 @@ Before computation, create an immutable experiment/trial entry containing:
 
 Negative, failed, and null trials remain recorded.
 
+The first short-horizon challenger additionally requires 24 hours and at least 20,000 trade plus
+20,000 orderbook observations in each of three markets before any trial. It fixes three rule
+hypotheses, two conservative cost scenarios, three chronological folds, profit/stop/time exits, and
+a sealed 20-percent final holdout in the committed plan. Missing data produces a retained blocked
+ledger with zero trials. Public book flow is named `snapshot_derived_ofi` and is never treated as
+individual-order or exact queue evidence.
+
 ## Validation
 
 - Use chronological rolling or expanding walk-forward validation.

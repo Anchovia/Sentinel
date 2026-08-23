@@ -245,6 +245,20 @@ manifest totals, not directory guesses, drive the monitor. Maintenance runs in t
 outside the event/feature/decision hot path. The original Docker named volume is retained only as a
 migration rollback copy; neither it nor the D drive is an off-host backup.
 
+Phase 11.6 adds an offline research branch that never enters the supervised order path:
+
+```text
+checksummed detailed public rows -> registered cutoff and sufficiency gate
+  -> causal feature replay -> fixed entry/exit rule -> conservative L2 paper broker
+  -> exact Decimal ledger -> blocked/negative/candidate research evidence
+```
+
+The first plan fixes three rules, two cost scenarios, and three chronological folds before
+execution. Fewer than 24 hours and 20,000 trade plus 20,000 orderbook events in each of three
+markets stops before any trial. The final 20 percent remains sealed. Synthetic tests may exercise a
+complete paper round trip but cannot create a runtime approval, enable the paper-order gate, access
+an exchange credential, or become a performance claim.
+
 ## Deployment target
 
 Initial deployment is one Linux host with Docker Compose: API, supervised public paper burn-in,

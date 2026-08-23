@@ -37,9 +37,13 @@
   for 20 rotating candidates. It is not full-depth capture for all pairs, and the activity/move
   ranking is a data-allocation policy rather than validated alpha.
 - The approved alpha used by the end-to-end paper fill test is a deterministic fixture, not a
-  registered research result, profitability claim, or deployable artifact. No production alpha,
-  automated approval, exit controller, round-trip lifecycle, sustained paper performance, or
-  representative performance export exists yet.
+  registered research result, profitability claim, or deployable artifact. An offline registered
+  research engine now exercises fixed profit/stop/time exits and a complete conservative paper
+  round trip, but it is not connected to the supervised runtime. No production alpha, automated
+  approval, sustained paper performance, or representative performance export exists yet.
+- The first short-horizon plan requires 24 hours and sufficient detailed data in three markets.
+  Shorter collection is retained as `BLOCKED` with zero trials. This gate is only a minimum for
+  running the experiment, not proof of statistical power, stability, capacity, or profitability.
 - Final-holdout controls and experiment retention exist, but they do not remove selection bias,
   multiple testing, regime change, or limited sample risk.
 - Readiness policy thresholds are configurable governance defaults, not guarantees. The validator

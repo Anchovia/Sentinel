@@ -8,9 +8,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 ## Current state
 
 - Date: 2026-08-24 KST
-- Completed phases: 0–10; Phase 11.1–11.5 checkpoints complete
-- Current checkpoint: all-KRW broad monitoring with rotating 20-market dense paper analysis and
-  bounded D-drive storage; preregistered alpha/exit research next
+- Completed phases: 0–10; Phase 11.1–11.6 checkpoints complete
+- Current checkpoint: preregistered short-horizon research engine and data-sufficiency assessment;
+  initial committed-data result pending after the implementation revision is fixed
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
@@ -35,7 +35,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 11.2: `af50599 feat: 중립 실시간 모의 판단 경로 구축`
 - Phase 11.3: `f067442 feat: 모의 거래 재시작 복구 구축`
 
-## Implemented through Phase 11.5
+## Implemented through Phase 11.6
 
 - Safety-first Python modular monolith, six closed live gates, Decimal domain/accounting boundary,
   keyless Upbit public transport, versioned immutable raw lineage, deterministic replay/bars/features,
@@ -65,6 +65,12 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - A causal incremental real-time feature path calculates book/trade/ticker state and rolling
   microstructure features while measuring validation/feature latency. Raw persistence runs in a
   bounded asynchronous queue and any overflow fails the supervisor instead of dropping data.
+- Three short-horizon hypotheses, fixed entry/profit/stop/time/cooldown rules, base/stress execution
+  costs, data minimums, folds, metrics, and a sealed holdout were committed before execution. The
+  offline engine routes causal signals through the conservative paper broker and Decimal ledger.
+- A row-identity inventory and `assess-scalping-research` command retain insufficient data as a
+  blocked Markdown/JSON/experiment-ledger bundle with zero trials. The registered minimum is 24
+  hours and 20,000 trade plus 20,000 orderbook events in each of three markets.
 - The decision remains `HOLD` with no approved real-time model, strategy order, private network,
   account, or live capability.
 - An always-neutral alpha now exercises regime/execution inputs and the proposal/risk/paper/ledger
@@ -75,7 +81,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   blocks regardless of other feature or edge values.
 - A test-only approved fixture proves the complete simulated order/fill/accounting plumbing. It is
   not shipped or promoted. Atomic decision exports and the Korean monitor show review status,
-  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-019 record consequential
+  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-021 record consequential
   choices. README remains intentionally minimal.
 - `realtime-paper-recovery-1` now preserves policy-bound orders, fills, reservations, FIFO lots,
   exact balances, ledger chains, counters, and the event cursor in the durable paper volume. Clean
@@ -103,21 +109,23 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   after interruption. Active totals are always rebuilt from verified manifests.
 - `paper-runtime-5` enforces and reports 30-day retention, 50GiB maximum active raw data, a 20GiB
   free-space fail-closed stop, 15-minute maintenance, compacted/deleted files, reclaimed bytes, and
-  actual filesystem free space. ADR-001 through ADR-020 record consequential choices.
+  actual filesystem free space. ADR-001 through ADR-021 record consequential choices.
 - Compose grants the paper runtime a 60-second stop grace period. The final signal stop persisted a
   clean checkpoint and the next run reported `VERIFIED_CLEAN` before resuming full coverage.
 
 ## Latest validation
 
 ```text
-Python 3.13.15; no Phase 11.5 dependency added
-ruff + format: PASS (221 files)
-mypy: PASS (112 source files)
-pytest: PASS (354 tests, 85.85% branch coverage)
-Secret scan: PASS (325 text files)
+Python 3.13.15; no Phase 11.6 dependency added
+ruff + format: PASS (164 Python files)
+mypy: PASS (113 source files)
+pytest: PASS (361 tests, 85.81% branch coverage)
+Secret scan: PASS (330 text files)
 pip-audit: PASS (no known vulnerabilities)
-Compose config: PASS; paper-runtime healthy
-Final image: PASS (quantforge-paper-runtime, sha256:d250811d...8d55142)
+Compose config: PASS
+Phase 11.6 image: PASS (quantforge:phase11-6, sha256:80d6854c...4cd555c1)
+Synthetic registered entry/exit: deterministic conservative fills, positive net round trip,
+non-zero fees/slippage/adverse selection; neutral baseline orders/fills zero
 D-drive verified 10,000-event neutral replay: 2,132.31 events/s; feature p99 0.377ms;
 decision p99 0.812ms; combined p99 1.137ms; max 2.520ms; 3,328 inference frames
 D-drive All-KRW runtime: healthy after 517 seconds; 285/285 ticker coverage, rotating 20-market
