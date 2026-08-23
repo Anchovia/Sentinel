@@ -1,0 +1,28 @@
+schema_version: 1
+dataset:
+  require_source_hash: true
+  require_availability_time: true
+  forbid_random_shuffle: true
+labels:
+  horizons_seconds: [5, 15, 60, 300]
+  reference_feature: mid_price
+  estimated_round_trip_cost_bps: "10"
+  safety_margin_bps: "2"
+splits:
+  order: [train, validation, test, final_holdout]
+  train_fraction: 0.50
+  validation_fraction: 0.20
+  test_fraction: 0.20
+  final_holdout_fraction: 0.10
+  purge_seconds: 300
+  embargo_seconds: 300
+  final_holdout_access: sealed_one_shot_manual_review
+evaluation:
+  require_positive_cost: true
+  minimum_samples: 30
+  calibration_bins: 10
+  ordinary_evaluator_may_access_final_holdout: false
+experiments:
+  require_preregistration: true
+  retain_failed_and_null_trials: true
+  append_only_hash_chain: true

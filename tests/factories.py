@@ -7,6 +7,7 @@ import orjson
 
 from quantforge.domain import EventEnvelope, TradeBar, deterministic_bar_id
 from quantforge.exchange.upbit.mapper import map_public_message
+from quantforge.research import AlphaClass, LabeledExample
 
 BASE_TIME = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -136,3 +137,39 @@ def make_trade_bar(
         data_gap=False,
         source_hash=sha256(f"bar-{index}-{close}".encode()).hexdigest(),
     )
+
+
+def make_labeled_examples(count: int = 90) -> tuple[LabeledExample, ...]:
+    examples: list[LabeledExample] = []
+    for index in range(count):
+        x = ((index % 30) - 15) / 5
+        if x < -0.5:
+            label = AlphaClass.DOWN
+            future_return = -20.0
+        elif x > 0.5:
+            label = AlphaClass.UP
+            future_return = 20.0
+        else:
+            label = AlphaClass.NEUTRAL
+            future_return = 0.0
+        event_time = BASE_TIME + timedelta(seconds=index)
+        future_price = (
+            "100.2" if label is AlphaClass.UP else "99.8" if label is AlphaClass.DOWN else "100"
+        )
+        examples.append(
+            LabeledExample(
+                example_id=UUID(int=50_000 + index),
+                source_row_id=UUID(int=60_000 + index),
+                market="KRW-BTC",
+                event_time_utc=event_time,
+                features_available_at_utc=event_time,
+                label_end_utc=event_time + timedelta(seconds=1),
+                label_available_at_utc=event_time + timedelta(seconds=1),
+                values=(("volatility", abs(x)), ("x", x)),
+                alpha_class=label,
+                future_return_bps=future_return,
+                current_reference_price="100",
+                future_reference_price=future_price,
+            )
+        )
+    return tuple(examples)

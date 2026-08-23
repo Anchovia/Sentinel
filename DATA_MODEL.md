@@ -99,6 +99,41 @@ equity = cash_balance + market_value
 Spread, slippage, and adverse-selection fields are execution-cost attribution. Costs embedded in the
 fill price are not subtracted a second time.
 
+## Research dataset and labels
+
+```text
+FeatureRow:
+row_id, market, event_time_utc, available_at_utc
+feature_set, feature_version, sorted values, reference_price, source_snapshot_hash
+
+LabeledExample:
+example_id, source_row_id, event_time_utc, features_available_at_utc
+label_end_utc, label_available_at_utc, sorted values
+alpha_class, future_return_bps, current/future reference prices
+```
+
+Forward labels cannot become available before both the feature and future reference observation.
+The label specification hashes horizon, reference, round-trip cost, and safety margin. Splits retain
+source/plan/partition hashes and the fixed role order train, validation, test, final holdout.
+
+## Experiment ledger
+
+Preregistration stores hypothesis, researcher, code/dataset/feature/label lineage, model family,
+complete hyperparameter space, planned metrics/splits, cost model, and explicit holdout plan. Trial
+records retain parameters, seed, split/artifact hashes, metrics or failure, and holdout review. Close
+records reconcile trial/failure/holdout counts. All records form an append-only SHA-256 chain.
+
+## Model artifacts and predictions
+
+Model metadata records model/family/version, training code, dataset/features/labels, chronological
+train/validation/test periods, parameters, seed, metrics, calibration, market/regime scope, inference
+schema, artifact hash, creator time, approver, and release state. Registered artifact bytes,
+metadata, and manifest are independently checksummed and verified on load.
+
+Prediction contracts cover regime probabilities, alpha class probabilities/net edge/uncertainty/
+abstention, and execution fill/cost estimates. Analytical probabilities and features may use finite
+binary floats; order, fee, return/cost boundary, and accounting values remain Decimal.
+
 ## Transactional entities
 
 Minimum PostgreSQL entities:

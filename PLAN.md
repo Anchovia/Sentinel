@@ -38,12 +38,12 @@ Exit criteria:
 - Fees, spread, latency, slippage, partial/non-fill, cancellation, adverse selection, ledger, accounting invariants, and reports.
 - Explain and test differences between naive and conservative fills.
 
-## Phase 4 — Baseline Models (`IN_PROGRESS`)
+## Phase 4 — Baseline Models (`COMPLETE`)
 
 - Dataset and label versioning, trial preregistration, simple regime/alpha/execution baselines, calibration, uncertainty, abstention, and model registry.
 - Time-based OOS validation, cost-adjusted metrics, reproducible artifacts, and untouched final holdout.
 
-## Phase 5 — Strategy and Risk (`PENDING`)
+## Phase 5 — Strategy and Risk (`IN_PROGRESS`)
 
 - Baseline strategies, router, universe selector, independent risk engine, sizing, attribution, and kill switch.
 - Tests proving strategies cannot bypass risk and that stale/unsafe state blocks orders.

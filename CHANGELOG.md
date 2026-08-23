@@ -34,6 +34,17 @@ All notable changes are recorded here. The project follows semantic versioning o
   comparison reports.
 - Append-only Decimal portfolio ledger with reservations, duplicate-fill prevention, FIFO lots,
   realized/unrealized PnL, exact balance invariants, cost attribution, and a verified hash chain.
+- Versioned feature-dataset and cost-aware forward-label contracts with event/availability lineage,
+  chronological train/validation/test/final-holdout partitioning, boundary purge, embargo, and a
+  one-shot reviewed holdout guard.
+- Append-only preregistered experiment/trial ledger that rejects undeclared parameters, metrics, and
+  splits; preserves failures; reconciles summaries; and limits final-holdout use.
+- Dependency-light rule regime, diagonal Gaussian mixture, always-neutral, standardized
+  multinomial logistic, boosted-stump, and execution-cost baselines.
+- Validation-only temperature scaling, Brier/ECE/reliability calibration reports, uncertainty,
+  out-of-distribution abstention, sample warnings, and non-zero-cost OOS baseline comparison.
+- Immutable local model registry with artifact/metadata/manifest SHA-256 verification and no
+  automatic promotion path.
 
 ### Security
 

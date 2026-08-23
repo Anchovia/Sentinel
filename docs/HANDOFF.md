@@ -7,8 +7,8 @@ Read, in order: `AGENTS.md`, `SPEC.md`, `PLAN.md`, `PROGRESS.md`, `RISK_POLICY.m
 ## Current state
 
 - Date: 2026-08-23 KST
-- Completed phase: 3 — Backtest and Paper Broker
-- Current phase: 4 — Baseline Models (`IN_PROGRESS`)
+- Completed phase: 4 — Baseline Models
+- Current phase: 5 — Strategy and Risk (`IN_PROGRESS`)
 - Git branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Product/package: QuantForge / `quantforge`
@@ -20,6 +20,7 @@ Read, in order: `AGENTS.md`, `SPEC.md`, `PLAN.md`, `PROGRESS.md`, `RISK_POLICY.m
 - Phase 0 checkpoint: `dafd09c feat: establish QuantForge safety-first foundation`
 - Phase 1 checkpoint: `3bc2fd0 feat: add keyless Upbit public data pipeline`
 - Phase 2 checkpoint: `2e48e6c feat: add deterministic replay bars and causal features`
+- Phase 3 checkpoint: `32370e4 feat: add conservative paper execution and backtesting`
 
 ## Implemented
 
@@ -42,6 +43,15 @@ Read, in order: `AGENTS.md`, `SPEC.md`, `PLAN.md`, `PROGRESS.md`, `RISK_POLICY.m
   gross/realized/unrealized/net PnL, cost attribution, exact invariants, and an append-only hash chain.
 - Event-driven strategy-intent/risk-decision/backtest orchestration, atomic JSON reports,
   naive-versus-conservative comparison, and frozen deterministic Phase 3 hashes.
+- Versioned feature datasets and cost-aware forward labels with exact availability lineage;
+  chronological purge/embargo splits and a separated one-shot final holdout.
+- Preregistered append-only experiment/trial ledger retaining failed results and restricting search
+  space, metrics, split roles, summaries, and final-holdout access.
+- Rule/Gaussian-mixture regime, neutral/logistic/boosted-stump alpha, and execution-rule baselines;
+  validation-only temperature calibration, uncertainty/OOD abstention, and positive-cost OOS
+  comparison reports.
+- Immutable model artifact metadata and hash-verified registry with no automatic promotion or
+  deployment operation.
 
 ## Validation
 
@@ -49,9 +59,9 @@ Read, in order: `AGENTS.md`, `SPEC.md`, `PLAN.md`, `PROGRESS.md`, `RISK_POLICY.m
 Python: 3.13.15
 uv lock/sync: PASS (78 packages)
 Ruff + format: PASS
-mypy: PASS (56 source files)
-pytest: PASS (182 tests, 91.08% branch coverage)
-Secret scan: PASS (178 text files)
+mypy: PASS (66 source files)
+pytest: PASS (202 tests, 88.60% branch coverage)
+Secret scan: PASS (195 text files)
 pip-audit: PASS (no known vulnerabilities)
 Compose config: PASS
 keyless Upbit smoke: PASS (12 events; ticker/trade/orderbook; 3 valid manifests)
@@ -62,6 +72,11 @@ Phase 3 container: PASS (`quantforge:phase3`, sha256:a645f0a1...85c0b, all gates
 Phase 3 golden comparison: PASS (naive quantity 5; conservative quantity 0.5)
 Phase 3 determinism: PASS (run, replay, ledger, fill, PnL, output hashes stable)
 Phase 3 accounting: PASS (FIFO, locks, cash/position/PnL/equity/hash-chain invariants)
+Phase 4 split/holdout: PASS (chronological, purged/embargoed, ordinary access denied)
+Phase 4 experiments: PASS (preregistered search, failures retained, ledger verified)
+Phase 4 baselines/evaluation: PASS (deterministic artifacts, calibration, abstention, positive costs)
+Phase 4 registry: PASS (roundtrip immutable, tamper detected, auto-promotion absent)
+Phase 4 container: PASS (`quantforge:phase4`, sha256:cd6314d9...e2b76, all gates closed)
 ```
 
 ## Important constraints
@@ -81,14 +96,19 @@ Phase 3 accounting: PASS (FIFO, locks, cash/position/PnL/equity/hash-chain invar
   artifact ID and reviewed evidence.
 - Paper fees and latency are explicit simulation values, not current Upbit capability claims.
 - The Phase 3 ledger is single-market, long-only KRW spot and has no private balance source.
+- Phase 4 models use synthetic fixtures only and are not promoted or connected to a strategy.
+- The dependency-light diagonal mixture and boosted stumps are baselines/candidates, not substitutes
+  for a preregistered, adequately sampled production study.
+- Final-holdout one-shot state is in-process plus append-only record; durable authorization arrives
+  with the later database/audit service.
 - Local `main` is ahead of `origin/main`; publishing source to GitHub awaits explicit owner approval.
 - Scheduled tasks must not be registered until their skills, inputs, schemas, and manual dry runs exist.
 
 ## Next actions
 
-1. Commit the validated Phase 3 checkpoint on local `main`.
-2. Define dataset, label, split, trial-preregistration, prediction, and model-release contracts.
-3. Implement simple deterministic regime/alpha/execution baselines before complex models.
-4. Add time-based out-of-sample evaluation, calibration, uncertainty, abstention, and cost-adjusted
-   metrics while leaving a final holdout untouched.
-5. Persist reproducible model artifacts and comparison reports; do not promote or deploy them.
+1. Commit the validated Phase 4 checkpoint on local `main`.
+2. Define shared strategy input/decision contracts and deterministic routing without exchange access.
+3. Implement an independent pre-trade risk engine, sizing, exposure/concentration, cooldown, stale
+   data, uncertainty, and portfolio constraints.
+4. Add kill-switch state/reason/audit contracts and tests that block every downstream submission.
+5. Add strategy/model/market/regime PnL attribution; keep all outputs paper-only.

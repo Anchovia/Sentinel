@@ -12,11 +12,13 @@ The project is safety-first:
 
 ## Current status
 
-Phase 3 (event-driven backtesting and conservative paper execution) is complete. QuantForge can
+Phase 4 (reproducible baseline-model research) is complete. QuantForge can
 collect and deterministically replay keyless public data, build causal bars/features, model naive or
 conservative L2 fills, and reconcile every simulated fill through a Decimal FIFO hash-chain ledger.
-Backtest reports retain dataset/configuration/code/seed lineage and expose how midpoint full-fill
-assumptions overstate fill quantity or PnL. No private API or real orders are implemented or executed.
+Chronological datasets keep a sealed final holdout; experiments require preregistration; simple
+regime, alpha, and execution baselines are evaluated with calibration, uncertainty, abstention, and
+non-zero costs; artifacts enter an immutable hash-verified registry without automatic promotion.
+No model has been trained on production data, promoted, or connected to a real order path.
 
 See [SPEC.md](SPEC.md), [PLAN.md](PLAN.md), [PROGRESS.md](PROGRESS.md), and [RISK_POLICY.md](RISK_POLICY.md) before changing behavior.
 

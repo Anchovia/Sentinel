@@ -2,51 +2,53 @@
 
 ## Current checkpoint
 
-- Phase: 3 — Backtest and Paper Broker
+- Phase: 4 — Baseline Models
 - Status: `COMPLETE`
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; no live adapter or real order endpoint implemented
 - Actual orders executed: no
 - Secrets accessed: no
-- Data schema version: raw-event-envelope-1 / trade-bar-1 / feature-snapshot-1 / paper-ledger-1
-- Model schema version: not created
+- Data schema version: raw-event-envelope-1 / trade-bar-1 / feature-snapshot-1 / paper-ledger-1 / research-dataset-1
+- Model schema version: model-artifact-1 / prediction-1
 
-## Completed in Phase 3
+## Completed in Phase 4
 
-- Added immutable paper execution policy, order, fill, update, fee, latency, time-in-force, and
-  deterministic identifier contracts. Zero fees require an explicit research-only override;
-  calibrated L2 requires calibration lineage.
-- Implemented a public-data-only paper broker for market, best, limit, post-only, IOC, and FOK
-  behavior. The default conservative model applies order/cancel latency, L2 depth haircuts, spread,
-  slippage, adverse selection, partial/non-fill, passive queue uncertainty, and price priority.
-- Added fail-closed stale-book and data-gap behavior. A gap cancels resting paper orders and no new
-  order is accepted until a fresh book arrives. Trades during cancel latency may still fill.
-- Added an independent append-only Decimal ledger with cash/position locks, duplicate-fill guards,
-  FIFO lots, exact balance/PnL invariants, execution-cost attribution, and a verified hash chain.
-- Added event-driven backtest orchestration over the Phase 2 virtual clock. Strategies only emit
-  intents, risk separately approves amounts, and every run retains dataset/configuration/code/seed
-  lineage.
-- Added atomic JSON reports, naive-versus-conservative comparison, and frozen golden run, replay,
-  ledger, PnL, and fill hashes.
+- Added versioned causal feature-row and cost-aware forward-label builders retaining event time,
+  availability time, source snapshot, code, feature, label, and dataset hashes.
+- Added strict chronological train/validation/test/final-holdout splits. Boundary label windows are
+  purged, later splits support embargo, random shuffle is absent, and ordinary evaluation rejects the
+  final holdout.
+- Added a one-shot reviewed final-holdout vault and an append-only experiment ledger. Trials require
+  preregistration of parameter space, metrics, splits, cost model, code/data lineage, and holdout
+  intent; failed/null results remain in the hash chain.
+- Added dependency-light regime rule and diagonal Gaussian mixture baselines, always-neutral and
+  standardized multinomial-logistic alpha baselines, a boosted-stump candidate, and a conservative
+  execution-rule baseline.
+- Added validation-only temperature scaling, multiclass/class Brier scores, ECE, reliability bins,
+  negative log likelihood, entropy/margin uncertainty, OOD abstention, and low-sample warnings.
+- Added non-zero-cost OOS evaluation and baseline comparison with atomic JSON reports.
+- Added immutable model artifact metadata and a local registry that verifies artifact, metadata, and
+  manifest SHA-256 hashes. No automatic promotion or deployment API exists.
 
 ## Validation evidence
 
 ```text
-uv sync: PASS — Python 3.13.15, 78 locked packages
+uv sync: PASS — Python 3.13.15, 78 locked packages; no Phase 4 dependency added
 ruff: PASS — all checks passed
-format check: PASS — 110 files formatted
-mypy: PASS — 56 source files, no issues
-pytest: PASS — 182 tests, 91.08% branch coverage
-secret scan: PASS — 178 text files checked
+format check: PASS — 126 files formatted
+mypy: PASS — 66 source files, no issues
+pytest: PASS — 202 tests, 88.60% branch coverage
+secret scan: PASS — 195 text files checked
 dependency audit: PASS — no known vulnerabilities
-compose validation: PASS — paper override renders successfully
-golden paper comparison: PASS — naive filled 5, conservative filled 0.5
-golden conservative PnL: PASS — net -0.540407575 with non-zero cost attribution
-determinism: PASS — repeated run/replay/ledger/output hashes match exactly
-accounting invariants: PASS — cash, position, FIFO, fees, PnL, equity, locks, hash chain
-network/auth/order safety: PASS — paper broker imports no private transport and sends no request
-container build: PASS — quantforge:phase3 image sha256:a645f0a1...85c0b
+chronological split: PASS — purge/embargo boundaries and four non-overlapping roles
+final holdout: PASS — ordinary evaluator denied; reviewed vault access limited to one
+preregistration: PASS — undeclared parameter/split/metric and post-close trials rejected
+negative trials: PASS — failure retained and summary counts reconciled
+baseline determinism: PASS — repeated logistic and mixture artifacts/predictions identical
+calibration/cost report: PASS — Brier/ECE/NLL/reliability plus gross/cost/net reconciliation
+model registry: PASS — immutable roundtrip and tamper detection
+container build: PASS — quantforge:phase4 image sha256:cd6314d9...e2b76
 container safety smoke: PASS — paper, live=false, all 6 live gates failed closed
 ```
 
@@ -69,10 +71,16 @@ was read, no private endpoint was called, and no order capability exists.
 - The Phase 3 ledger is single-market, long-only KRW spot. Multi-asset accounting and private
   balance reconciliation are intentionally deferred.
 - Phase 3 fee values are simulation assumptions, not a claim about Upbit's current fee schedule.
+- Phase 4 baselines were validated on synthetic fixtures only. They are comparison floors, not
+  production models, profitability evidence, or promotion candidates.
+- The Gaussian mixture is diagonal and dependency-light; HMMs, richer boosting/survival models,
+  drift monitoring, and advanced multiple-testing statistics remain unimplemented.
+- Final-holdout protection is enforced by evaluator, vault, and trial-ledger contracts; durable
+  operational access control will require the later database/audit service.
 - Remote `origin/main` has not been pushed; external publication requires explicit owner approval.
 
 ## Next milestone
 
-Begin Phase 4 with versioned dataset/label/trial contracts, preregistered simple baselines,
-time-based out-of-sample evaluation, calibration/uncertainty/abstention, and a model registry. Keep
-the final holdout untouched and require conservative cost-adjusted reporting.
+Begin Phase 5 with shared strategy inputs/decisions, deterministic strategy router, independent
+pre-trade risk engine and sizing, portfolio/exposure controls, kill switch, attribution, and tests
+proving strategy code cannot bypass risk or unsafe/stale state.

@@ -68,6 +68,12 @@ the paper broker, matured orders generate simulated fills, and the independent p
 recomputes balances and PnL. Strategies emit intents only; a separate risk evaluator must approve an
 amount before paper submission. Data gaps and stale books fail closed.
 
+The Phase 4 research path is offline and lineage-first: causal feature snapshots become versioned
+rows and forward labels, chronological split guards isolate validation/test/final holdout, and only
+preregistered trials may fit baselines. Calibration fits validation data; ordinary evaluation reads
+test data but rejects final holdout. The artifact registry verifies immutable bytes and metadata but
+cannot promote or deploy a model.
+
 ## Deployment target
 
 Initial deployment is one Linux host with Docker Compose: API/runtime, PostgreSQL, Prometheus, and Grafana. Market data and trading processes will gain separate service entry points in later phases. Redis/NATS, MLflow, MinIO, or Rust require measured justification and an ADR.

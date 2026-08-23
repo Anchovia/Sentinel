@@ -33,6 +33,12 @@ Negative, failed, and null trials remain recorded.
 - Compare to no-skill, always-hold/neutral, and simple linear/rule baselines.
 - Report calibration, uncertainty, tail risk, turnover, capacity, and regime/market stability—not accuracy alone.
 
+The implemented ordinary evaluator accepts validation or test partitions and raises on
+`final_holdout`. Temperature calibration is selected from validation only. Test reports require a
+positive per-trade cost and separate gross return, transaction cost, and net return. A one-shot final
+holdout vault requires a review identifier; its access record must also be appended to the durable
+experiment ledger.
+
 ## Multiple testing and overfitting
 
 Track every trial and use appropriate controls such as PBO, Deflated Sharpe Ratio, White's Reality Check, Hansen's SPA, block/stationary bootstrap, and multiple-testing correction. Report IS-to-OOS degradation, sensitivity surfaces, subperiods, regimes, markets, and sample sufficiency.
@@ -48,3 +54,6 @@ EXPERIMENTAL -> VALIDATED -> PAPER -> SHADOW -> CANARY -> CHAMPION
 ```
 
 Every step requires evidence; CANARY and CHAMPION require explicit human approval. Drift may trigger monitoring, reduced exposure, shadow-only, pause, retraining experiment, or incident—but never automatic replacement.
+
+The current registry exposes immutable register/load operations only. It has no automatic promotion,
+deployment, or live-inference activation method.

@@ -1,0 +1,61 @@
+"""Reproducible research datasets, splits, and experiment audit contracts."""
+
+from quantforge.research.datasets import (
+    AlphaClass,
+    AlphaLabelSpec,
+    FeatureDataset,
+    FeatureRow,
+    LabeledDataset,
+    LabeledExample,
+    build_feature_dataset,
+    build_forward_labels,
+)
+from quantforge.research.experiments import (
+    ExperimentDecision,
+    ExperimentLedger,
+    ExperimentLedgerError,
+    ExperimentLedgerSnapshot,
+    ExperimentRegistration,
+    ExperimentStatus,
+    ExperimentSummary,
+    TrialResult,
+    TrialStatus,
+    new_experiment_id,
+    write_experiment_ledger,
+)
+from quantforge.research.splits import (
+    ChronologicalSplit,
+    DatasetPartition,
+    FinalHoldoutVault,
+    HoldoutAccessRecord,
+    SplitRole,
+    chronological_four_way_split,
+)
+
+__all__ = [
+    "AlphaClass",
+    "AlphaLabelSpec",
+    "ChronologicalSplit",
+    "DatasetPartition",
+    "ExperimentDecision",
+    "ExperimentLedger",
+    "ExperimentLedgerError",
+    "ExperimentLedgerSnapshot",
+    "ExperimentRegistration",
+    "ExperimentStatus",
+    "ExperimentSummary",
+    "FeatureDataset",
+    "FeatureRow",
+    "FinalHoldoutVault",
+    "HoldoutAccessRecord",
+    "LabeledDataset",
+    "LabeledExample",
+    "SplitRole",
+    "TrialResult",
+    "TrialStatus",
+    "build_feature_dataset",
+    "build_forward_labels",
+    "chronological_four_way_split",
+    "new_experiment_id",
+    "write_experiment_ledger",
+]

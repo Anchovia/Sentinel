@@ -1,0 +1,25 @@
+schema_version: 1
+release:
+  default_status: EXPERIMENTAL
+  automatic_training: false
+  automatic_promotion: false
+  automatic_deployment: false
+  human_approval_required_after_experimental: true
+baselines:
+  regime: [rule, diagonal_gaussian_mixture]
+  alpha: [always_neutral, multinomial_logistic]
+  candidates: [boosted_decision_stumps]
+  execution: [rule]
+calibration:
+  method: validation_temperature_grid
+  report_brier: true
+  report_expected_calibration_error: true
+  report_reliability_bins: true
+abstention:
+  enabled: true
+  min_confidence: 0.55
+  max_normalized_entropy: 0.85
+registry:
+  artifact_hash: sha256
+  immutable_versions: true
+  verify_on_load: true
