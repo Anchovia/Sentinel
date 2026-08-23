@@ -7,8 +7,8 @@ Read, in order: `AGENTS.md`, `SPEC.md`, `PLAN.md`, `PROGRESS.md`, `RISK_POLICY.m
 ## Current state
 
 - Date: 2026-08-23 KST
-- Completed phase: 5 — Strategy and Risk
-- Current phase: 6 — Private Exchange and Execution Safety (`IN_PROGRESS`)
+- Completed phase: 6 — Private Exchange and Execution Safety
+- Current phase: 7 — Dashboard and Operations (`IN_PROGRESS`)
 - Git branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Product/package: QuantForge / `quantforge`
@@ -22,6 +22,7 @@ Read, in order: `AGENTS.md`, `SPEC.md`, `PLAN.md`, `PROGRESS.md`, `RISK_POLICY.m
 - Phase 2 checkpoint: `41b64d1 feat: 결정적 재생과 인과 특징 구축`
 - Phase 3 checkpoint: `0f7e3a1 feat: 보수적 모의 체결과 백테스트 구축`
 - Phase 4 checkpoint: `b1a6b03 feat: 재현 가능한 기준 모델 연구 구축`
+- Phase 5 checkpoint: `91962b9 feat: 전략 라우팅과 위험 게이트 구축`
 
 ## Implemented
 
@@ -60,6 +61,14 @@ Read, in order: `AGENTS.md`, `SPEC.md`, `PLAN.md`, `PROGRESS.md`, `RISK_POLICY.m
 - Independent intent/risk gateway with snapshot binding, fail-closed hard checks, exact conservative
   sizing, daily-loss/drawdown/stale-data rejection, and no live mode acceptance.
 - Reconciliation-gated hash-chain kill switch and exact strategy/model/market/regime attribution.
+- Reviewed 2026-08-23 Upbit authentication, order/private-stream, order-test, lookup/cancel/chance,
+  and current pocket-scoped rate-limit documentation without authenticated calls.
+- Secret-isolated authentication/query-hash interfaces with no signer or Secret provider;
+  Decimal-preserving MyOrder/MyAsset schemas and pure private subscription builders.
+- Exact authenticated-order request/preflight contracts, deterministic burned identifiers, durable
+  hash-chain state journal, fake/disabled private ports, and fake-only test-order adapter.
+- Identifier-first timeout/restart reconciliation with no create retry; exact order/balance mismatch
+  reporting; live adapter with no network capability even when all six gates are satisfied.
 
 ## Validation
 
@@ -90,6 +99,13 @@ Phase 5 emergency tests: PASS (kill switch, daily loss, stale data, manual recon
 Phase 5 validation: PASS (220 tests, 88.50% coverage, Ruff, format, mypy 75 files)
 Phase 5 security: PASS (210-file Secret scan, no known dependency vulnerabilities)
 Phase 5 container: PASS (`quantforge:phase5`, sha256:e006c71f...a202c, all gates closed)
+Phase 6 private fixtures: PASS (MyOrder/MyAsset Decimal mapping and malformed isolation)
+Phase 6 journal: PASS (fsync/reopen/hash/state/identity verification and tamper detection)
+Phase 6 uncertain order: PASS (timeout/restart identifier lookup; zero duplicate create calls)
+Phase 6 reconciliation: PASS (unknown/missing/state/balance mismatches block resume)
+Phase 6 validation: PASS (237 tests, 87.20% coverage, Ruff/format, mypy 87 files)
+Phase 6 security: PASS (228-file Secret scan, no dependency vulnerabilities, no private network client)
+Phase 6 container: PASS (`quantforge:phase6`, sha256:55d48899...8e105, all gates closed, live network false)
 ```
 
 ## Important constraints
@@ -120,12 +136,18 @@ Phase 5 container: PASS (`quantforge:phase5`, sha256:e006c71f...a202c, all gates
   evidence. Additional exit/cross-sectional/maker-taker work requires preregistered experiments.
 - The kill-switch ledger is in-process; durable storage and authenticated cancellation controls are
   deferred. `cancel_and_flatten` remains approval- and liquidity-gated.
+- Phase 6 authentication is a protocol only. There is no credential provider, JWT signer,
+  authenticated HTTP/WebSocket client, real REST response parser, or private stream runtime.
+- Test-order and private exchange behavior can run only through the in-memory fake. No private,
+  test-order, or real-order endpoint was called.
+- The execution journal is a single-writer file proof without database transaction/locking/backup.
+  Durable multi-process operations and authenticated cancellations remain later work.
 - Scheduled tasks must not be registered until their skills, inputs, schemas, and manual dry runs exist.
 
 ## Next actions
 
-1. Commit and push the validated Phase 5 checkpoint on `main`.
-2. Refresh the official Upbit documentation snapshot before private/execution design work.
-3. Add authentication and private-stream interfaces backed only by fake transports and fixtures.
-4. Persist order-state/identifier/reconciliation contracts and test timeout/unknown/mismatch paths.
-5. Keep the live adapter disabled and make no credential, private endpoint, test-order, or real-order call.
+1. Commit and push the validated Phase 6 checkpoint on `main`.
+2. Define redacted runtime-export, incident, audit, reconciliation, and performance schemas.
+3. Add an authenticated read-oriented dashboard/API with no Secret or order endpoint access.
+4. Add confirmed/idempotent emergency-control contracts backed only by local fakes and audit records.
+5. Add backup/restore verification and operator runbooks; keep private/live network capability absent.

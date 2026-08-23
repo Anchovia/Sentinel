@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "exchange": "upbit",
-  "retrieved_at_utc": "2026-08-23T10:14:19.465Z",
+  "retrieved_at_utc": "2026-08-23T12:23:09.117Z",
   "official_index": "https://docs.upbit.com/kr/llms.txt",
   "documents": [
     {
@@ -40,6 +40,54 @@
       "document_updated_at": "2026-05-05T09:57:51.000Z"
     },
     {
+      "name": "Authentication",
+      "url": "https://docs.upbit.com/kr/reference/auth.md",
+      "verified_at_utc": "2026-08-23T12:23:09.117Z",
+      "observed_contract": "JWT HS512; per-request UUID nonce; ordered unquoted query SHA-512; Bearer header"
+    },
+    {
+      "name": "REST API best practice",
+      "url": "https://docs.upbit.com/kr/docs/rest-api-best-practice.md",
+      "verified_at_utc": "2026-08-23T12:23:09.117Z"
+    },
+    {
+      "name": "Available order information",
+      "url": "https://docs.upbit.com/kr/reference/available-order-information.md",
+      "verified_at_utc": "2026-08-23T12:23:09.117Z"
+    },
+    {
+      "name": "Create order",
+      "url": "https://docs.upbit.com/kr/reference/new-order.md",
+      "verified_at_utc": "2026-08-23T12:23:09.117Z",
+      "observed_contract": "identifier is account-wide unique, never reusable, max length 64"
+    },
+    {
+      "name": "Test order",
+      "url": "https://docs.upbit.com/kr/reference/order-test.md",
+      "verified_at_utc": "2026-08-23T12:23:09.117Z",
+      "observed_contract": "dry-run response cannot be queried or cancelled"
+    },
+    {
+      "name": "Get order",
+      "url": "https://docs.upbit.com/kr/reference/get-order.md",
+      "verified_at_utc": "2026-08-23T12:23:09.117Z"
+    },
+    {
+      "name": "Cancel order",
+      "url": "https://docs.upbit.com/kr/reference/cancel-order.md",
+      "verified_at_utc": "2026-08-23T12:23:09.117Z"
+    },
+    {
+      "name": "MyOrder WebSocket",
+      "url": "https://docs.upbit.com/kr/reference/websocket-myorder.md",
+      "verified_at_utc": "2026-08-23T12:23:09.117Z"
+    },
+    {
+      "name": "MyAsset WebSocket",
+      "url": "https://docs.upbit.com/kr/reference/websocket-myasset.md",
+      "verified_at_utc": "2026-08-23T12:23:09.117Z"
+    },
+    {
       "name": "Official Python SDK package metadata",
       "url": "https://raw.githubusercontent.com/upbit-official/upbit-sdk-python/main/pyproject.toml",
       "observed_version": "0.9.0",
@@ -48,6 +96,6 @@
   ],
   "verification": {
     "method": "manual official-source retrieval before implementation",
-    "notes": "This file records source identity and publisher update metadata, not a vendored copy. Re-fetch every source and review diffs before changing exchange behavior."
+    "notes": "This file records source identity and reviewed contract observations, not a vendored copy. Phase 6 verification was read-only; no private endpoint, test-order endpoint, order endpoint, credential, or Secret was used. Re-fetch every source and review diffs before changing exchange behavior."
   }
 }

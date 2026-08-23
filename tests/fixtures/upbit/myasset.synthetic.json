@@ -1,0 +1,11 @@
+{
+  "type": "myAsset",
+  "asset_uuid": "30000000-0000-0000-0000-000000000001",
+  "assets": [
+    {"currency": "KRW", "balance": 100000, "locked": 100.05},
+    {"currency": "BTC", "balance": 1, "locked": 1}
+  ],
+  "asset_timestamp": 1767225601000,
+  "timestamp": 1767225601000,
+  "stream_type": "REALTIME"
+}

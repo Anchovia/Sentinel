@@ -48,12 +48,12 @@ Exit criteria:
 - Baseline strategies, router, universe selector, independent risk engine, sizing, attribution, and kill switch.
 - Tests proving strategies cannot bypass risk and that stale/unsafe state blocks orders.
 
-## Phase 6 — Private Exchange and Execution Safety (`IN_PROGRESS`)
+## Phase 6 — Private Exchange and Execution Safety (`COMPLETE`)
 
 - Authentication interface, private stream mappers, order policy, test-order adapter, state machine persistence, identifier, reconciliation, and disabled live adapter.
 - Mock-only validation for timeouts, idempotency, unknown orders, and balance mismatch. No real order.
 
-## Phase 7 — Dashboard and Operations (`PENDING`)
+## Phase 7 — Dashboard and Operations (`IN_PROGRESS`)
 
 - Authenticated read-oriented dashboard, metrics, incidents, audit log, runtime exports, backups, and runbooks.
 - Emergency controls require confirmation, idempotency, result verification, and audit records.

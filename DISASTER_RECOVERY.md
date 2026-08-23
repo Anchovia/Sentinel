@@ -42,3 +42,10 @@ Never point a restore test at production storage or an order-capable network pat
 ## Failure reporting
 
 Record the failed step, affected recovery point, evidence, likely impact, workaround, code/config changes required, owner action, and next retest date. A failed restore test blocks live-readiness status.
+Order recovery starts from the durable execution journal, never from a repeated create request.
+Verify the journal hash chain and state transitions, reconcile every pending/unknown identifier, and
+compare exact remote balances before rebuilding positions or allowing any new submission. A partial,
+corrupt, missing, or contradictory journal is a fail-closed incident requiring human review.
+
+Phase 6 validates this process with a file journal and fake exchange. Database recovery, backups,
+private stream replay, credential restoration, and authenticated cancellation remain unimplemented.

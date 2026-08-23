@@ -52,6 +52,12 @@ the requested amount. `configs/risk.paper.yaml` is a simulation policy and grant
 
 Triggers include daily loss/drawdown breach, unknown order, balance mismatch, stale public data, excessive clock skew, reconciliation failure, authentication/rate-limit lockout, schema failure, repeated abnormal orders, or manual operator action. Unlock requires reconciliation and explicit human approval.
 
+An authenticated create timeout is always `UNKNOWN`. Recovery must query the burned identifier and
+must not submit again. Missing, failed, or mismatched lookup evidence keeps the order unknown and
+blocks trading. The same fail-closed rule applies after a restart with `SUBMISSION_PENDING` in the
+journal. Order-test responses are dry-run evidence only and cannot be queried, canceled, promoted to
+an actual order, or used as proof that a later real order is safe.
+
 ## Position sizing
 
 Initial sizing is conservative and combines hard notional caps with volatility, liquidity, confidence, uncertainty, correlation, and drawdown scaling. Full Kelly is forbidden. Risk limits are governance values, not model hyperparameters.

@@ -2,51 +2,55 @@
 
 ## Current checkpoint
 
-- Phase: 5 — Strategy and Risk
+- Phase: 6 — Private Exchange and Execution Safety
 - Status: `COMPLETE`
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; no live adapter or real order endpoint implemented
 - Actual orders executed: no
 - Secrets accessed: no
-- Data schema version: raw-event-envelope-1 / trade-bar-1 / feature-snapshot-1 / paper-ledger-1 / research-dataset-1 / strategy-risk-1 / attribution-1
+- Data schema version: raw-event-envelope-1 / trade-bar-1 / feature-snapshot-1 / paper-ledger-1 / research-dataset-1 / strategy-risk-1 / attribution-1 / private-event-1 / execution-journal-1 / reconciliation-1
 - Model schema version: model-artifact-1 / prediction-1
 
-## Completed in Phase 5
+## Completed in Phase 6
 
-- Added a causal shared strategy input containing market, feature, regime, alpha, execution,
-  portfolio, and read-only risk snapshots, plus exact proposal contracts with validity,
-  invalidation, exit, cost, confidence, uncertainty, strategy, and version lineage.
-- Added transparent OFI/microprice momentum and liquidity-shock mean-reversion candidates. Strategy
-  code has no exchange, execution, order-intent, or submission import and emits proposals only.
-- Added a deterministic router with explicit ACTIVE/SHADOW/PAUSED/RESEARCH_ONLY/RETIRED states,
-  edge/priority selection, correlation-group deduplication, loss limits, cooldowns, and capacity.
-- Added deterministic KRW universe selection that fails closed on inactive/warning/stale,
-  low-coverage, low-volume, wide-spread, or low-depth markets.
-- Added the independent strategy-to-risk gateway and versioned hard-limit risk engine. Risk binds
-  market/signal/edge/uncertainty snapshots, checks health/freshness/model release/depth/exposure/loss/
-  drawdown/turnover/rates/identifiers, and uses exact conservative scaling without Kelly.
-- Added a manual two-step, reconciliation-gated kill switch. Unapproved or liquidity-unsafe flatten
-  activation is rejected and every transition forms an append-only SHA-256 chain.
-- Added exact strategy/model/market/regime cost attribution with gross-to-net reconciliation and a
-  separate SHA-256 chain, avoiding double subtraction from the actual portfolio ledger.
+- Re-fetched the official Upbit AI document index and reviewed authentication, REST best practice,
+  rate limits, order chance/create/test/get/cancel, MyOrder, and MyAsset contracts. No authenticated
+  endpoint or credential was used.
+- Added ordered query-string/SHA-512 contracts and an opaque authorization interface, but no Secret
+  provider, JWT signer, authenticated HTTP/WebSocket client, or network-capable private adapter.
+- Added Decimal-preserving private MyOrder/MyAsset wire schemas, exchange-neutral domain mapping,
+  source hashes, and pure private-subscription message construction.
+- Added strict limit/price/market/best order shapes, IOC/FOK/post-only/SMP compatibility, dynamic
+  order-chance preflight, fee/balance/tick/notional/expiry checks, and risk-decision binding.
+- Added deterministic <=64-character identifiers and an append-only fsynced file journal that burns
+  identifiers, verifies chronology/state transitions, and rejects sequence/hash/identity damage.
+- Added fake/disabled private ports, a fake-only order-test adapter, idempotent submission coordinator,
+  and identifier lookup after timeout/restart. Unknown outcomes never retry create.
+- Added read-only remote order and exact balance reconciliation. Unknown/missing/state/balance
+  mismatch evidence sets `safe_to_resume=false`.
+- Added a disabled live adapter that has no network capability and still raises after all six live
+  configuration gates pass.
 
 ## Validation evidence
 
 ```text
-uv sync: PASS — Python 3.13.15, 78 locked packages; no Phase 5 dependency added
+uv sync: PASS — Python 3.13.15, 78 locked packages; no Phase 6 dependency added
 ruff: PASS — all checks passed
-format check: PASS — 138 files formatted
-mypy: PASS — 75 source files, no issues
-pytest: PASS — 220 tests, 88.50% branch coverage
-secret scan: PASS — 210 text files checked
+format check: PASS — 154 files formatted
+mypy: PASS — 87 source files, no issues
+pytest: PASS — 237 tests, 87.20% branch coverage
+secret scan: PASS — 228 text files checked
 dependency audit: PASS — no known vulnerabilities
-strategy isolation: PASS — no exchange/execution/OrderIntent capability under strategies
-correlation router: PASS — strongest edge selected independent of iteration order; cooldown enforced
-risk bypass: PASS — only gateway creates intent; hard rejection reaches broker boundary first
-kill/daily-loss/stale-data: PASS — each independently rejects; release requires reconciliation
-attribution: PASS — exact gross/cost/net arithmetic, aggregation, and chain verification
-container build: PASS — quantforge:phase5 image sha256:e006c71f...a202c
+official capability refresh: PASS — read-only source review recorded at 2026-08-23T12:23:09.117Z
+private schemas: PASS — MyOrder/MyAsset fixtures preserve Decimal and reject malformed input
+journal persistence: PASS — reopen/state/hash identity verified; tampering rejected
+idempotency: PASS — repeated successful submit makes one fake create call
+timeout/restart: PASS — identifier lookup only; unresolved outcome stays UNKNOWN; create not retried
+reconciliation: PASS — exact balance mismatch and unsafe resume verified
+network isolation: PASS — private/auth/coordinator/live modules contain no network client import
+disabled live: PASS — raises after all six gates; image reports live_network_capability=false
+container build: PASS — quantforge:phase6 image sha256:55d48899...8e105
 container safety smoke: PASS — paper, live=false, all 6 live gates failed closed
 ```
 
@@ -80,9 +84,18 @@ was read, no private endpoint was called, and no order capability exists.
 - The Phase 5 kill switch is an in-process state/audit contract. Runtime cancellation orchestration,
   durable storage, authentication, and operator controls are deferred to Phases 6 and 7.
 - `configs/risk.paper.yaml` is illustrative paper policy only and cannot approve live trading.
+- Phase 6 has no credential source, JWT signer, authenticated transport, private-stream supervisor,
+  REST parser for real responses, or real/test-order endpoint access. Only fixtures and fakes run.
+- The execution journal is a single-writer fsynced file proof. Transactional database persistence,
+  process locking, backups, and private-stream recovery are not implemented yet.
+- Dynamic order chance, fees, ticks, and minimums are fixture contracts in Phase 6, not current live
+  account values. The capability snapshot must be refreshed again before any exchange behavior change.
+- Cancellation is represented by the port/state contracts, but authenticated cancellation and
+  operator controls remain absent. The live adapter cannot submit or cancel under any settings.
 
 ## Next milestone
 
-Begin Phase 6 by refreshing official Upbit private/execution documentation, then implement only
-interfaces, mock transports, identifiers, persistent state/reconciliation contracts, and a disabled
-live adapter. Do not use credentials, private endpoints, test-order endpoints, or real orders.
+Begin Phase 7 with an authenticated, read-oriented operations/dashboard surface over redacted local
+runtime exports, incidents, journal/reconciliation status, audit logs, backup/restore evidence, and
+confirmed emergency-control contracts. Do not add an authenticated exchange transport or enable
+live trading.

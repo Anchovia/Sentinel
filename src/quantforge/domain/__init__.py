@@ -1,5 +1,15 @@
 from quantforge.domain.bars import SupportedInterval, TradeBar, deterministic_bar_id
 from quantforge.domain.events import EventEnvelope, EventType, JSONScalar, JSONValue
+from quantforge.domain.exchange_orders import (
+    ExchangeOrderRequest,
+    ExchangeOrderType,
+    ExchangeTimeInForce,
+    OrderChance,
+    OrderTestResult,
+    RemoteOrderSnapshot,
+    RemoteOrderState,
+    SelfMatchPrevention,
+)
 from quantforge.domain.execution import (
     LiquidityRole,
     PaperExecutionPolicy,
@@ -14,6 +24,12 @@ from quantforge.domain.execution import (
 from quantforge.domain.market_data import CoverageWindow, DataGap, DataGapReason
 from quantforge.domain.money import MonetaryDecimal, as_decimal, quantize_down
 from quantforge.domain.orders import OrderIntent, OrderStateMachine, OrderStatus
+from quantforge.domain.private_events import (
+    PrivateAssetBalance,
+    PrivateAssetEvent,
+    PrivateOrderEvent,
+    PrivateOrderState,
+)
 from quantforge.domain.risk import RiskDecision, RiskDecisionType
 
 __all__ = [
@@ -22,21 +38,33 @@ __all__ = [
     "DataGapReason",
     "EventEnvelope",
     "EventType",
+    "ExchangeOrderRequest",
+    "ExchangeOrderType",
+    "ExchangeTimeInForce",
     "JSONScalar",
     "JSONValue",
     "LiquidityRole",
     "MonetaryDecimal",
+    "OrderChance",
     "OrderIntent",
     "OrderStateMachine",
     "OrderStatus",
+    "OrderTestResult",
     "PaperExecutionPolicy",
     "PaperExecutionUpdate",
     "PaperFill",
     "PaperFillModel",
     "PaperOrder",
     "PaperOrderType",
+    "PrivateAssetBalance",
+    "PrivateAssetEvent",
+    "PrivateOrderEvent",
+    "PrivateOrderState",
+    "RemoteOrderSnapshot",
+    "RemoteOrderState",
     "RiskDecision",
     "RiskDecisionType",
+    "SelfMatchPrevention",
     "SupportedInterval",
     "TimeInForce",
     "TradeBar",

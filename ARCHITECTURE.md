@@ -80,6 +80,12 @@ signals, and the only intent adapter immediately invokes the independent risk en
 hard limits and health checks may reject or resize but never expand an intent. Kill-switch release
 requires a manual request followed by successful reconciliation.
 
+The Phase 6 authenticated boundary is mock-only. Secret ownership and JWT signing are protocols with
+no implementation; private order and WebSocket schemas can be tested only through fixtures and an
+in-memory fake port. A deterministic identifier is burned into an fsynced hash-chain journal before
+submission. Timeout or crash recovery performs identifier lookup and never repeats create. The live
+adapter has no network capability and remains disabled even if every configuration gate is true.
+
 ## Deployment target
 
 Initial deployment is one Linux host with Docker Compose: API/runtime, PostgreSQL, Prometheus, and Grafana. Market data and trading processes will gain separate service entry points in later phases. Redis/NATS, MLflow, MinIO, or Rust require measured justification and an ADR.

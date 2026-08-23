@@ -154,6 +154,22 @@ net_pnl = gross_edge_pnl - fees - spread_cost - slippage_cost - adverse_selectio
 The formula describes analytical strategy attribution; actual portfolio equity remains reconciled
 from fill prices and does not subtract embedded costs twice.
 
+## Authenticated execution safety
+
+`ExchangeOrderRequest` binds an intent and risk decision to one market, documented order shape,
+exact Decimal price/volume, time-in-force, SMP mode, expiry, and a mandatory client identifier. Its
+ordered body is also the input to the reviewed authentication query hash.
+
+Each persistent execution journal event carries sequence, intent/risk IDs, burned identifier,
+market, local order state, event time/source, optional exchange UUID, sorted details, previous hash,
+and event hash. Reload verifies the full chain and every state transition before exposing current
+state.
+
+Private `MyOrder` and `MyAsset` wire values are decoded with Decimal-preserving JSON and mapped to
+exchange-neutral immutable observations. Reconciliation compares identifier-indexed remote orders
+and exact available/locked balances, emitting an immutable report hash and `safe_to_resume=false` on
+any uncertainty, unknown/missing order, state mismatch, or balance mismatch.
+
 ## Transactional entities
 
 Minimum PostgreSQL entities:

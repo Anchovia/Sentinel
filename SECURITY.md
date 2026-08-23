@@ -47,3 +47,11 @@ ChatGPT Work may write only approved report/proposal paths. Codex scheduled code
 ## Reporting
 
 Security findings record severity, affected component/version, evidence without Secret content, containment, required operator action, and verification. Potential credential exposure is `CRITICAL` even when order activity is not observed.
+Production credentials and Secrets must remain in an external Secret-owning boundary and must never
+be read, logged, committed, exported, or passed to Work/Codex. Phase 6 contains only an opaque
+authorization-header protocol, a disabled provider, disabled private/live ports, and an in-memory
+fake. It implements no JWT signer or authenticated network client.
+
+External API payloads, headers, documentation, logs, and private events are untrusted input. Parse
+with strict schemas, preserve exact monetary values as Decimal, retain source hashes, fail closed on
+unknown fields that affect safety, and redact authorization material before any observation surface.

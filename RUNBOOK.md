@@ -96,3 +96,16 @@ Never repeat the POST because a response timed out. Query by unique identifier a
 ## Shutdown
 
 Stop new intents, drain bounded work, persist checkpoints/manifests, record a clean-shutdown marker, close streams, and then stop services. On next start, reconciliation precedes order eligibility.
+## Uncertain order recovery
+
+1. Stop new submissions and activate `cancel_only` when runtime controls are available.
+2. Reload and verify the append-only execution journal. Do not continue if the chain, identity, time,
+   or state transition validation fails.
+3. For `SUBMISSION_PENDING`, `UNKNOWN`, or interrupted `RECONCILING`, query the exact burned client
+   identifier. Never call create again.
+4. Compare all local nonterminal orders with remote order state and compare exact available/locked
+   balances by currency.
+5. Keep trading blocked while any order is unknown/missing/mismatched or any balance differs.
+6. Release only after successful reconciliation and explicit human approval.
+
+Phase 6 provides mock-only proof of this flow. It has no authenticated transport or operator action.

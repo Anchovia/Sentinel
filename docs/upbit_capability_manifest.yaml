@@ -1,6 +1,6 @@
 schema_version: 1
 exchange: upbit
-retrieved_at_utc: "2026-08-23T10:14:19.465Z"
+retrieved_at_utc: "2026-08-23T12:23:09.117Z"
 source_snapshot: docs/upbit_document_snapshot.json
 
 public_websocket:
@@ -44,11 +44,28 @@ public_websocket:
 private_websocket:
   enabled: false
   endpoint: wss://api.upbit.com/websocket/v1/private
-  reason: Private streams and credentials are outside Phase 1.
+  schemas_reviewed: true
+  streams:
+    myOrder:
+      enabled: false
+      event_driven_only: true
+    myAsset:
+      enabled: false
+      event_driven_only: true
+      codes_parameter_supported: false
+  reason: Phase 6 permits schemas and fake transports only; credentials and network use are disabled.
 
 rest_api:
   enabled: false
-  reason: Phase 1 uses keyless public WebSocket data only.
+  base_url: https://api.upbit.com
+  authentication_reviewed: true
+  endpoints:
+    order_chance: {enabled: false, rate_group: default, requests_per_second: 30}
+    create_order: {enabled: false, rate_group: order, requests_per_second: 12}
+    test_order: {enabled: false, rate_group: order-test, requests_per_second: 8}
+    get_order: {enabled: false, rate_group: default, requests_per_second: 30}
+    cancel_order: {enabled: false, rate_group: default, requests_per_second: 30}
+  reason: Phase 6 permits contracts and fake transports only; all authenticated network calls are disabled.
 
 official_python_sdk:
   available: true
@@ -65,6 +82,9 @@ official_python_sdk:
 safety:
   api_keys_required: false
   order_submission_present: false
+  disabled_live_adapter_required: true
+  test_order_network_access: false
+  private_network_access: false
   external_payloads_are_untrusted: true
   additive_unknown_response_fields: retained_in_raw_payload
   malformed_messages: isolate_and_count

@@ -50,6 +50,14 @@ All notable changes are recorded here. The project follows semantic versioning o
 - Independent fail-closed paper risk gateway with intent/snapshot binding, hard health/exposure/loss/
   turnover/rate limits, exact conservative sizing, and no strategy-side order capability.
 - Manual-release hash-chained kill switch and exact strategy/model/market/regime attribution ledger.
+- Refreshed official Upbit authentication, private-stream, order, test-order, lookup, cancellation,
+  order-chance, and rate-limit capability observations without using an authenticated endpoint.
+- Secret-isolated authentication/query-hash contracts and Decimal-preserving MyOrder/MyAsset
+  schemas, fixture mappers, and private subscription builders.
+- Strict authenticated-order shapes, deterministic account-wide identifiers, dynamic preflight,
+  fsynced hash-chain order journal, and exact order/balance reconciliation.
+- Mock-only test-order/private ports, identifier-first no-retry timeout/crash recovery, and a live
+  adapter that remains disabled even when all six configuration gates pass.
 
 ### Security
 
