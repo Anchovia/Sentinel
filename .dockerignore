@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+.bootstrap-venv
+.tools
+__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+data
+runtime_exports
+reports
+research/notebooks
+.env
+.env.*
+*.pem
+*.key

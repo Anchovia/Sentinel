@@ -1,0 +1,9 @@
+services:
+  api:
+    environment:
+      QF_ENVIRONMENT: paper
+      QF_TRADING_MODE: paper
+      QF_ALLOW_ORDER_SUBMISSION: "false"
+    volumes:
+      - ./runtime_exports:/app/runtime_exports
+      - ./reports:/app/reports

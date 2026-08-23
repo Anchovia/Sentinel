@@ -1,0 +1,11 @@
+schema_version: 1
+environment: test
+trading:
+  mode: backtest
+  allow_order_submission: false
+clock:
+  kind: virtual
+determinism:
+  require_dataset_hash: true
+  require_configuration_hash: true
+  require_random_seed: true

@@ -1,0 +1,11 @@
+schema_version: 1
+quote_currency: KRW
+selection:
+  dynamic: true
+  exclude_warning_markets: true
+  exclude_suspended_markets: true
+  require_data_quality_pass: true
+research_seed_markets:
+  - KRW-BTC
+  - KRW-ETH
+note: Seed markets are for data and paper-mode smoke tests, not a live allowlist.

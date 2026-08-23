@@ -1,0 +1,9 @@
+schema_version: 1
+environment: paper
+trading:
+  mode: paper
+  allow_order_submission: false
+execution:
+  broker: paper
+  fill_model: conservative_l2
+  real_order_network_access: false

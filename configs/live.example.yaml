@@ -1,0 +1,14 @@
+schema_version: 1
+environment: production
+trading:
+  mode: paper
+  allow_order_submission: false
+  live_release_manifest_valid: false
+  risk_policy_approved: false
+  model_release_approved: false
+  operator_unlock_present: false
+live_adapter:
+  implemented: false
+  enabled: false
+  credential_source: external_secret_store_only
+  note: This example cannot activate live trading.

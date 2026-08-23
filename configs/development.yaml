@@ -1,0 +1,6 @@
+schema_version: 1
+environment: development
+logging:
+  level: DEBUG
+database:
+  url_env: QF_DATABASE_URL

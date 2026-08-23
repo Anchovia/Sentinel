@@ -1,0 +1,18 @@
+schema_version: 1
+environment: development
+timezone:
+  storage: UTC
+  display: Asia/Seoul
+trading:
+  mode: paper
+  allow_order_submission: false
+  live_release_manifest_valid: false
+  risk_policy_approved: false
+  model_release_approved: false
+  operator_unlock_present: false
+logging:
+  level: INFO
+  format: json
+runtime_exports:
+  enabled: true
+  interval_seconds: 300

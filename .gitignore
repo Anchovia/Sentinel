@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+htmlcov/
+.venv/
+.bootstrap-venv/
+.tools/
+dist/
+build/
+*.egg-info/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Secrets and local overrides
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.p12
+
+# Runtime and data artifacts
+data/
+artifacts/
+logs/
+tmp/
+*.parquet
+*.duckdb
+*.db
+*.sqlite*
+
+# Runtime exports and reports are generated; keep directory sentinels and schemas.
+runtime_exports/**/*.json
+!runtime_exports/**/.gitkeep
+reports/**/*.md
+!reports/**/.gitkeep
+
+# Frontend
+dashboard/node_modules/
+dashboard/dist/

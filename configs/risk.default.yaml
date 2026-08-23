@@ -1,0 +1,21 @@
+schema_version: 1
+policy_version: foundation-0.1
+enforcement:
+  enabled: true
+  fail_closed: true
+  live_limits_configured: false
+limits:
+  max_order_notional_krw: 0
+  max_position_notional_per_market: 0
+  max_total_exposure_krw: 0
+  max_total_exposure_pct: 0
+  max_concurrent_positions: 0
+  max_daily_loss_krw: 0
+  max_daily_loss_pct: 0
+  max_drawdown_pct: 0
+  max_unknown_orders: 0
+  max_data_age_ms: 0
+  max_clock_skew_ms: 0
+  max_balance_reconciliation_age_seconds: 0
+  min_expected_net_edge_bps: null
+note: Zero-valued foundation limits intentionally prevent live approval until human review.

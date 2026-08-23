@@ -1,0 +1,90 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quantforge"
+version = "0.1.0"
+description = "Safety-first quantitative research and trading platform for Upbit KRW spot markets"
+readme = "README.md"
+requires-python = ">=3.13,<3.15"
+license = { file = "LICENSE" }
+authors = [{ name = "Anchovia" }]
+dependencies = [
+  "alembic>=1.16,<2",
+  "asyncpg>=0.30,<1",
+  "fastapi>=0.116,<1",
+  "prometheus-client>=0.22,<1",
+  "pydantic>=2.11,<3",
+  "pydantic-settings>=2.10,<3",
+  "pyyaml>=6.0.2,<7",
+  "sqlalchemy>=2.0,<3",
+  "structlog>=25.4,<26",
+  "typer>=0.16,<1",
+  "tzdata>=2026.1,<2027",
+  "uvicorn[standard]>=0.35,<1",
+]
+
+[project.scripts]
+quantforge = "quantforge.cli:app"
+
+[dependency-groups]
+dev = [
+  "detect-secrets>=1.5,<2",
+  "httpx>=0.28,<1",
+  "hypothesis>=6.138,<7",
+  "mypy>=1.17,<2",
+  "pip-audit>=2.9,<3",
+  "pytest>=9.0.3,<10",
+  "pytest-asyncio>=1.1,<2",
+  "pytest-cov>=6.2,<7",
+  "ruff>=0.12,<1",
+  "types-pyyaml>=6.0.12,<7",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/quantforge"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers -ra"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+  "integration: tests that cross process, storage, or network-adapter boundaries",
+  "live: forbidden tests that would require a live exchange endpoint",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "S", "RUF"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S105", "S106"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unreachable = true
+show_error_codes = true
+mypy_path = "src"
+packages = ["quantforge"]
+plugins = ["pydantic.mypy"]
+
+[tool.coverage.run]
+branch = true
+source = ["quantforge"]
+omit = ["src/quantforge/__main__.py"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
+exclude_also = [
+  "if TYPE_CHECKING:",
+  "if __name__ == .__main__.:",
+]
