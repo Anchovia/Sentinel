@@ -1,23 +1,26 @@
 {
   "schema_version": 1,
   "exchange": "upbit",
-  "retrieved_at_utc": "2026-08-23T12:23:09.117Z",
+  "retrieved_at_utc": "2026-08-23T15:18:25.093Z",
   "official_index": "https://docs.upbit.com/kr/llms.txt",
   "documents": [
     {
       "name": "WebSocket guide",
       "url": "https://docs.upbit.com/kr/reference/websocket-guide.md",
-      "document_updated_at": "2026-03-24T02:33:54.000Z"
+      "document_updated_at": "2026-03-24T02:33:54.000Z",
+      "verified_at_utc": "2026-08-23T15:18:25.093Z"
     },
     {
       "name": "WebSocket best practice",
       "url": "https://docs.upbit.com/kr/docs/websocket-best-practice.md",
-      "document_updated_at": "2026-07-14T09:05:34.000Z"
+      "document_updated_at": "2026-07-14T09:05:34.000Z",
+      "verified_at_utc": "2026-08-23T15:18:25.093Z"
     },
     {
       "name": "Rate limits",
       "url": "https://docs.upbit.com/kr/reference/rate-limits.md",
-      "document_updated_at": "2026-08-21T11:06:48.000Z"
+      "document_updated_at": "2026-08-21T11:06:48.000Z",
+      "verified_at_utc": "2026-08-23T15:18:25.093Z"
     },
     {
       "name": "Ticker WebSocket",
@@ -96,6 +99,6 @@
   ],
   "verification": {
     "method": "manual official-source retrieval before implementation",
-    "notes": "This file records source identity and reviewed contract observations, not a vendored copy. Phase 6 verification was read-only; no private endpoint, test-order endpoint, order endpoint, credential, or Secret was used. Re-fetch every source and review diffs before changing exchange behavior."
+    "notes": "This file records source identity and reviewed contract observations, not a vendored copy. Phase 10 re-fetched llms.txt, WebSocket best practice, and rate-limit documentation before the public burn-in implementation. Public endpoint, idle timeout, ping/pong, reconnection, and WebSocket message-limit observations remained compatible. Verification used no private endpoint, authenticated endpoint, order endpoint, credential, or Secret. Re-fetch every source and review diffs before changing exchange behavior."
   }
 }

@@ -33,6 +33,12 @@ PostgreSQL and monitoring ports bind locally by default. Production requires aut
 - Schema validation and size/rate limits on external payloads.
 - Redaction applied before structured logs and runtime exports.
 
+The supervised public burn-in performs a startup safety attestation before opening its keyless
+socket. It rejects production mode, any configured Upbit credential, non-paper mode, and any state
+where fewer than all six live gates are closed. Its runtime schema makes credential use, private
+network use, order capability, and live submission false-only, and the container receives no
+exchange Secret.
+
 ## Supply chain
 
 - Exact `uv.lock`; reviewed dependency updates; no automatic major upgrades.

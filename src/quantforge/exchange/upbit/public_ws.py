@@ -121,10 +121,19 @@ class UpbitPublicWebSocketClient:
         self._wall_clock = wall_clock or (lambda: datetime.now(UTC))
         self._monotonic_clock_ns = monotonic_clock_ns
         self._max_reconnect_attempts = max_reconnect_attempts
+        self._reconnect_count = 0
         self._stop = asyncio.Event()
         self._send_lock = asyncio.Lock()
         self._active_connection: WebSocketConnection | None = None
         self._request: SubscriptionRequest = build_subscription_request(self._subscriptions)
+
+    @property
+    def connected(self) -> bool:
+        return self._active_connection is not None
+
+    @property
+    def reconnect_count(self) -> int:
+        return self._reconnect_count
 
     async def run(self, *, max_messages: int | None = None) -> int:
         if max_messages is not None and max_messages < 1:
@@ -174,6 +183,7 @@ class UpbitPublicWebSocketClient:
                     and reconnect_attempt > self._max_reconnect_attempts
                 ):
                     raise
+                self._reconnect_count += 1
                 self.metrics.reconnects.inc()
                 await self._sleep(self._backoff_seconds(reconnect_attempt))
             finally:

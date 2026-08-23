@@ -1,5 +1,7 @@
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from uuid import UUID
 
 from typer.testing import CliRunner
 
@@ -9,6 +11,11 @@ from quantforge.config import get_settings
 from quantforge.operations import read_dashboard_snapshot
 from quantforge.readiness import ReadinessStatus, read_readiness_report
 from quantforge.runtime import DataQualitySnapshot
+from quantforge.runtime.paper_supervisor import (
+    PaperRuntimeSnapshot,
+    PaperRuntimeState,
+    write_paper_runtime_snapshot,
+)
 from quantforge.storage import ParquetRawEventWriter
 
 runner = CliRunner()
@@ -61,6 +68,66 @@ def test_replay_raw_rejects_empty_input(tmp_path: Path) -> None:
     result = runner.invoke(app, ["replay-raw", "--input-root", str(tmp_path)])
     assert result.exit_code != 0
     assert "no verified raw events" in result.output
+
+
+def test_paper_status_requires_a_connected_fresh_market_event(tmp_path: Path) -> None:
+    now_utc = datetime.now(UTC)
+    snapshot = PaperRuntimeSnapshot(
+        run_id=UUID(int=1),
+        state=PaperRuntimeState.RUNNING,
+        started_at_utc=now_utc - timedelta(seconds=1),
+        updated_at_utc=now_utc,
+        markets=("KRW-BTC",),
+        streams=("ticker", "trade", "orderbook"),
+        accepted_messages=1,
+        event_counts=(("trade", 1),),
+        duplicate_messages=0,
+        parser_errors=0,
+        reconnects=0,
+        committed_files=0,
+        committed_rows=0,
+        heartbeat_sequence=1,
+        websocket_connected=True,
+        last_event_at_utc=now_utc,
+        last_exchange_at_utc=now_utc,
+        raw_output="data/paper/raw",
+        policy_hash="0" * 64,
+    )
+    path = write_paper_runtime_snapshot(snapshot, tmp_path)
+
+    result = runner.invoke(
+        app,
+        ["paper-status", "--snapshot", str(path), "--require-fresh-seconds", "90"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["healthy"] is True
+    assert payload["websocket_connected"] is True
+
+    disconnected = snapshot.model_copy(update={"websocket_connected": False})
+    write_paper_runtime_snapshot(disconnected, tmp_path)
+    disconnected_result = runner.invoke(
+        app,
+        ["paper-status", "--snapshot", str(path), "--require-fresh-seconds", "90"],
+    )
+    assert disconnected_result.exit_code == 1
+    assert json.loads(disconnected_result.stdout)["healthy"] is False
+
+    stale = snapshot.model_copy(
+        update={
+            "started_at_utc": now_utc - timedelta(seconds=180),
+            "updated_at_utc": now_utc - timedelta(seconds=120),
+            "last_event_at_utc": now_utc - timedelta(seconds=120),
+        }
+    )
+    write_paper_runtime_snapshot(stale, tmp_path)
+    stale_result = runner.invoke(
+        app,
+        ["paper-status", "--snapshot", str(path), "--require-fresh-seconds", "90"],
+    )
+    assert stale_result.exit_code == 1
+    assert json.loads(stale_result.stdout)["healthy"] is False
 
 
 def test_export_operations_is_secret_free_and_non_ordering(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]

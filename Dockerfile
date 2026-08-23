@@ -15,7 +15,7 @@ COPY src ./src
 RUN uv sync --frozen --no-dev --no-install-project && uv sync --frozen --no-dev
 
 RUN useradd --create-home --uid 10001 quantforge \
-    && mkdir -p /app/data/operations /app/runtime_exports \
+    && mkdir -p /app/data/operations /app/data/paper /app/runtime_exports \
     && chown -R quantforge:quantforge /app/data /app/runtime_exports
 USER quantforge
 

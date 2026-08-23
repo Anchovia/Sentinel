@@ -133,6 +133,23 @@ reviewed hashed evidence + versioned readiness policy
 The evaluator does not instantiate runtime settings or import an exchange/HTTP adapter. Approval
 references and canary limits are analyzed as data; they cannot unlock the six execution gates.
 
+Phase 10 adds the first supervised real-time process, but only for the public burn-in boundary:
+
+```text
+keyless KRW public WebSocket
+        -> reviewed schema + immutable EventEnvelope
+        -> periodic append-only Parquet/manifests
+        -> atomic paper-runtime heartbeat + redacted operations snapshot
+        -> offline verified replay
+```
+
+Startup refuses production mode, credentials, non-paper mode, or any partially opened live gate.
+The process has no private transport, strategy decision, risk approval, paper order, fill, or account
+state. This separation allows public feed/storage reliability to be measured before real-time
+simulated execution is composed.
+
 ## Deployment target
 
-Initial deployment is one Linux host with Docker Compose: API/runtime, PostgreSQL, Prometheus, and Grafana. Market data and trading processes will gain separate service entry points in later phases. Redis/NATS, MLflow, MinIO, or Rust require measured justification and an ADR.
+Initial deployment is one Linux host with Docker Compose: API, supervised public paper burn-in,
+PostgreSQL, Prometheus, and Grafana. The simulated strategy/execution process remains a later service
+entry point. Redis/NATS, MLflow, MinIO, or Rust require measured justification and an ADR.

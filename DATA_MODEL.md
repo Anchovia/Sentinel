@@ -193,6 +193,12 @@ Order and ledger events are immutable append records; current views are derived.
 
 `runtime_exports` contains redacted, review-oriented snapshots for operations, performance, models, data quality, incidents, releases, and research. Exports exclude credentials, authorization material, raw account identifiers, and `.env` content. Schemas and Secret tests are mandatory before scheduled consumers are enabled.
 
+Phase 10 adds `paper-runtime-1`, an atomic lifecycle snapshot for one credential-free public burn-in
+run. It binds a run UUID and policy hash to UTC start/update/stop times, selected public
+markets/streams, accepted/event/duplicate/parser/reconnect/committed counts, latest event and
+exchange times, maximum observed ingress latency, heartbeat sequence, and terminal reason. Its
+credential, authentication, private-network, order, and live-submission fields are false-only.
+
 Phase 7 defines `operations-dashboard-1`, containing UTC generation time and fixed Overview,
 Markets, Positions, Orders, Strategies, Models, System, and Incidents views. Decimal is retained for
 assets, balances, prices, quantities, fees, exposure, and PnL. Exchange order UUIDs are represented

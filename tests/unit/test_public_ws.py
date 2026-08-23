@@ -127,6 +127,8 @@ async def test_transport_failure_reconnects_with_bounded_backoff() -> None:
     assert sleeps == [1.0]
     assert len(connector.calls) == 2
     assert len(events) == 1
+    assert client.reconnect_count == 1
+    assert client.connected is False
 
 
 @pytest.mark.asyncio

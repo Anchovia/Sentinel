@@ -1,6 +1,6 @@
 schema_version: 1
 exchange: upbit
-retrieved_at_utc: "2026-08-23T12:23:09.117Z"
+retrieved_at_utc: "2026-08-23T15:18:25.093Z"
 source_snapshot: docs/upbit_document_snapshot.json
 
 public_websocket:

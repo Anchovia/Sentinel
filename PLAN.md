@@ -69,6 +69,18 @@ Exit criteria:
 - Output only `NOT_READY`, `CONDITIONALLY_READY`, or `READY_FOR_MANUAL_CANARY_REVIEW`.
 - Never activate live trading.
 
+## Phase 10 — Supervised Public Paper Burn-in (`COMPLETE`)
+
+- Run credential-free KRW public WebSocket collection as a supervised process with atomic
+  heartbeats, periodic immutable storage flushes, reconnect/parser/duplicate/latency evidence, and
+  clean bounded shutdown.
+- Refuse production mode, configured Upbit credentials, non-paper mode, or any partially opened live
+  gate before creating the public client.
+- Publish a Secret-free paper runtime status and operations snapshot, and provide a read-only status
+  command plus an isolated Compose service.
+- Validate with a short real `KRW-BTC` public smoke and deterministic checksum replay. Do not create
+  strategy signals, simulated fills, performance claims, or readiness claims in this phase.
+
 ## Milestone discipline
 
 For every milestone:

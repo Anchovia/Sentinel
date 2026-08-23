@@ -2,9 +2,9 @@
 
 ## Current checkpoint
 
-- Phase: 9 — Live Readiness
+- Phase: 10 — Supervised Public Paper Burn-in
 - Status: `COMPLETE`
-- Planned implementation phases: 0–9 complete
+- Planned implementation phases: 0–10 complete
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; the live adapter has no network capability
@@ -14,6 +14,25 @@
 - Production Secrets accessed: no
 - Scheduled task registration: none
 - Automatic merge/deploy/model promotion/live activation: unavailable
+
+## Completed in Phase 10
+
+- Re-fetched the official Upbit `llms.txt`, WebSocket best-practice, and rate-limit pages. The
+  unauthenticated public endpoint, 120-second idle timeout, ping/pong, reconnect, and WebSocket
+  connection/message policies remain compatible with the direct public adapter.
+- Added a supervised public burn-in runtime that refuses production, credentials, non-paper mode,
+  or even a partially opened set of the six live gates before creating a client.
+- Added atomic `paper-runtime-1` heartbeats, periodic immutable Parquet/manifests, parser/reconnect/
+  duplicate/latency counters, a live public-market operations snapshot, graceful bounded shutdown,
+  and offline status health checks.
+- Added `run-paper` and `paper-status`, plus a separate non-root, read-only Compose service with a
+  persistent paper-data volume and only the runtime export bind it needs.
+- A host smoke accepted and checksummed 30 real public `KRW-BTC` messages, then replayed the exact
+  dataset offline. A final read-only container smoke accepted 10 more public messages.
+- No strategy/model/risk decision, paper order, fill, account state, private endpoint, credential,
+  or order path was used. This phase is public feed/storage burn-in only.
+- Added ADR-014 and updated architecture, data, security, limitations, runbook, capability, progress,
+  and handoff records. The public README remained unchanged and minimal.
 
 ## Completed in Phase 9
 
@@ -40,24 +59,19 @@
 ## Validation evidence
 
 ```text
-Python: PASS — 3.13.15; no Phase 9 dependency added
+Python: PASS — 3.13.15; no Phase 10 dependency added
 ruff: PASS — all checks passed
-format check: PASS — 202 files formatted
-mypy: PASS — 105 source files, no issues
-pytest: PASS — 294 tests, 86.59% branch coverage
-readiness missing evidence: PASS — NOT_READY, all 13 gates failed closed
-readiness hard/preferred boundary: PASS — CONDITIONALLY_READY
-readiness complete synthetic fixture: PASS — READY_FOR_MANUAL_CANARY_REVIEW only
-readiness safety regressions: PASS — UNKNOWN order, stale security, local backup, future evidence,
-  mismatched approvals/artifacts, protected policy, and oversized canary all rejected
-runtime settings isolation: PASS — readiness CLI does not load settings/.env
-transport isolation: PASS — readiness package has no exchange/HTTP imports
-secret scan: PASS — 300 text files checked
+format check: PASS — 205 files formatted
+mypy: PASS — 106 source files, no issues
+pytest: PASS — 304 tests, 86.52% branch coverage
+host public smoke: PASS — 30 accepted/committed, 0 parser errors, 0 reconnects, no auth/private/order
+host verified replay: PASS — 30 inputs, dataset ed2124cb...f4ea, output e3cf7e53...4c29
+secret scan: PASS — 305 text files checked
 dependency audit: PASS — no known vulnerabilities
-Compose config: PASS — base + paper overlays
-container build: PASS — quantforge:phase9 sha256:15fd924d...bf786
+Compose config: PASS — base + paper overlays including paper-runtime
+container build: PASS — quantforge:phase10 sha256:9fade54b...0522
 container safety: PASS — paper, live=false, all six gates failed closed, credentials=false
-container readiness: PASS — NOT_READY, 13 missing gates, no activation/network/order/settings change
+container public smoke: PASS — 10 accepted/committed, 0 parser errors/reconnects, all safety flags false
 schedule registration: NONE
 ```
 
@@ -77,13 +91,17 @@ schedule registration: NONE
   populated. Local schedules require the computer and desktop app.
 - The Windows host lacks `uv` and `make` on PATH, so exact Make targets were not run in this phase;
   their equivalent locked project-venv commands passed. Container builds use the pinned uv image.
-- Dashboard, local journals, backup proof, public-L2 fill approximation, bounded public collector,
-  missing authenticated transport, and synthetic research limitations remain documented.
+- The public collector is supervised, but sustained coverage has not accumulated and real-time
+  strategy/risk/paper-broker/ledger/performance orchestration is not yet composed.
+- The dashboard and Grafana are developer/operations skeletons, not a polished Korean end-user GUI.
+- Dashboard, local journals, backup proof, public-L2 fill approximation, missing authenticated
+  transport, and synthetic research limitations remain documented.
 
 ## Next milestone
 
-Do not enable live trading. The next work is operational evidence production and hardening: sustained
-paper supervision, continuous runtime exports, production storage/backup/TLS/RBAC/network design,
-authorized dry-run order-test and reconciliation evidence, multi-operator drills, and independent
-security/release reviews. Re-run the validator after each reviewed evidence bundle; pursue a manual
-canary implementation only if every gate truly passes and separate human authority is granted.
+Do not enable live trading. Run the new public burn-in continuously and measure coverage, restarts,
+parser failures, gaps, disk growth, and retention. The next implementation composes causal real-time
+bars/features with versioned baseline inference, proposal-only strategies, independent paper risk,
+the conservative paper broker, exact ledger, and representative performance/model/data exports.
+Build the polished Korean read-only GUI only after those contracts produce stable data. Production
+storage/backup/TLS/RBAC/network design and any authenticated dry-run work remain separately reviewed.

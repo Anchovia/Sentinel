@@ -7,3 +7,52 @@ services:
     volumes:
       - ./runtime_exports:/app/runtime_exports
       - ./reports:/app/reports
+
+  paper-runtime:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      - quantforge
+      - run-paper
+      - --markets
+      - KRW-BTC
+      - --streams
+      - ticker,trade,orderbook
+      - --heartbeat-seconds
+      - "15"
+      - --flush-seconds
+      - "60"
+    environment:
+      QF_ENVIRONMENT: paper
+      QF_TRADING_MODE: paper
+      QF_ALLOW_ORDER_SUBMISSION: "false"
+      QF_LIVE_RELEASE_MANIFEST_VALID: "false"
+      QF_RISK_POLICY_APPROVED: "false"
+      QF_MODEL_RELEASE_APPROVED: "false"
+      QF_OPERATOR_UNLOCK_PRESENT: "false"
+      QF_UPBIT_ACCESS_KEY: ""
+      QF_UPBIT_SECRET_KEY: ""
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - paper-data:/app/data/paper
+      - ./runtime_exports:/app/runtime_exports
+    healthcheck:
+      test:
+        - CMD
+        - quantforge
+        - paper-status
+        - --require-fresh-seconds
+        - "90"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+volumes:
+  paper-data:

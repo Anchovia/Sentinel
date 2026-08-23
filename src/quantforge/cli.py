@@ -3,6 +3,7 @@
 import asyncio
 import json
 import shutil
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, cast
@@ -19,6 +20,7 @@ from quantforge.automation import (
 )
 from quantforge.config import get_settings
 from quantforge.domain import DataGap, EventEnvelope
+from quantforge.exchange.upbit.errors import UpbitAdapterError
 from quantforge.exchange.upbit.public_ws import UpbitPublicWebSocketClient
 from quantforge.exchange.upbit.subscriptions import PublicStreamType, UpbitSubscription
 from quantforge.operations import (
@@ -34,6 +36,12 @@ from quantforge.readiness import (
 )
 from quantforge.replay import ReplayEngine, VirtualClock
 from quantforge.runtime import DataQualitySnapshot, LiveSubmissionGuard, write_data_quality_snapshot
+from quantforge.runtime.paper_supervisor import (
+    PaperRuntimePolicy,
+    PaperRuntimeState,
+    PaperRuntimeSupervisor,
+    read_paper_runtime_snapshot,
+)
 from quantforge.storage import (
     ParquetRawEventWriter,
     cleanup_orphan_temp_files,
@@ -42,12 +50,14 @@ from quantforge.storage import (
 
 app = typer.Typer(no_args_is_help=True, help="QuantForge research and operations CLI")
 DEFAULT_RAW_OUTPUT = Path("data/raw")
+DEFAULT_PAPER_RAW_OUTPUT = Path("data/paper/raw")
 DEFAULT_REPLAY_INPUT = Path("data/raw")
 DEFAULT_DATA_QUALITY_OUTPUT = Path("runtime_exports/data_quality")
 DEFAULT_OPERATIONS_OUTPUT = Path("runtime_exports")
 DEFAULT_BACKUP_ROOT = Path("data/backups")
 DEFAULT_AUTOMATION_ALLOWLIST = Path("automation/write-allowlist.yaml")
 DEFAULT_READINESS_POLICY = Path("configs/readiness.default.yaml")
+DEFAULT_PAPER_RUNTIME_SNAPSHOT = Path("runtime_exports/ops/paper-runtime.json")
 
 
 @app.callback()
@@ -125,6 +135,151 @@ def collect_public(
             sort_keys=True,
         )
     )
+
+
+@app.command("run-paper")
+def run_paper(
+    markets: str = typer.Option("KRW-BTC", help="Comma-separated uppercase KRW market codes"),
+    streams: str = typer.Option("ticker,trade,orderbook", help="Public stream names"),
+    duration_seconds: int = typer.Option(
+        0,
+        min=0,
+        max=604_800,
+        help="Stop after this many seconds; zero runs until stopped",
+    ),
+    max_messages: int = typer.Option(
+        0,
+        min=0,
+        help="Stop after this many valid messages; zero is unlimited",
+    ),
+    heartbeat_seconds: int = typer.Option(15, min=1, max=300),
+    flush_seconds: int = typer.Option(60, min=1, max=3600),
+    raw_output: Annotated[
+        Path, typer.Option(help="Append-only public raw Parquet root")
+    ] = DEFAULT_PAPER_RAW_OUTPUT,
+    output_root: Annotated[
+        Path, typer.Option(help="Secret-free runtime export root")
+    ] = DEFAULT_OPERATIONS_OUTPUT,
+) -> None:
+    """Run supervised keyless public collection with every live/order gate closed."""
+
+    selected_markets = tuple(item.strip() for item in markets.split(",") if item.strip())
+    selected_streams = tuple(item.strip() for item in streams.split(",") if item.strip())
+    allowed_streams = {"ticker", "trade", "orderbook"}
+    if not selected_markets or any(not market.startswith("KRW-") for market in selected_markets):
+        raise typer.BadParameter(
+            "paper runtime accepts uppercase KRW market codes only", param_hint="--markets"
+        )
+    if not selected_streams or any(item not in allowed_streams for item in selected_streams):
+        raise typer.BadParameter(
+            "streams must contain only ticker, trade, or orderbook", param_hint="--streams"
+        )
+    subscriptions = tuple(
+        UpbitSubscription(cast(PublicStreamType, stream), selected_markets)
+        for stream in selected_streams
+    )
+
+    def client_factory(
+        on_event: Callable[[EventEnvelope], Awaitable[None]],
+        on_error: Callable[[UpbitAdapterError], Awaitable[None]],
+    ) -> UpbitPublicWebSocketClient:
+        return UpbitPublicWebSocketClient(subscriptions, on_event, on_error=on_error)
+
+    policy = PaperRuntimePolicy(
+        heartbeat_seconds=float(heartbeat_seconds),
+        flush_seconds=float(flush_seconds),
+        duration_seconds=float(duration_seconds) if duration_seconds else None,
+        max_messages=max_messages or None,
+    )
+    supervisor = PaperRuntimeSupervisor(
+        settings=get_settings(),
+        markets=selected_markets,
+        streams=selected_streams,
+        raw_output=raw_output,
+        output_root=output_root,
+        policy=policy,
+        client_factory=client_factory,
+    )
+    snapshot = asyncio.run(supervisor.run())
+    typer.echo(
+        json.dumps(
+            {
+                "state": snapshot.state,
+                "run_id": str(snapshot.run_id),
+                "accepted_messages": snapshot.accepted_messages,
+                "committed_rows": snapshot.committed_rows,
+                "parser_errors": snapshot.parser_errors,
+                "reconnects": snapshot.reconnects,
+                "runtime_snapshot": str((output_root / "ops" / "paper-runtime.json").resolve()),
+                "authentication_used": snapshot.authentication_used,
+                "private_network_used": snapshot.private_network_used,
+                "order_submission_available": snapshot.order_submission_available,
+                "live_submission_allowed": snapshot.live_submission_allowed,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("paper-status")
+def paper_status(
+    snapshot: Annotated[
+        Path, typer.Option(help="Paper runtime snapshot JSON")
+    ] = DEFAULT_PAPER_RUNTIME_SNAPSHOT,
+    require_fresh_seconds: int | None = typer.Option(
+        None,
+        min=1,
+        help="Exit nonzero unless a running heartbeat is this fresh",
+    ),
+) -> None:
+    """Read the latest Secret-free paper runtime heartbeat without network access."""
+
+    if not snapshot.is_file():
+        raise typer.BadParameter("paper runtime snapshot was not found", param_hint="--snapshot")
+    parsed = read_paper_runtime_snapshot(snapshot)
+    now_utc = datetime.now(UTC)
+    age_seconds = max(0.0, (now_utc - parsed.updated_at_utc).total_seconds())
+    event_age_seconds = (
+        max(0.0, (now_utc - parsed.last_event_at_utc).total_seconds())
+        if parsed.last_event_at_utc is not None
+        else None
+    )
+    healthy = (
+        parsed.state is PaperRuntimeState.RUNNING
+        and parsed.websocket_connected
+        and event_age_seconds is not None
+    )
+    if require_fresh_seconds is not None:
+        healthy = (
+            healthy
+            and age_seconds <= require_fresh_seconds
+            and event_age_seconds is not None
+            and event_age_seconds <= require_fresh_seconds
+        )
+    typer.echo(
+        json.dumps(
+            {
+                "state": parsed.state,
+                "run_id": str(parsed.run_id),
+                "heartbeat_age_seconds": round(age_seconds, 3),
+                "market_event_age_seconds": (
+                    round(event_age_seconds, 3) if event_age_seconds is not None else None
+                ),
+                "accepted_messages": parsed.accepted_messages,
+                "committed_rows": parsed.committed_rows,
+                "parser_errors": parsed.parser_errors,
+                "reconnects": parsed.reconnects,
+                "websocket_connected": parsed.websocket_connected,
+                "healthy": healthy,
+                "authentication_used": parsed.authentication_used,
+                "order_submission_available": parsed.order_submission_available,
+                "live_submission_allowed": parsed.live_submission_allowed,
+            },
+            sort_keys=True,
+        )
+    )
+    if require_fresh_seconds is not None and not healthy:
+        raise typer.Exit(code=1)
 
 
 @app.command("replay-raw")

@@ -86,6 +86,11 @@ All notable changes are recorded here. The project follows semantic versioning o
   security/runbooks, closed live locks, independent approvals, and a small canary plan.
 - Secret-rejecting atomic readiness exports and a non-ordering `validate-live-readiness` CLI that
   does not load runtime settings or import exchange/HTTP transport.
+- A fail-closed `run-paper` public burn-in supervisor with duration/message bounds, periodic raw
+  Parquet flushes, lifecycle heartbeats, reconnect/parser/duplicate/latency evidence, graceful
+  shutdown, and no authentication, private endpoint, or order capability.
+- A read-only `paper-status` health command, live public-market operations snapshots, and a separate
+  read-only Compose service for sustained `KRW-BTC` public observation.
 
 ### Security
 

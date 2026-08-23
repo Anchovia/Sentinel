@@ -7,9 +7,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 
 ## Current state
 
-- Date: 2026-08-23 KST
-- Completed phases: 0–9
-- Current checkpoint: implementation plan complete; operational evidence/hardening next
+- Date: 2026-08-24 KST
+- Completed phases: 0–10
+- Current checkpoint: supervised public paper burn-in complete; sustained evidence next
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
@@ -28,8 +28,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 6: `ac7798b feat: 모의 비공개 주문 안전 경계 구축`
 - Phase 7: `b71424e feat: 운영 대시보드와 감사 경계 구축`
 - Phase 8: `84b751c feat: 격리된 자동 감사 기반 구축`
+- Phase 9: `a2c0542 feat: 읽기 전용 실거래 준비도 검증 구축`
 
-## Implemented through Phase 9
+## Implemented through Phase 10
 
 - Safety-first Python modular monolith, six closed live gates, Decimal domain/accounting boundary,
   keyless Upbit public transport, versioned immutable raw lineage, deterministic replay/bars/features,
@@ -47,21 +48,28 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Read-only live readiness with 13 gates, two-tier conservative thresholds, input/policy hashes,
   staleness/contradiction checks, distinct approvals, Decimal canary limits, and atomic output. The
   highest status is manual review only; all mutation/order/network/Secret flags are false-only.
-- ADR-001 through ADR-013 record consequential design choices. README remains intentionally minimal.
+- Supervised keyless public burn-in with credential/production/partial-live-gate startup refusal,
+  atomic lifecycle heartbeats, periodic immutable raw flushes, public market operations views,
+  reconnect/parser/duplicate/latency evidence, offline health status, and clean bounded shutdown.
+- A separate read-only Compose service stores paper raw data in a persistent volume and writes only
+  redacted runtime exports. It has no private, model, strategy, risk, broker, ledger, or order path.
+- ADR-001 through ADR-014 record consequential design choices. README remains intentionally minimal.
 
 ## Latest validation
 
 ```text
-Python 3.13.15; no Phase 9 dependency added
-ruff + format: PASS (202 files)
-mypy: PASS (105 source files)
-pytest: PASS (294 tests, 86.59% branch coverage)
-Secret scan: PASS (300 text files)
+Python 3.13.15; no Phase 10 dependency added
+ruff + format: PASS (205 files)
+mypy: PASS (106 source files)
+pytest: PASS (304 tests, 86.52% branch coverage)
+Secret scan: PASS (305 text files)
 pip-audit: PASS (no known vulnerabilities)
-Compose config: PASS
-Phase 9 image: PASS (quantforge:phase9, sha256:15fd924d...bf786)
+Compose config: PASS, including isolated paper-runtime
+Host public smoke: 30 accepted/committed, no parser error/reconnect/auth/private/order path
+Host offline replay: 30 verified inputs, stable dataset/output hashes
+Phase 10 image: PASS (quantforge:phase10, sha256:9fade54b...0522)
 Container safety: paper, live=false, credentials=false, all six gates closed
-Container readiness: NOT_READY, all 13 missing gates fail, no activation/network/order/settings
+Container public smoke: 10 accepted/committed; every auth/private/order/live flag false
 Actual/private/test orders: none
 Scheduled tasks: not registered
 ```
@@ -79,8 +87,11 @@ Scheduled tasks: not registered
   manual-trial and first-three-run review process before registering any task.
 - No authenticated exchange client, credential provider, cancellation/order endpoint, order-capable
   live adapter, production database/recovery, or canary activation path exists.
-- Public L2 fill/queue behavior is approximate; the collector is bounded; models/strategies are
-  fixture-scale baselines with no profitability or promotion claim.
+- Public L2 fill/queue behavior is approximate. The collector is now supervised, but sustained
+  coverage is not yet evidence and real-time paper strategy/execution is not composed. Models and
+  strategies remain fixture-scale baselines with no profitability or promotion claim.
+- The current server-rendered dashboard/Grafana views are internal operations skeletons, not the
+  finished Korean GUI.
 - Dashboard/recovery/authorization/network/storage hardening remains incomplete. Consult
   `docs/KNOWN_LIMITATIONS.md` and `docs/readiness/LIVE_READINESS.md`.
 - The Windows host lacks `uv` and `make` on PATH; exact Make targets were unavailable. Equivalent
@@ -90,14 +101,17 @@ Scheduled tasks: not registered
 
 ## Next actions
 
-1. Keep paper mode. Build continuous supervised public collection and representative Secret-free
-   operations/performance/model/data/incident/readiness evidence producers.
-2. Design production PostgreSQL persistence, encrypted off-host backup/restore with measured RPO/RTO,
+1. Keep paper mode. Run and observe the supervised public burn-in; measure coverage, gaps, parser
+   failures, reconnects, restarts, disk growth, and retention without treating uptime as readiness.
+2. Compose causal real-time bars/features, baseline inference, proposal-only routing, independent
+   paper risk, conservative broker, exact ledger, and representative performance/model/data exports.
+3. Build the polished Korean read-only GUI after the runtime export contracts are stable.
+4. Design production PostgreSQL persistence, encrypted off-host backup/restore with measured RPO/RTO,
    TLS/RBAC/rate limits, Secret delivery, network isolation, and monitoring retention.
-3. Under separate human authorization only, implement and review credential/order-test transport,
+5. Under separate human authorization only, implement and review credential/order-test transport,
    identifier reconciliation, withdrawal-disabled/IP-allowlisted key policy, and multi-operator
    incident/cancel/recovery drills. Do not send a real order.
-4. Register Work/Codex schedules only after each manual prompt passes. Continue report-only/dedicated-
+6. Register Work/Codex schedules only after each manual prompt passes. Continue report-only/dedicated-
    worktree boundaries and never auto-merge/deploy/promote/change risk/live state.
-5. Assemble reviewed evidence and re-run `validate-live-readiness`. A manual canary remains a future
+7. Assemble reviewed evidence and re-run `validate-live-readiness`. A manual canary remains a future
    separately approved project even if the output reaches manual-review eligibility.

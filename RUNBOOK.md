@@ -52,6 +52,33 @@ Bar materialization requires explicit `CoverageWindow` evidence. Missing coverag
 `data_gap`, not `no_trade`. Features may use only events/bars whose `available_at_utc` is no later
 than the requested as-of time.
 
+## Supervised public paper burn-in
+
+Start a foreground burn-in that runs until explicitly stopped:
+
+```text
+uv run quantforge run-paper \
+  --markets KRW-BTC \
+  --streams ticker,trade,orderbook \
+  --raw-output data/paper/raw \
+  --output-root runtime_exports
+```
+
+For a bounded smoke, add both `--duration-seconds 30` and `--max-messages 30`. Inspect the latest
+heartbeat without using the network:
+
+```text
+uv run quantforge paper-status \
+  --snapshot runtime_exports/ops/paper-runtime.json \
+  --require-fresh-seconds 90
+```
+
+Startup must fail if an Upbit key is configured, any live gate is partially opened, the mode is not
+paper, or the environment is production. The status must always report authentication/private
+network/order/live submission false. Stop the process normally so buffered rows and the terminal
+heartbeat are committed. After an abnormal stop, verify manifests and replay before trusting new
+coverage. Phase 10 observes and stores public data only; zero paper fills is expected.
+
 Infrastructure, when Docker Compose is available:
 
 ```text

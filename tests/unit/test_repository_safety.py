@@ -68,6 +68,19 @@ def test_container_includes_reviewed_readiness_policy() -> None:
     assert "COPY configs ./configs" in dockerfile
 
 
+def test_paper_runtime_container_has_no_credentials_or_order_gates() -> None:
+    compose = yaml.safe_load((ROOT / "docker-compose.paper.yml").read_text(encoding="utf-8"))
+    service = compose["services"]["paper-runtime"]
+
+    assert service["command"][:2] == ["quantforge", "run-paper"]
+    assert service["environment"]["QF_TRADING_MODE"] == "paper"
+    assert service["environment"]["QF_ALLOW_ORDER_SUBMISSION"] == "false"
+    assert service["environment"]["QF_UPBIT_ACCESS_KEY"] == ""
+    assert service["environment"]["QF_UPBIT_SECRET_KEY"] == ""
+    assert "no-new-privileges:true" in service["security_opt"]
+    assert "paper-data:/app/data/paper" in service["volumes"]
+
+
 def test_env_example_has_no_nonempty_exchange_credentials() -> None:
     lines = (ROOT / ".env.example").read_text(encoding="utf-8").splitlines()
     credential_lines = [line for line in lines if line.startswith("QF_UPBIT_")]

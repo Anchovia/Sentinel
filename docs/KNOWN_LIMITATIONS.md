@@ -5,7 +5,8 @@
 - Default mode is paper. There is no credential provider, JWT signer, authenticated exchange
   transport, real/test order call, real cancellation, or usable live adapter.
 - Private order/asset and order-policy behavior is fixture/fake-port evidence only. Public WebSocket
-  collection is bounded rather than a supervised long-running service.
+  collection now has a supervised burn-in service, but its sustained uptime/retention evidence has
+  not yet accumulated.
 - Upbit capability observations were reviewed on 2026-08-23 and are not an automatic semantic diff.
   The official Python SDK remains excluded because its declared WebSocket constraint conflicts with
   the reviewed direct transport.
@@ -19,6 +20,8 @@
   latency, promotion, canary eligibility, or live readiness is claimed.
 - Continuous coverage records, longer/event/volume/imbalance bars, full production feature/model
   families, sustained paper history, and representative performance/model exports are incomplete.
+- The supervised public burn-in writes raw events and operations health only. Real-time feature,
+  model, strategy, risk, paper-broker, ledger, and performance orchestration remains incomplete.
 - Final-holdout controls and experiment retention exist, but they do not remove selection bias,
   multiple testing, regime change, or limited sample risk.
 - Readiness policy thresholds are configurable governance defaults, not guarantees. The validator
@@ -28,6 +31,8 @@
 
 - The dashboard has one bearer-authenticated operator role and no RBAC/SSO/TLS ingress/application
   rate limiter. Runtime producers do not yet populate every read view.
+- The existing server-rendered dashboard and Grafana views are developer/operations skeletons, not a
+  polished Korean end-user GUI.
 - Incident, control, order, experiment, risk, and attribution journals are local single-writer proofs,
   not transactional replicated production storage.
 - Backups are unencrypted, local development restore proofs with no PostgreSQL/off-host/raw-tick/
