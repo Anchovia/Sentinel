@@ -14,7 +14,12 @@ from quantforge.execution.journal import (
 )
 from quantforge.execution.live import DisabledLiveOrderAdapter, LiveExecutionUnavailable
 from quantforge.execution.order_policy import ExchangeOrderPolicy, OrderPreflightResult
-from quantforge.execution.paper import PaperBroker, PaperExecutionRejected
+from quantforge.execution.paper import (
+    PaperBroker,
+    PaperBrokerState,
+    PaperExecutionRejected,
+    PaperWorkingOrderState,
+)
 from quantforge.execution.reconciliation import (
     BalanceObservation,
     ExecutionReconciler,
@@ -36,7 +41,9 @@ __all__ = [
     "OrderJournalIntegrityError",
     "OrderPreflightResult",
     "PaperBroker",
+    "PaperBrokerState",
     "PaperExecutionRejected",
+    "PaperWorkingOrderState",
     "ReconciliationIssue",
     "ReconciliationIssueType",
     "ReconciliationReport",

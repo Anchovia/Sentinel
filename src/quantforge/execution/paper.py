@@ -1,10 +1,12 @@
 """Deterministic, latency-aware paper broker driven only by replayed public data."""
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import cast
+from typing import Annotated, cast
 from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from quantforge.domain import (
     DataGap,
@@ -30,6 +32,66 @@ BPS = Decimal(10_000)
 
 class PaperExecutionRejected(ValueError):
     """Raised when an intent cannot safely enter the paper broker."""
+
+
+class PaperWorkingOrderState(BaseModel):
+    """Versioned state required to audit or cancel one recovered paper order."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    order: PaperOrder
+    expires_at: datetime
+    queue_ahead: Decimal = Field(ge=0)
+    fill_sequence: Annotated[int, Field(ge=0)] = 0
+
+    @field_validator("expires_at")
+    @classmethod
+    def require_utc(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() != UTC.utcoffset(value):
+            raise ValueError("paper order expiry must be UTC-aware")
+        return value
+
+
+class PaperBrokerState(BaseModel):
+    """Secret-free broker checkpoint; stale books are deliberately never restored."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    schema_version: Annotated[int, Field(ge=1)] = 1
+    policy_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    orders: tuple[PaperWorkingOrderState, ...] = ()
+    fills: tuple[PaperFill, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_identity_and_arithmetic(self) -> "PaperBrokerState":
+        order_ids = tuple(item.order.order_id for item in self.orders)
+        fill_ids = tuple(fill.fill_id for fill in self.fills)
+        if order_ids != tuple(sorted(order_ids, key=str)) or len(order_ids) != len(set(order_ids)):
+            raise ValueError("paper broker orders must have sorted unique identities")
+        if fill_ids != tuple(sorted(fill_ids, key=str)) or len(fill_ids) != len(set(fill_ids)):
+            raise ValueError("paper broker fills must have sorted unique identities")
+        orders = {item.order.order_id: item for item in self.orders}
+        for item in self.orders:
+            if item.order.policy_hash != self.policy_hash:
+                raise ValueError("paper order policy does not match broker state")
+            sequences = sorted(
+                fill.sequence for fill in self.fills if fill.order_id == item.order.order_id
+            )
+            if sequences and sequences != list(range(1, max(sequences) + 1)):
+                raise ValueError("paper fill sequences must be contiguous")
+            if sequences and item.fill_sequence != max(sequences):
+                raise ValueError("working order fill sequence does not reconcile")
+            if not sequences and item.fill_sequence != 0:
+                raise ValueError("working order has an unexplained fill sequence")
+            filled = sum(
+                (fill.quantity for fill in self.fills if fill.order_id == item.order.order_id),
+                start=Decimal(0),
+            )
+            if item.order.remaining_quantity != item.order.original_quantity - filled:
+                raise ValueError("paper order remaining quantity does not reconcile")
+        if any(fill.order_id not in orders for fill in self.fills):
+            raise ValueError("paper fill has no checkpointed order")
+        return self
 
 
 @dataclass(frozen=True)
@@ -89,6 +151,52 @@ class PaperBroker:
     @property
     def fills(self) -> tuple[PaperFill, ...]:
         return tuple(self._fills)
+
+    def export_state(self) -> PaperBrokerState:
+        """Return exact economic/order state without carrying a potentially stale public book."""
+
+        return PaperBrokerState(
+            policy_hash=self.policy.digest,
+            orders=tuple(
+                PaperWorkingOrderState(
+                    order=working.order,
+                    expires_at=working.expires_at,
+                    queue_ahead=working.queue_ahead,
+                    fill_sequence=working.fill_sequence,
+                )
+                for working in self._ordered_working_orders()
+            ),
+            fills=tuple(sorted(self._fills, key=lambda fill: str(fill.fill_id))),
+        )
+
+    @classmethod
+    def from_state(
+        cls,
+        state: PaperBrokerState,
+        *,
+        policy: PaperExecutionPolicy,
+        markets: tuple[str, ...],
+    ) -> "PaperBroker":
+        """Restore verified paper state while requiring a fresh book before any new execution."""
+
+        if state.policy_hash != policy.digest:
+            raise PaperExecutionRejected("paper broker checkpoint policy mismatch")
+        market_set = set(markets)
+        if any(item.order.market not in market_set for item in state.orders):
+            raise PaperExecutionRejected("paper broker checkpoint market mismatch")
+        broker = cls(policy)
+        broker._orders = {
+            item.order.order_id: _WorkingOrder(
+                order=item.order,
+                expires_at=item.expires_at,
+                queue_ahead=item.queue_ahead,
+                fill_sequence=item.fill_sequence,
+            )
+            for item in state.orders
+        }
+        broker._fills = list(state.fills)
+        broker._unsafe_markets = market_set
+        return broker
 
     def submit(
         self,
@@ -194,6 +302,14 @@ class PaperBroker:
     def close(self, *, closed_at: datetime) -> tuple[PaperExecutionUpdate, ...]:
         """Deterministically cancel all non-terminal orders at the replay boundary."""
 
+        return self.cancel_all(
+            canceled_at=closed_at,
+            reason="paper order canceled at replay boundary",
+        )
+
+    def cancel_all(self, *, canceled_at: datetime, reason: str) -> tuple[PaperExecutionUpdate, ...]:
+        """Cancel every non-terminal paper order for shutdown or fail-closed recovery."""
+
         updates: list[PaperExecutionUpdate] = []
         for working in self._ordered_working_orders():
             if working.order.status not in {
@@ -207,8 +323,8 @@ class PaperBroker:
             updates.append(
                 PaperExecutionUpdate(
                     order=working.order,
-                    occurred_at=closed_at,
-                    reason="paper order canceled at replay boundary",
+                    occurred_at=canceled_at,
+                    reason=reason,
                 )
             )
         return tuple(updates)

@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from enum import StrEnum
 from hashlib import sha256
-from typing import Annotated
+from typing import Annotated, Any, cast
 from uuid import UUID
 
 import orjson
@@ -148,6 +148,141 @@ class PortfolioSnapshot(BaseModel):
         return self
 
 
+class PortfolioReservationState(BaseModel):
+    """Exact remaining reservation for one paper order."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    order_id: UUID
+    side: str = Field(pattern=r"^(bid|ask)$")
+    cash: MonetaryDecimal = Field(ge=0)
+    quantity: MonetaryDecimal = Field(ge=0)
+
+    @model_validator(mode="after")
+    def validate_one_sided_reservation(self) -> "PortfolioReservationState":
+        if self.side == "bid" and (self.cash <= 0 or self.quantity != 0):
+            raise ValueError("bid recovery reservation must contain only positive cash")
+        if self.side == "ask" and (self.quantity <= 0 or self.cash != 0):
+            raise ValueError("ask recovery reservation must contain only positive quantity")
+        return self
+
+
+class PortfolioLedgerState(BaseModel):
+    """Hash-bound, fully reconciling portfolio state for deterministic paper recovery."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    schema_version: Annotated[int, Field(ge=1)] = 1
+    market: str = Field(pattern=r"^KRW-[A-Z0-9]+$")
+    initial_cash: MonetaryDecimal = Field(ge=0)
+    cash_balance: MonetaryDecimal = Field(ge=0)
+    locked_cash: MonetaryDecimal = Field(ge=0)
+    realized_gross_pnl: MonetaryDecimal
+    cumulative_fees: MonetaryDecimal = Field(ge=0)
+    spread_cost: MonetaryDecimal = Field(ge=0)
+    slippage_cost: MonetaryDecimal = Field(ge=0)
+    adverse_selection_cost: MonetaryDecimal = Field(ge=0)
+    lots: tuple[PositionLot, ...] = ()
+    records: tuple[LedgerRecord, ...] = ()
+    reservations: tuple[PortfolioReservationState, ...] = ()
+    applied_fill_ids: tuple[UUID, ...] = ()
+    state_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+    @classmethod
+    def create(cls, **values: object) -> "PortfolioLedgerState":
+        normalized_values = cast(dict[str, Any], values)
+        normalized = cls.model_construct(**normalized_values, state_hash=ZERO_HASH).model_dump(
+            mode="json", exclude={"state_hash"}
+        )
+        return cls(**values, state_hash=cls._calculate_state_hash(normalized))
+
+    @model_validator(mode="after")
+    def validate_recovery_state(self) -> "PortfolioLedgerState":
+        values = self.model_dump(mode="json", exclude={"state_hash"})
+        if self.state_hash != self._calculate_state_hash(values):
+            raise ValueError("portfolio recovery state hash is invalid")
+        reservation_ids = tuple(item.order_id for item in self.reservations)
+        if reservation_ids != tuple(sorted(reservation_ids, key=str)) or len(
+            reservation_ids
+        ) != len(set(reservation_ids)):
+            raise ValueError("portfolio reservations must have sorted unique order identities")
+        if self.applied_fill_ids != tuple(sorted(self.applied_fill_ids, key=str)) or len(
+            self.applied_fill_ids
+        ) != len(set(self.applied_fill_ids)):
+            raise ValueError("applied fill identities must be sorted and unique")
+        if self.locked_cash > self.cash_balance:
+            raise ValueError("recovered locked cash exceeds the cash balance")
+        expected_locked_cash = sum(
+            (item.cash for item in self.reservations if item.side == "bid"), start=Decimal(0)
+        )
+        expected_locked_quantity = sum(
+            (item.quantity for item in self.reservations if item.side == "ask"),
+            start=Decimal(0),
+        )
+        position = sum((lot.remaining_quantity for lot in self.lots), start=Decimal(0))
+        if expected_locked_cash != self.locked_cash or expected_locked_quantity > position:
+            raise ValueError("recovered reservations do not reconcile")
+        record_fill_ids = tuple(
+            sorted(
+                {
+                    record.fill_id
+                    for record in self.records
+                    if record.record_type is LedgerRecordType.FILL and record.fill_id is not None
+                },
+                key=str,
+            )
+        )
+        if self.applied_fill_ids != record_fill_ids:
+            raise ValueError("applied fills do not reconcile with ledger records")
+        self._verify_record_chain()
+        if self.records:
+            last = self.records[-1]
+            if (
+                last.cash_balance != self.cash_balance
+                or last.locked_cash != self.locked_cash
+                or last.position_quantity != position
+                or last.locked_quantity != expected_locked_quantity
+                or last.realized_gross_pnl != self.realized_gross_pnl
+                or last.cumulative_fees != self.cumulative_fees
+            ):
+                raise ValueError("recovered balances do not match the ledger tail")
+        elif any(
+            (
+                self.cash_balance != self.initial_cash,
+                self.locked_cash != 0,
+                self.realized_gross_pnl != 0,
+                self.cumulative_fees != 0,
+                self.spread_cost != 0,
+                self.slippage_cost != 0,
+                self.adverse_selection_cost != 0,
+                bool(self.lots),
+                bool(self.reservations),
+                bool(self.applied_fill_ids),
+            )
+        ):
+            raise ValueError("non-initial portfolio state requires ledger records")
+        return self
+
+    def _verify_record_chain(self) -> None:
+        previous = ZERO_HASH
+        for sequence, record in enumerate(self.records, start=1):
+            if record.sequence != sequence or record.previous_hash != previous:
+                raise ValueError("portfolio recovery ledger chain is invalid")
+            expected = PortfolioLedger._calculate_hash(record.model_dump(exclude={"record_hash"}))
+            if record.record_hash != expected:
+                raise ValueError("portfolio recovery ledger record hash is invalid")
+            previous = record.record_hash
+
+    @staticmethod
+    def _calculate_state_hash(values: dict[str, object]) -> str:
+        payload = orjson.dumps(
+            values,
+            default=str,
+            option=orjson.OPT_SORT_KEYS | orjson.OPT_UTC_Z,
+        )
+        return sha256(payload).hexdigest()
+
+
 @dataclass
 class _Reservation:
     side: str
@@ -185,6 +320,59 @@ class PortfolioLedger:
     @property
     def records(self) -> tuple[LedgerRecord, ...]:
         return tuple(self._records)
+
+    def export_state(self) -> PortfolioLedgerState:
+        """Export an exact hash-bound state that can be independently verified before restore."""
+
+        return PortfolioLedgerState.create(
+            market=self.market,
+            initial_cash=self.initial_cash,
+            cash_balance=self.cash_balance,
+            locked_cash=self.locked_cash,
+            realized_gross_pnl=self.realized_gross_pnl,
+            cumulative_fees=self.cumulative_fees,
+            spread_cost=self.spread_cost,
+            slippage_cost=self.slippage_cost,
+            adverse_selection_cost=self.adverse_selection_cost,
+            lots=self.lots,
+            records=self.records,
+            reservations=tuple(
+                PortfolioReservationState(
+                    order_id=order_id,
+                    side=reservation.side,
+                    cash=reservation.cash,
+                    quantity=reservation.quantity,
+                )
+                for order_id, reservation in sorted(
+                    self._reservations.items(), key=lambda item: str(item[0])
+                )
+            ),
+            applied_fill_ids=tuple(sorted(self._applied_fills, key=str)),
+        )
+
+    @classmethod
+    def from_state(cls, state: PortfolioLedgerState) -> "PortfolioLedger":
+        """Restore only after Pydantic hash, chain, balance, lot, and reservation validation."""
+
+        ledger = cls(market=state.market, initial_cash=state.initial_cash)
+        ledger.cash_balance = state.cash_balance
+        ledger.locked_cash = state.locked_cash
+        ledger.realized_gross_pnl = state.realized_gross_pnl
+        ledger.cumulative_fees = state.cumulative_fees
+        ledger.spread_cost = state.spread_cost
+        ledger.slippage_cost = state.slippage_cost
+        ledger.adverse_selection_cost = state.adverse_selection_cost
+        ledger._lots = list(state.lots)
+        ledger._records = list(state.records)
+        ledger._reservations = {
+            item.order_id: _Reservation(side=item.side, cash=item.cash, quantity=item.quantity)
+            for item in state.reservations
+        }
+        ledger._applied_fills = set(state.applied_fill_ids)
+        ledger.verify()
+        if ledger.export_state() != state:
+            raise AccountingInvariantError("restored portfolio state does not round-trip")
+        return ledger
 
     @property
     def position_quantity(self) -> Decimal:

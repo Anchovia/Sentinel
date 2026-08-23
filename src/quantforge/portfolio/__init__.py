@@ -6,6 +6,8 @@ from quantforge.portfolio.ledger import (
     LedgerRecord,
     LedgerRecordType,
     PortfolioLedger,
+    PortfolioLedgerState,
+    PortfolioReservationState,
     PortfolioSnapshot,
     PositionLot,
 )
@@ -17,6 +19,8 @@ __all__ = [
     "LedgerRecord",
     "LedgerRecordType",
     "PortfolioLedger",
+    "PortfolioLedgerState",
+    "PortfolioReservationState",
     "PortfolioSnapshot",
     "PositionLot",
 ]

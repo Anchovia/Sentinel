@@ -3,6 +3,7 @@ from decimal import Decimal
 from uuid import UUID
 
 import pytest
+from pydantic import ValidationError
 
 from factories import BASE_TIME
 from quantforge.domain import (
@@ -14,7 +15,7 @@ from quantforge.domain import (
     PaperOrderType,
     TimeInForce,
 )
-from quantforge.portfolio import AccountingInvariantError, PortfolioLedger
+from quantforge.portfolio import AccountingInvariantError, PortfolioLedger, PortfolioLedgerState
 
 
 def _fill(*, sequence: int, side: str, price: str, quantity: str) -> PaperFill:
@@ -156,3 +157,18 @@ def test_read_only_portfolio_view_does_not_grow_ledger() -> None:
     assert first.ledger_hash == "0" * 64
     assert second.mark_price == Decimal("101")
     assert ledger.records == ()
+
+
+def test_portfolio_recovery_state_round_trips_and_rejects_tampering() -> None:
+    ledger = PortfolioLedger(market="KRW-BTC", initial_cash="1000")
+    ledger.apply_fill(_fill(sequence=1, side="bid", price="100", quantity="1"))
+
+    state = ledger.export_state()
+    restored = PortfolioLedger.from_state(state)
+
+    assert restored.export_state() == state
+    assert restored.position_quantity == Decimal(1)
+    tampered = state.model_dump(mode="json")
+    tampered["cash_balance"] = "999"
+    with pytest.raises(ValidationError, match="state hash"):
+        PortfolioLedgerState.model_validate(tampered)

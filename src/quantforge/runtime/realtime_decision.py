@@ -11,7 +11,7 @@ from hashlib import sha256
 from pathlib import Path
 from time import perf_counter_ns
 from typing import Annotated, Literal, Protocol
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import orjson
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -39,6 +39,13 @@ from quantforge.models import (
 from quantforge.operations.exports import assert_runtime_export_safe
 from quantforge.portfolio import AccountingInvariantError, PortfolioLedger, PortfolioSnapshot
 from quantforge.risk import RiskEngine, RiskLimits, RiskSnapshot, StrategyRiskGateway
+from quantforge.runtime.paper_recovery import (
+    PaperRecoveryIntegrityError,
+    PaperRecoveryStatus,
+    RealtimePaperRecoveryCheckpoint,
+    read_realtime_paper_recovery_checkpoint,
+    write_realtime_paper_recovery_checkpoint,
+)
 from quantforge.runtime.realtime_pipeline import RealtimeFeatureFrame
 from quantforge.strategies import (
     LiquidityShockMeanReversion,
@@ -230,6 +237,9 @@ class RealtimePaperDecisionSnapshot(BaseModel):
     latest_reason_codes: tuple[str, ...] = ()
     model_release_status: ModelReleaseStatus
     model_approval_valid: bool
+    recovery_status: PaperRecoveryStatus = PaperRecoveryStatus.NOT_CONFIGURED
+    recovery_blocked: bool = False
+    recovery_checkpoint_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     paper_order_simulation_enabled: bool
     processed_events: Annotated[int, Field(ge=0)]
     feature_ready_frames: Annotated[int, Field(ge=0)]
@@ -279,8 +289,14 @@ class RealtimePaperDecisionSnapshot(BaseModel):
             raise ValueError("risk approvals cannot exceed strategy trade proposals")
         if self.paper_fills and not self.paper_orders:
             raise ValueError("paper fills require a simulated order")
-        if not self.paper_order_simulation_enabled and (self.paper_orders or self.paper_fills):
+        if (
+            not self.paper_order_simulation_enabled
+            and not self.recovery_blocked
+            and (self.paper_orders or self.paper_fills)
+        ):
             raise ValueError("disabled paper-order simulation cannot contain orders or fills")
+        if self.recovery_blocked and self.paper_order_simulation_enabled:
+            raise ValueError("blocked paper recovery cannot enable simulated orders")
         return self
 
 
@@ -295,6 +311,7 @@ class RealtimePaperOrchestrator:
         alpha_model: RealtimeAlphaModel | None = None,
         approval: RealtimeModelApproval | None = None,
         strategies: tuple[Strategy, ...] | None = None,
+        recovery_path: Path | None = None,
         clock_ns: Callable[[], int] = perf_counter_ns,
     ) -> None:
         if not markets or len(markets) != len(set(markets)):
@@ -357,6 +374,111 @@ class RealtimePaperOrchestrator:
         self._reason = "FEATURES_NOT_READY"
         self._latest_strategy_id: str | None = None
         self._latest_reason_codes: tuple[str, ...] = ()
+        self._last_event_id: UUID | None = None
+        self._recovery_path = recovery_path
+        self._loaded_checkpoint: RealtimePaperRecoveryCheckpoint | None = None
+        self._recovery_status = (
+            PaperRecoveryStatus.NOT_CONFIGURED if recovery_path is None else PaperRecoveryStatus.NEW
+        )
+        self._recovery_blocked = False
+        self._recovery_checkpoint_hash: str | None = None
+        self._recovery_session_active = False
+        self._recovery_dirty = False
+        if recovery_path is not None and recovery_path.exists():
+            self._restore_checkpoint(recovery_path)
+
+    @property
+    def paper_order_simulation_available(self) -> bool:
+        return self.policy.paper_order_simulation_enabled and not self._recovery_blocked
+
+    def begin_recovery_session(self, *, started_at_utc: datetime) -> None:
+        """Mark the durable state active before consuming public events."""
+
+        self._require_utc(started_at_utc)
+        if self._recovery_path is None:
+            return
+        if self._recovery_session_active:
+            raise RealtimePaperBlocked("paper recovery session is already active")
+        if self._loaded_checkpoint is not None:
+            if (
+                self._loaded_checkpoint.clean_shutdown
+                and not self._loaded_checkpoint.recovery_blocked
+            ):
+                self._recovery_status = PaperRecoveryStatus.VERIFIED_CLEAN
+            elif (
+                not self.policy.paper_order_simulation_enabled
+                and self._loaded_checkpoint_is_economically_empty()
+            ):
+                self._recovery_blocked = False
+                self._recovery_status = PaperRecoveryStatus.EMPTY_UNCLEAN_RECOVERED
+                self._state = RealtimePaperDecisionState.HOLD
+                self._reason = "EMPTY_UNCLEAN_PAPER_STATE_RECOVERED"
+            else:
+                self._recovery_blocked = True
+                self._recovery_status = PaperRecoveryStatus.UNCLEAN_RECONCILED
+                updates = self._broker.cancel_all(
+                    canceled_at=started_at_utc,
+                    reason="unclean paper recovery canceled every non-terminal order",
+                )
+                for market in self.markets:
+                    selected = tuple(update for update in updates if update.order.market == market)
+                    self._apply_updates(market, selected)
+                self._state = RealtimePaperDecisionState.HOLD
+                self._reason = "PAPER_RECOVERY_BLOCKED"
+        self._recovery_session_active = True
+        self.persist_recovery_checkpoint(generated_at_utc=started_at_utc, clean_shutdown=False)
+
+    def persist_recovery_checkpoint(
+        self,
+        *,
+        generated_at_utc: datetime,
+        clean_shutdown: bool,
+    ) -> RealtimePaperRecoveryCheckpoint | None:
+        """Persist complete economic state; clean checkpoints cannot contain open orders."""
+
+        self._require_utc(generated_at_utc)
+        if self._recovery_path is None:
+            return None
+        checkpoint = RealtimePaperRecoveryCheckpoint.create(
+            generated_at_utc=generated_at_utc,
+            clean_shutdown=clean_shutdown,
+            recovery_blocked=self._recovery_blocked,
+            policy_hash=self.policy.digest,
+            markets=self.markets,
+            broker=self._broker.export_state(),
+            ledgers=tuple(self._ledgers[market].export_state() for market in self.markets),
+            latest_marks=tuple(
+                (market, self._latest_marks[market])
+                for market in self.markets
+                if market in self._latest_marks
+            ),
+            peak_equities=tuple((market, self._peak_equity[market]) for market in self.markets),
+            processed_events=self._processed_events,
+            feature_ready_frames=self._feature_ready_frames,
+            inference_frames=self._inference_frames,
+            strategy_trade_proposals=self._strategy_trade_proposals,
+            risk_approvals=self._risk_approvals,
+            risk_rejections=self._risk_rejections,
+            submission_rejections=self._submission_rejections,
+            paper_orders=self._paper_orders,
+            paper_fills=self._paper_fills,
+            turnover_krw=self._turnover_krw,
+            first_event_at_utc=self._first_event_at_utc,
+            last_event_at_utc=self._last_event_at_utc,
+            last_event_id=self._last_event_id,
+            order_times=tuple(self._order_times),
+            market_order_times=tuple(
+                (market, tuple(self._market_order_times[market])) for market in self.markets
+            ),
+            decision_state=self._state.value,
+            decision_reason=self._reason,
+            latest_strategy_id=self._latest_strategy_id,
+            latest_reason_codes=self._latest_reason_codes,
+        )
+        write_realtime_paper_recovery_checkpoint(checkpoint, self._recovery_path)
+        self._recovery_checkpoint_hash = checkpoint.checkpoint_hash
+        self._recovery_dirty = False
+        return checkpoint
 
     def process(
         self,
@@ -364,6 +486,7 @@ class RealtimePaperOrchestrator:
         frame: RealtimeFeatureFrame | None,
     ) -> None:
         started_ns = self._clock_ns()
+        self._recovery_dirty = False
         try:
             if event.market not in self._ledgers:
                 raise RealtimePaperBlocked("event market is outside the paper decision universe")
@@ -379,6 +502,7 @@ class RealtimePaperOrchestrator:
             if self._first_event_at_utc is None:
                 self._first_event_at_utc = event.received_at_utc
             self._last_event_at_utc = event.received_at_utc
+            self._last_event_id = event.event_id
             if frame is None or not frame.ready_for_inference:
                 self._state = RealtimePaperDecisionState.HOLD
                 self._reason = (
@@ -411,9 +535,13 @@ class RealtimePaperOrchestrator:
                     "NO_APPROVED_ALPHA_MODEL"
                     if not self._approval_valid(event.market, event.received_at_utc)
                     else (
-                        "PAPER_ORDER_SIMULATION_DISABLED"
-                        if not self.policy.paper_order_simulation_enabled
-                        else selected.reason_codes[0]
+                        "PAPER_RECOVERY_BLOCKED"
+                        if self._recovery_blocked
+                        else (
+                            "PAPER_ORDER_SIMULATION_DISABLED"
+                            if not self.policy.paper_order_simulation_enabled
+                            else selected.reason_codes[0]
+                        )
                     )
                 )
             else:
@@ -425,17 +553,31 @@ class RealtimePaperOrchestrator:
                 self._state = RealtimePaperDecisionState.PAPER_FILL
                 self._reason = "PAPER_FILL_APPLIED"
         finally:
-            elapsed_ms = max(0, self._clock_ns() - started_ns) / 1_000_000
-            self._latencies_ms.append(elapsed_ms)
-            self._budget_breaches += int(elapsed_ms > self.policy.decision_budget_ms)
+            try:
+                if self._recovery_dirty and self._recovery_session_active:
+                    self.persist_recovery_checkpoint(
+                        generated_at_utc=event.received_at_utc,
+                        clean_shutdown=False,
+                    )
+            finally:
+                elapsed_ms = max(0, self._clock_ns() - started_ns) / 1_000_000
+                self._latencies_ms.append(elapsed_ms)
+                self._budget_breaches += int(elapsed_ms > self.policy.decision_budget_ms)
 
     def close(self, *, closed_at_utc: datetime) -> None:
+        self._require_utc(closed_at_utc)
         updates = self._broker.close(closed_at=closed_at_utc)
         for market in self.markets:
             selected = tuple(update for update in updates if update.order.market == market)
             self._apply_updates(market, selected)
         self._state = RealtimePaperDecisionState.HOLD
         self._reason = "PAPER_RUNTIME_STOPPED"
+        if self._recovery_session_active:
+            self.persist_recovery_checkpoint(
+                generated_at_utc=closed_at_utc,
+                clean_shutdown=True,
+            )
+            self._recovery_session_active = False
 
     def snapshot(self, *, generated_at_utc: datetime) -> RealtimePaperDecisionSnapshot:
         latencies = sorted(self._latencies_ms)
@@ -464,7 +606,10 @@ class RealtimePaperOrchestrator:
                 ModelReleaseStatus.PAPER if approval_valid else ModelReleaseStatus.EXPERIMENTAL
             ),
             model_approval_valid=approval_valid,
-            paper_order_simulation_enabled=self.policy.paper_order_simulation_enabled,
+            recovery_status=self._recovery_status,
+            recovery_blocked=self._recovery_blocked,
+            recovery_checkpoint_hash=self._recovery_checkpoint_hash,
+            paper_order_simulation_enabled=self.paper_order_simulation_available,
             processed_events=self._processed_events,
             feature_ready_frames=self._feature_ready_frames,
             inference_frames=self._inference_frames,
@@ -592,7 +737,7 @@ class RealtimePaperOrchestrator:
                 market=market,
                 as_of_utc=now,
                 trading_mode="paper",
-                kill_switch_active=not self.policy.paper_order_simulation_enabled,
+                kill_switch_active=not self.paper_order_simulation_available,
                 strategy_paused=False,
                 daily_loss_capacity_remaining_krw=max(
                     Decimal(0), limits.max_daily_loss_krw - daily_loss
@@ -687,7 +832,7 @@ class RealtimePaperOrchestrator:
             market=market,
             captured_at_utc=now,
             trading_mode="paper",
-            kill_switch_active=not self.policy.paper_order_simulation_enabled,
+            kill_switch_active=not self.paper_order_simulation_available,
             market_active=inputs.market.market_active,
             warning_active=inputs.market.warning_active,
             public_websocket_healthy=not inputs.market.data_gap,
@@ -756,6 +901,7 @@ class RealtimePaperOrchestrator:
         ledger = self._ledgers[market]
         ledger.record_intent(intent)
         ledger.record_risk_decision(decision)
+        self._recovery_dirty = True
         if decision.decision not in {RiskDecisionType.ALLOW, RiskDecisionType.RESIZE}:
             self._risk_rejections += 1
             self._state = RealtimePaperDecisionState.RISK_REJECTED
@@ -797,6 +943,8 @@ class RealtimePaperOrchestrator:
     def _apply_updates(self, market: str, updates: tuple[PaperExecutionUpdate, ...]) -> int:
         ledger = self._ledgers[market]
         fills = 0
+        if updates:
+            self._recovery_dirty = True
         for update in updates:
             ledger.record_order_update(update)
             for fill in update.fills:
@@ -817,6 +965,88 @@ class RealtimePaperOrchestrator:
         self._peak_equity[market] = max(self._peak_equity[market], equity)
         peak = self._peak_equity[market]
         return (peak - equity) / peak if peak > 0 and equity < peak else Decimal(0)
+
+    def _restore_checkpoint(self, path: Path) -> None:
+        try:
+            checkpoint = read_realtime_paper_recovery_checkpoint(path)
+            if checkpoint.policy_hash != self.policy.digest:
+                raise RealtimePaperBlocked("paper recovery checkpoint policy mismatch")
+            if checkpoint.markets != self.markets:
+                raise RealtimePaperBlocked("paper recovery checkpoint market mismatch")
+            self._broker = PaperBroker.from_state(
+                checkpoint.broker,
+                policy=self.policy.execution,
+                markets=self.markets,
+            )
+            self._ledgers = {
+                state.market: PortfolioLedger.from_state(state) for state in checkpoint.ledgers
+            }
+            self._latest_marks = dict(checkpoint.latest_marks)
+            self._peak_equity = dict(checkpoint.peak_equities)
+            self._processed_events = checkpoint.processed_events
+            self._feature_ready_frames = checkpoint.feature_ready_frames
+            self._inference_frames = checkpoint.inference_frames
+            self._strategy_trade_proposals = checkpoint.strategy_trade_proposals
+            self._risk_approvals = checkpoint.risk_approvals
+            self._risk_rejections = checkpoint.risk_rejections
+            self._submission_rejections = checkpoint.submission_rejections
+            self._paper_orders = checkpoint.paper_orders
+            self._paper_fills = checkpoint.paper_fills
+            self._turnover_krw = checkpoint.turnover_krw
+            self._first_event_at_utc = checkpoint.first_event_at_utc
+            self._last_event_at_utc = checkpoint.last_event_at_utc
+            self._last_event_id = checkpoint.last_event_id
+            self._order_times = deque(checkpoint.order_times)
+            self._market_order_times = {
+                market: deque(times) for market, times in checkpoint.market_order_times
+            }
+            self._state = RealtimePaperDecisionState(checkpoint.decision_state)
+            self._reason = checkpoint.decision_reason
+            self._latest_strategy_id = checkpoint.latest_strategy_id
+            self._latest_reason_codes = checkpoint.latest_reason_codes
+            self._loaded_checkpoint = checkpoint
+            self._recovery_blocked = checkpoint.recovery_blocked
+            self._recovery_checkpoint_hash = checkpoint.checkpoint_hash
+        except (
+            AccountingInvariantError,
+            PaperExecutionRejected,
+            PaperRecoveryIntegrityError,
+            ValueError,
+        ) as exc:
+            if isinstance(exc, RealtimePaperBlocked):
+                raise
+            raise RealtimePaperBlocked("paper recovery checkpoint restore failed") from exc
+
+    def _loaded_checkpoint_is_economically_empty(self) -> bool:
+        checkpoint = self._loaded_checkpoint
+        if checkpoint is None:
+            return True
+        return (
+            checkpoint.paper_orders == 0
+            and checkpoint.paper_fills == 0
+            and checkpoint.turnover_krw == 0
+            and not checkpoint.broker.orders
+            and not checkpoint.broker.fills
+            and all(
+                ledger.cash_balance == ledger.initial_cash
+                and ledger.locked_cash == 0
+                and ledger.realized_gross_pnl == 0
+                and ledger.cumulative_fees == 0
+                and ledger.spread_cost == 0
+                and ledger.slippage_cost == 0
+                and ledger.adverse_selection_cost == 0
+                and not ledger.lots
+                and not ledger.records
+                and not ledger.reservations
+                and not ledger.applied_fill_ids
+                for ledger in checkpoint.ledgers
+            )
+        )
+
+    @staticmethod
+    def _require_utc(value: datetime) -> None:
+        if value.tzinfo is None or value.utcoffset() != UTC.utcoffset(value):
+            raise RealtimePaperBlocked("paper recovery timestamp must be UTC-aware")
 
     def _approval_valid(self, market: str, at_utc: datetime) -> bool:
         return (

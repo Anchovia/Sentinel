@@ -119,10 +119,34 @@ Until a separately reviewed artifact and human paper approval exist, the output 
 `EXPERIMENTAL`, approval false, `HOLD`, and zero strategy proposals, risk approvals, paper orders,
 and fills. It must also show `paper_order_simulation_enabled: false`. A matching model approval is
 insufficient on its own: the independent paper-order simulation gate defaults closed and must remain
-closed until deterministic broker/ledger restart recovery exists. The matching live shadow snapshot
-is `runtime_exports/ops/realtime-paper-decision.json`. Do not create or edit approval or gate data
+closed unless recovery is `VERIFIED_CLEAN`; an unclean recovery block requires a future reviewed
+operator acknowledgement. The matching live shadow snapshot is
+`runtime_exports/ops/realtime-paper-decision.json`. Do not create or edit approval or gate data
 merely to make these counters nonzero. The fixture exercising a simulated fill exists only in tests
 and is not market or performance evidence.
+
+### Paper recovery checkpoint
+
+The supervised service writes `data/paper/state/realtime-paper-recovery.json` in its durable paper
+volume. The outer checkpoint hash, execution-policy hash, every portfolio-state hash, broker fill
+sequence, and ledger chain must validate before restore. A clean restart reports
+`VERIFIED_CLEAN`; a first run reports `NEW`. `EMPTY_UNCLEAN_RECOVERED` is allowed only when simulation
+was disabled and the checkpoint proves there was no order, fill, lock, lot, ledger record, cost,
+turnover, or balance change.
+
+If the monitor reports `UNCLEAN_RECONCILED` or `재시작 복구: 확인 필요`:
+
+1. Keep the paper-order simulation gate closed; do not edit the checkpoint or approval files.
+2. Confirm every recovered non-terminal paper order was canceled and every cash/position lock is 0.
+3. Preserve the checkpoint, runtime snapshot, raw-data manifests, and logs as incident evidence.
+4. Mark the interrupted paper session invalid for performance claims.
+5. Continue keyless public collection only. A future reviewed operator workflow is required to clear
+   the persistent recovery block; restarting again does not clear it.
+
+The checkpoint deliberately excludes orderbooks. A new verified public L2 snapshot is required after
+every restart. `SIGTERM` and `SIGINT` request a clean supervisor stop and close the active public
+socket before storage/checkpoint cleanup. Checkpoint I/O on consequential order/accounting changes is
+part of decision latency.
 
 Infrastructure, when Docker Compose is available:
 

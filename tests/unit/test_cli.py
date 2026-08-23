@@ -131,6 +131,8 @@ def test_paper_decision_benchmark_is_verified_neutral_and_orderless(tmp_path: Pa
     assert payload["model_release_status"] == "EXPERIMENTAL"
     assert payload["model_approval_valid"] is False
     assert payload["paper_order_simulation_enabled"] is False
+    assert payload["paper_recovery_status"] == "NOT_CONFIGURED"
+    assert payload["paper_recovery_blocked"] is False
     assert payload["decision_state"] == "HOLD"
     assert payload["strategy_trade_proposals"] == 0
     assert payload["risk_approvals"] == 0

@@ -93,9 +93,12 @@ Exit criteria:
 - Keep the supervised runtime at `HOLD`: no alpha artifact is approved, so strategy proposals, risk
   approvals, simulated orders, and fills remain zero. A human-approved test fixture proves the full
   paper-only plumbing without adding authentication, private network, or real-order capability.
-- Phase 11.3 onward: preregister and test falsifiable alpha/exit challengers, add deterministic
-  broker/ledger restart recovery, review an artifact for paper status, add complete entry/exit
-  lifecycle and performance exports, and measure every stage before expanding the monitor further.
+- Phase 11.3 (`COMPLETE`): persist a hash-bound broker/ledger checkpoint, restore only verified clean
+  shutdowns, discard stale books, and fail closed after an economically active unclean shutdown by
+  canceling open paper orders, releasing reservations, and blocking the gate pending review.
+- Phase 11.4 onward: preregister and test falsifiable alpha/exit challengers, review an artifact for
+  paper status, add complete entry/exit lifecycle and performance exports, and measure every stage
+  before expanding the monitor further.
 
 ## Milestone discipline
 

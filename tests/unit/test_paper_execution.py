@@ -296,3 +296,31 @@ def test_data_gap_cancels_orders_and_stale_books_are_rejected() -> None:
             _decision(_intent(intent_id=UUID(int=103)), decision_id=UUID(int=203)),
             submitted_at=BASE_TIME + timedelta(milliseconds=100),
         )
+
+
+def test_broker_recovery_round_trips_orders_fills_and_discards_stale_book() -> None:
+    policy = PaperExecutionPolicy(model=PaperFillModel.NAIVE, order_latency_ms=0)
+    broker = PaperBroker(policy)
+    book = make_orderbook_event(sequence=1, received_offset_ms=0)
+    broker.on_item(book, now=BASE_TIME)
+    intent = _intent(requested_notional=None, requested_quantity="1")
+    broker.submit(
+        intent,
+        _decision(intent, approved_notional=None, approved_quantity="1"),
+        submitted_at=BASE_TIME,
+    )
+    broker.on_item(book.model_copy(update={"event_id": UUID(int=999)}), now=BASE_TIME)
+
+    state = broker.export_state()
+    restored = PaperBroker.from_state(state, policy=policy, markets=("KRW-BTC",))
+
+    assert restored.export_state() == state
+    assert len(restored.orders) == 1
+    assert len(restored.fills) == 1
+    next_intent = _intent(intent_id=UUID(int=102))
+    with pytest.raises(PaperExecutionRejected, match="unsafe"):
+        restored.submit(
+            next_intent,
+            _decision(next_intent, decision_id=UUID(int=202)),
+            submitted_at=BASE_TIME,
+        )

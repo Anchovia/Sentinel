@@ -1,3 +1,4 @@
+import asyncio
 from collections import deque
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
@@ -23,6 +24,7 @@ class FakeWebSocket:
     def __init__(self, messages: list[str | bytes | BaseException]) -> None:
         self.messages = deque(messages)
         self.sent: list[str | bytes] = []
+        self.closed = False
 
     async def send(self, message: str | bytes) -> None:
         self.sent.append(message)
@@ -32,6 +34,23 @@ class FakeWebSocket:
         if isinstance(item, BaseException):
             raise item
         return item
+
+    async def close(self) -> None:
+        self.closed = True
+
+
+class BlockingWebSocket(FakeWebSocket):
+    def __init__(self) -> None:
+        super().__init__([])
+        self._closed = asyncio.Event()
+
+    async def recv(self) -> str | bytes:
+        await self._closed.wait()
+        raise ConnectionError("closed by supervisor")
+
+    async def close(self) -> None:
+        await super().close()
+        self._closed.set()
 
 
 class FakeContext(AbstractAsyncContextManager[FakeWebSocket]):
@@ -202,6 +221,29 @@ async def test_stop_before_run_is_clean() -> None:
     client = UpbitPublicWebSocketClient([UpbitSubscription("trade", ("KRW-BTC",))], ignore_event)
     await client.stop()
     assert await client.run() == 0
+
+
+@pytest.mark.asyncio
+async def test_stop_closes_active_socket_and_unblocks_receive() -> None:
+    websocket = BlockingWebSocket()
+    connector = FakeConnector([websocket])
+
+    async def ignore_event(event: EventEnvelope) -> None:
+        del event
+
+    client = UpbitPublicWebSocketClient(
+        [UpbitSubscription("trade", ("KRW-BTC",))],
+        ignore_event,
+        connector=connector,
+    )
+    task = asyncio.create_task(client.run())
+    while not client.connected:
+        await asyncio.sleep(0)
+
+    await client.stop()
+
+    assert await task == 0
+    assert websocket.closed is True
 
 
 @pytest.mark.parametrize(

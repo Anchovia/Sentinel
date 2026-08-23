@@ -34,8 +34,7 @@ only consequential intent, risk, order, fill, fee, attribution, lock, and releas
 - Model approval cannot be inferred from configuration presence, strategy status, or code execution.
 - Model approval and paper-order simulation permission are independent fail-closed controls.
 - The broker and ledger integration is regression-tested before any paper candidate is reviewed.
-- Broker and ledger state remain process-local; the simulation gate stays closed until deterministic
-  restart recovery is implemented and tested.
+- Broker and ledger recovery is defined separately by ADR-018; unclean state remains fail-closed.
 - There are no simulated trades or paper performance results until a preregistered challenger and
   complete exit lifecycle receive separate human review.
 - The Python retail path remains an event-driven paper research system, not a colocated HFT system.

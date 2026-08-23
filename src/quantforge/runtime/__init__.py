@@ -1,4 +1,11 @@
 from quantforge.runtime.live_guard import LiveGateResult, LiveSubmissionBlocked, LiveSubmissionGuard
+from quantforge.runtime.paper_recovery import (
+    PaperRecoveryIntegrityError,
+    PaperRecoveryStatus,
+    RealtimePaperRecoveryCheckpoint,
+    read_realtime_paper_recovery_checkpoint,
+    write_realtime_paper_recovery_checkpoint,
+)
 from quantforge.runtime.realtime_decision import (
     RealtimeAlphaModel,
     RealtimeModelApproval,
@@ -25,6 +32,8 @@ __all__ = [
     "LiveGateResult",
     "LiveSubmissionBlocked",
     "LiveSubmissionGuard",
+    "PaperRecoveryIntegrityError",
+    "PaperRecoveryStatus",
     "RealtimeAlphaModel",
     "RealtimeDecisionState",
     "RealtimeFeatureFrame",
@@ -35,10 +44,13 @@ __all__ = [
     "RealtimePaperDecisionState",
     "RealtimePaperOrchestrator",
     "RealtimePaperPipeline",
+    "RealtimePaperRecoveryCheckpoint",
     "RealtimePipelineSnapshot",
     "read_realtime_paper_decision_snapshot",
+    "read_realtime_paper_recovery_checkpoint",
     "read_realtime_pipeline_snapshot",
     "write_data_quality_snapshot",
     "write_realtime_paper_decision_snapshot",
+    "write_realtime_paper_recovery_checkpoint",
     "write_realtime_pipeline_snapshot",
 ]

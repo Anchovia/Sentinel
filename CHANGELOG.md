@@ -119,6 +119,14 @@ All notable changes are recorded here. The project follows semantic versioning o
 - Read-only portfolio valuation that avoids one ledger append per market event and reconciles rare
   Decimal associativity remainders to authoritative cash and position balances while preserving
   prior frozen replay hashes.
+- A hash-bound `realtime-paper-recovery-1` checkpoint containing policy-bound paper orders, fills,
+  reservations, FIFO lots, Decimal balances, verified ledger chains, counters, and event cursor.
+- Clean-restart restoration that discards stale books, plus fail-closed unclean recovery that cancels
+  non-terminal paper orders, releases locks, preserves evidence, and keeps simulation blocked.
+- Graceful container signal handling and a narrowly bounded empty-state recovery: only a disabled
+  simulation with no economic or ledger activity can clear an unclean marker automatically.
+- Active public WebSocket closure during a stop request so stalled network receive cannot prevent
+  storage flush, paper-order cancellation, reservation release, or clean checkpoint persistence.
 
 ### Security
 

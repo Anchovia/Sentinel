@@ -2,9 +2,9 @@
 
 ## Current checkpoint
 
-- Phase: 11.2 — Neutral Real-Time Paper Decision Path
+- Phase: 11.3 — Fail-Closed Paper State Recovery
 - Status: checkpoint `COMPLETE`; Phase 11 `IN_PROGRESS`
-- Planned implementation phases: 0–10 complete; Phase 11.1–11.2 checkpoints complete
+- Planned implementation phases: 0–10 complete; Phase 11.1–11.3 checkpoints complete
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; the live adapter has no network capability
@@ -14,6 +14,39 @@
 - Production Secrets accessed: no
 - Scheduled task registration: none
 - Automatic merge/deploy/model promotion/live activation: unavailable
+
+## Completed in Phase 11.3
+
+- Added a versioned outer-SHA-256 paper recovery checkpoint bound to exact decision/execution policy,
+  market universe, broker orders/fills, reservations, FIFO lots, Decimal balances, complete verified
+  ledger chains, counters, latest marks, risk-rate windows, and last event cursor.
+- Clean shutdown now cancels every non-terminal paper order, releases its reservation, atomically
+  writes a clean checkpoint, and restores it only when its policy, markets, hashes, accounting, fill
+  sequences, and ledger tail all reconcile.
+- Restart never trusts a stale orderbook. A recovered broker requires a new public L2 snapshot before
+  any future execution can be considered.
+- An unclean checkpoint cannot resume paper execution: recovered open orders are deterministically
+  canceled, cash/position locks are released, the evidence remains persisted, and the independent
+  paper-order gate stays blocked across subsequent restarts.
+- Container termination signals now request the same clean supervisor shutdown. An unclean state can
+  avoid permanent blocking only when simulation is disabled and every order, fill, lock, lot, ledger
+  record, cost, turnover, and balance change is provably absent (`EMPTY_UNCLEAN_RECOVERED`).
+- Stop requests explicitly close the active public WebSocket, so a stalled receive cannot outlive the
+  supervisor cleanup window.
+- Consequential order/accounting mutations are synchronously persisted and included in measured
+  decision latency. Neutral state is refreshed by the existing heartbeat without per-event disk I/O.
+- Added recovery state to the redacted decision snapshot, CLI benchmark, and compact Korean monitor.
+  No approval, strategy proposal, simulated order, authenticated call, or real-order capability was
+  added to the supervised runtime.
+- Verified an actual Docker replacement: the first migration safely classified the disabled empty
+  state as `EMPTY_UNCLEAN_RECOVERED`; the next signal-driven restart restored `VERIFIED_CLEAN` with
+  recovery unblocked and the paper-order gate still closed.
+- Replayed 10,000 retained events after recovery integration: 2,286.57 events/s, feature p99 0.352ms,
+  decision p99 0.850ms, combined p99 1.133ms, and combined max 2.602ms. All 3,328 ready frames ran
+  inference with zero proposals, risk approvals, orders, fills, or real capabilities.
+- Confirmed the final healthy runtime at 895 accepted / 561 newly committed / 70,517 retained rows:
+  decision p99 1.079ms, max 1.289ms, 0 budget breaches, queue depth/overflow 0, and recovery
+  `VERIFIED_CLEAN` without any paper or real order.
 
 ## Completed in Phase 11.2
 
@@ -122,22 +155,22 @@
 ## Validation evidence
 
 ```text
-Python: PASS — 3.13.15; no Phase 11.2 dependency added
+Python: PASS — 3.13.15; no Phase 11.3 dependency added
 ruff: PASS — all checks passed
 format check: PASS — 213 files formatted
 mypy: PASS — 109 source files, no issues
-pytest: PASS — 332 tests, 86.94% branch coverage
-secret scan: PASS — 315 text files checked
+pytest: PASS — 340 tests, 86.62% branch coverage
+secret scan: PASS — 317 text files checked
 dependency audit: PASS — no known vulnerabilities
 Compose config: PASS — base + paper overlays including healthy paper-runtime
-container build: PASS — quantforge-paper-runtime sha256:efd0b824...e2907
-verified 10,000-event neutral decision replay: PASS — 2,179.38 events/s; feature p99 0.362ms;
-  decision p99 0.896ms; combined p99 1.185ms; max 2.892ms; 3,328 inference frames
-sustained public runtime: PASS — 1,439 accepted, 1,436 periodic committed, retained rows 52,330;
+container build: PASS — quantforge-paper-runtime sha256:33680a3c...eff37
+verified 10,000-event neutral decision replay: PASS — 2,286.57 events/s; feature p99 0.352ms;
+  decision p99 0.850ms; combined p99 1.133ms; max 2.602ms; 3,328 inference frames
+sustained public runtime: PASS — 895 accepted, 561 periodic committed, retained rows 70,517;
   queue depth 0/65,536; overflows/parser errors/reconnects 0; HOLD; order capability false
-live decision snapshot: PASS — p99 1.221ms; max 1.827ms; 0 budget breaches; model approval,
-  paper-order gate, proposals, risk approvals, paper orders/fills, authentication/private/real/live
-  capability all false or 0
+live decision snapshot: PASS — p99 1.079ms; max 1.289ms; 0 budget breaches; recovery
+  VERIFIED_CLEAN; recovery block/model approval/paper-order gate/proposals/risk approvals/paper
+  orders/fills/authentication/private/real/live capability all false or 0
 actual/private/test orders: NONE
 schedule registration: NONE
 ```
@@ -161,8 +194,8 @@ schedule registration: NONE
 - The public collector, feature path, and neutral paper composition are supervised, but sustained
   coverage has not accumulated and no alpha or exit lifecycle has paper approval. The full-path
   simulated fill is a fixture only; representative performance does not exist.
-- Paper broker, reservations, and portfolio state are process-local and are not deterministically
-  restored after restart. The separate paper-order gate must stay closed until recovery is complete.
+- Clean paper state now restores deterministically. Unclean state is reconciled fail-closed and
+  remains blocked until a future reviewed operator acknowledgement workflow exists.
 - The Korean monitor now shows neutral decision, proposal, simulated-order/fill, and portfolio
   counters. The authenticated dashboard and Grafana remain developer/operations skeletons.
 - Dashboard, local journals, backup proof, public-L2 fill approximation, missing authenticated
@@ -172,10 +205,11 @@ schedule registration: NONE
 
 Do not enable live trading. Keep the public burn-in and Korean monitor running; measure coverage,
 restarts, parser failures, gaps, disk growth, and retention. Next, preregister falsifiable alpha and
-exit hypotheses, evaluate challengers on cost-inclusive chronological data, implement deterministic
-paper order/portfolio restart recovery, and submit an artifact for separate human paper review. Only
-a reviewed artifact plus a separately enabled paper-order gate may turn the already composed path
-from neutral to simulated entry/exit lifecycle and representative performance exports.
+exit hypotheses, evaluate challengers on cost-inclusive chronological data, add a reviewed operator
+acknowledgement for unclean paper recovery, and submit an artifact for separate human paper review.
+Only clean recovery, a reviewed artifact, and a separately enabled paper-order gate may turn the
+already composed path from neutral to simulated entry/exit lifecycle and representative performance
+exports.
 Extend the monitor into a polished paper-performance GUI only after those contracts produce stable
 data. Production storage/backup/TLS/RBAC/network design and any authenticated dry-run work remain
 separately reviewed.

@@ -4,6 +4,7 @@ import asyncio
 import json
 import math
 import shutil
+import signal
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -46,6 +47,7 @@ from quantforge.runtime import (
 )
 from quantforge.runtime.paper_supervisor import (
     PaperRuntimePolicy,
+    PaperRuntimeSnapshot,
     PaperRuntimeState,
     PaperRuntimeSupervisor,
     read_paper_runtime_snapshot,
@@ -66,6 +68,35 @@ DEFAULT_BACKUP_ROOT = Path("data/backups")
 DEFAULT_AUTOMATION_ALLOWLIST = Path("automation/write-allowlist.yaml")
 DEFAULT_READINESS_POLICY = Path("configs/readiness.default.yaml")
 DEFAULT_PAPER_RUNTIME_SNAPSHOT = Path("runtime_exports/ops/paper-runtime.json")
+
+
+async def _run_paper_with_signals(
+    supervisor: PaperRuntimeSupervisor,
+) -> PaperRuntimeSnapshot:
+    """Translate container termination signals into the supervisor's clean shutdown path."""
+
+    loop = asyncio.get_running_loop()
+    installed: list[signal.Signals] = []
+    stop_tasks: set[asyncio.Task[None]] = set()
+
+    def request_stop(selected: signal.Signals) -> None:
+        task = asyncio.create_task(
+            supervisor.request_stop(reason=f"signal_{selected.name.lower()}")
+        )
+        stop_tasks.add(task)
+        task.add_done_callback(stop_tasks.discard)
+
+    for selected in (signal.SIGTERM, signal.SIGINT):
+        try:
+            loop.add_signal_handler(selected, request_stop, selected)
+            installed.append(selected)
+        except (NotImplementedError, RuntimeError, ValueError):
+            continue
+    try:
+        return await supervisor.run()
+    finally:
+        for selected in installed:
+            loop.remove_signal_handler(selected)
 
 
 @app.callback()
@@ -208,7 +239,7 @@ def run_paper(
         policy=policy,
         client_factory=client_factory,
     )
-    snapshot = asyncio.run(supervisor.run())
+    snapshot = asyncio.run(_run_paper_with_signals(supervisor))
     typer.echo(
         json.dumps(
             {
@@ -407,6 +438,8 @@ def benchmark_paper_decision(
                 "paper_order_simulation_enabled": (
                     decision_snapshot.paper_order_simulation_enabled
                 ),
+                "paper_recovery_status": decision_snapshot.recovery_status.value,
+                "paper_recovery_blocked": decision_snapshot.recovery_blocked,
                 "decision_state": decision_snapshot.decision_state,
                 "strategy_trade_proposals": decision_snapshot.strategy_trade_proposals,
                 "risk_approvals": decision_snapshot.risk_approvals,

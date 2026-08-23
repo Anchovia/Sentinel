@@ -410,17 +410,31 @@ class PaperRuntimeSupervisor:
         self._last_exchange_at_utc: datetime | None = None
         self._max_ingress_latency_ms: float | None = None
         self._last_error_type: str | None = None
+        self._requested_shutdown_reason: str | None = None
         self._market = _MarketAccumulator(self.markets)
         self._realtime = RealtimePaperPipeline(self.markets)
-        self._decision = RealtimePaperOrchestrator(self.markets)
+        self._decision = RealtimePaperOrchestrator(
+            self.markets,
+            recovery_path=self.raw_output.parent / "state" / "realtime-paper-recovery.json",
+        )
         self._writer = ParquetRawEventWriter(
             self.raw_output, max_rows=self.policy.max_rows_per_file
         )
         self._client = self.client_factory(self._on_event, self._on_error)
 
+    async def request_stop(self, *, reason: str) -> None:
+        """Request an idempotent graceful stop from an OS signal or operator-owned supervisor."""
+
+        if not reason or len(reason) > 100:
+            raise ValueError("paper runtime stop reason is invalid")
+        if self._requested_shutdown_reason is None:
+            self._requested_shutdown_reason = reason
+        await self._client.stop()
+
     async def run(self) -> PaperRuntimeSnapshot:
         self.raw_output.mkdir(parents=True, exist_ok=True)
         cleanup_orphan_temp_files(self.raw_output)
+        self._decision.begin_recovery_session(started_at_utc=self.started_at_utc)
         await self._write_heartbeat(PaperRuntimeState.STARTING)
         storage_task = asyncio.create_task(
             self._storage_worker(), name=f"paper-storage-{self.run_id}"
@@ -470,6 +484,8 @@ class PaperRuntimeSupervisor:
             await self._client.stop()
             task.cancel()
         finally:
+            if self._requested_shutdown_reason is not None:
+                shutdown_reason = self._requested_shutdown_reason
             if not task.done():
                 try:
                     await task
@@ -679,6 +695,11 @@ class PaperRuntimeSupervisor:
         write_dashboard_snapshot(dashboard, self.output_root)
         realtime_snapshot = self._realtime.snapshot(generated_at_utc=now_utc)
         write_realtime_pipeline_snapshot(realtime_snapshot, self.output_root)
+        if state in {PaperRuntimeState.STARTING, PaperRuntimeState.RUNNING}:
+            self._decision.persist_recovery_checkpoint(
+                generated_at_utc=now_utc,
+                clean_shutdown=False,
+            )
         decision_snapshot = self._decision.snapshot(generated_at_utc=now_utc)
         write_realtime_paper_decision_snapshot(decision_snapshot, self.output_root)
         write_paper_monitor(

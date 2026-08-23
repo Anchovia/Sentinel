@@ -31,6 +31,8 @@ class WebSocketConnection(Protocol):
 
     async def recv(self) -> str | bytes: ...
 
+    async def close(self) -> None: ...
+
 
 @dataclass(frozen=True, slots=True)
 class PublicWebSocketPolicy:
@@ -203,6 +205,8 @@ class UpbitPublicWebSocketClient:
 
     async def stop(self) -> None:
         self._stop.set()
+        if self._active_connection is not None:
+            await self._active_connection.close()
 
     async def _send_request(
         self, websocket: WebSocketConnection, request: SubscriptionRequest

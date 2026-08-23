@@ -188,9 +188,21 @@ append to the verified hash chain, while hot-path mark-to-market reads reconcile
 without unbounded ledger growth. `realtime-paper-decision-1` exposes only redacted paper counters,
 latency, and balances.
 
-The paper broker and portfolio ledger are currently process-local. Their state is not reconstructed
-after a supervisor restart, so the paper-order simulation gate must remain closed until deterministic
-order, reservation, fill, and position recovery is implemented and tested.
+Phase 11.3 adds `realtime-paper-recovery-1` under the durable paper-data volume. The checkpoint binds
+the exact policy, market universe, orders, fills, reservations, FIFO lots, Decimal balances, ledger
+hash chains, counters, and event cursor to one outer SHA-256. It never restores an orderbook: every
+restart requires a new public snapshot before execution can be considered.
+
+A clean shutdown first cancels every non-terminal paper order and releases its reservation, then
+writes a clean checkpoint. Container `SIGTERM`/`SIGINT` is translated into that supervisor path and
+closes the active public socket so a stalled receive cannot prevent cleanup. Only verified state is
+automatically restored. An unclean marker with any economic activity cannot resume
+an order: all recovered non-terminal orders are canceled, locks are released, and the independent
+simulation gate remains blocked across later restarts. A checkpoint with no order, fill, lock, lot,
+ledger record, cost, or balance change may recover as `EMPTY_UNCLEAN_RECOVERED` only while simulation
+configuration is disabled. The public collector continues in neutral mode. Consequential
+order/accounting changes are synchronously checkpointed and their durability cost is included in
+decision latency; neutral heartbeats refresh the checkpoint off the market-event hot path.
 
 ## Deployment target
 

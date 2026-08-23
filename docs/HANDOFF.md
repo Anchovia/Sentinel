@@ -8,7 +8,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 ## Current state
 
 - Date: 2026-08-24 KST
-- Completed phases: 0–10; Phase 11.1–11.2 checkpoints complete
+- Completed phases: 0–10; Phase 11.1–11.3 checkpoints complete
 - Current checkpoint: neutral real-time inference/strategy/risk/paper-broker/ledger composition;
   preregistered alpha and exit research plus separate paper approval next
 - Branch: `main` by explicit owner instruction
@@ -33,7 +33,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 10: `34ac186 feat: 공개 페이퍼 감독 런타임 구축`
 - Phase 11.1: `eb8a4da feat: 저지연 실시간 처리 기반 구축`
 
-## Implemented through Phase 11.2
+## Implemented through Phase 11.3
 
 - Safety-first Python modular monolith, six closed live gates, Decimal domain/accounting boundary,
   keyless Upbit public transport, versioned immutable raw lineage, deterministic replay/bars/features,
@@ -72,27 +72,34 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   blocks regardless of other feature or edge values.
 - A test-only approved fixture proves the complete simulated order/fill/accounting plumbing. It is
   not shipped or promoted. Atomic decision exports and the Korean monitor show review status,
-  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-017 record consequential
+  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-018 record consequential
   choices. README remains intentionally minimal.
+- `realtime-paper-recovery-1` now preserves policy-bound orders, fills, reservations, FIFO lots,
+  exact balances, ledger chains, counters, and the event cursor in the durable paper volume. Clean
+  state restores automatically without a stale book. Unclean state cancels open paper orders,
+  releases locks, persists the evidence, and blocks future simulation pending separate review.
+- Container signals now use the clean shutdown path. A disabled and provably empty economic state may
+  report `EMPTY_UNCLEAN_RECOVERED`; any order, fill, lock, lot, ledger record, cost, turnover, or
+  balance change preserves the unclean block.
 
 ## Latest validation
 
 ```text
-Python 3.13.15; no Phase 11.2 dependency added
+Python 3.13.15; no Phase 11.3 dependency added
 ruff + format: PASS (213 files)
 mypy: PASS (109 source files)
-pytest: PASS (332 tests, 86.94% branch coverage)
-Secret scan: PASS (315 text files)
+pytest: PASS (340 tests, 86.62% branch coverage)
+Secret scan: PASS (317 text files)
 pip-audit: PASS (no known vulnerabilities)
 Compose config: PASS; paper-runtime healthy
-Final image: PASS (quantforge-paper-runtime, sha256:efd0b824...e2907)
-Verified 10,000-event neutral decision replay: 2,179.38 events/s; feature p99 0.362ms;
-decision p99 0.896ms; combined p99 1.185ms; max 2.892ms; 3,328 inference frames
-Sustained runtime: 1,439 accepted, 1,436 periodic committed, retained rows 52,330;
+Final image: PASS (quantforge-paper-runtime, sha256:33680a3c...eff37)
+Verified 10,000-event neutral decision replay: 2,286.57 events/s; feature p99 0.352ms;
+decision p99 0.850ms; combined p99 1.133ms; max 2.602ms; 3,328 inference frames
+Sustained runtime: 895 accepted, 561 periodic committed, retained rows 70,517;
 queue 0/65,536, overflows/parser errors/reconnects zero
-Live decision snapshot: p99 1.221ms; max 1.827ms; zero 5ms breaches; model approval,
-paper-order gate, proposals, risk approvals, paper orders/fills, authentication/private/real/live
-capability all false or zero
+Live decision snapshot: p99 1.079ms; max 1.289ms; zero 5ms breaches; recovery VERIFIED_CLEAN;
+recovery block, model approval, paper-order gate, proposals, risk approvals, paper orders/fills,
+authentication/private/real/live capability all false or zero
 Actual/private/test orders: none
 Scheduled tasks: not registered
 ```
@@ -113,8 +120,9 @@ Scheduled tasks: not registered
 - Public L2 fill/queue behavior is approximate. The collector and neutral composition are supervised,
   but sustained coverage is not evidence. No alpha/exit artifact is approved; the only simulated
   fill is a fixture with no profitability or promotion claim.
-- Paper broker, reservation, and portfolio state are process-local and are not restored after a
-  supervisor restart. Keep the paper-order gate closed until deterministic recovery is implemented.
+- Clean paper state restores deterministically, but there is no operator workflow to acknowledge and
+  clear an unclean recovery block. Interrupted sessions remain invalid for performance evidence, and
+  long-history checkpoint growth has not been load-tested.
 - The Korean monitor covers public feed/storage and neutral paper counters. The authenticated
   server-rendered dashboard/Grafana views remain internal operations skeletons, and there are no
   representative paper strategy, round-trip, or performance results yet.
@@ -131,8 +139,8 @@ Scheduled tasks: not registered
    failures, reconnects, restarts, disk growth, and retention without treating uptime as readiness.
 2. Preregister falsifiable alpha and exit hypotheses, run cost-inclusive chronological challengers,
    preserve negative results, and present any candidate artifact for separate human paper review.
-3. Implement deterministic paper order, reservation, fill, and portfolio restart recovery. Only
-   after that, model approval, and separate gate approval, exercise complete simulated entry/exit
+3. Add a reviewed operator acknowledgement workflow for unclean paper recovery. Only after clean
+   recovery, model approval, and separate gate approval, exercise complete simulated entry/exit
    lifecycles and produce representative exports before expanding the GUI further.
 4. Design production PostgreSQL persistence, encrypted off-host backup/restore with measured RPO/RTO,
    TLS/RBAC/rate limits, Secret delivery, network isolation, and monitoring retention.

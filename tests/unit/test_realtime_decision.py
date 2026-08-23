@@ -9,6 +9,7 @@ import pytest
 from factories import BASE_TIME, make_orderbook_event, make_trade_event
 from quantforge.features import FeatureSnapshot
 from quantforge.models import AlphaPrediction, DecisionAction, ModelReleaseStatus
+from quantforge.runtime.paper_recovery import PaperRecoveryStatus
 from quantforge.runtime.realtime_decision import (
     RealtimeAlphaModel,
     RealtimeModelApproval,
@@ -253,3 +254,128 @@ def test_decision_snapshot_is_atomic_and_secret_free(tmp_path: Path) -> None:
     assert payload["real_order_submission_available"] is False
     assert "approved_by" not in path.read_text(encoding="utf-8")
     assert list(path.parent.glob("*.tmp")) == []
+
+
+def test_clean_checkpoint_restores_exact_paper_position_and_counters(tmp_path: Path) -> None:
+    checkpoint = tmp_path / "state/realtime-paper-recovery.json"
+    model = _ApprovedAlpha()
+    features = RealtimePaperPipeline(("KRW-BTC",))
+    orchestrator = RealtimePaperOrchestrator(
+        ("KRW-BTC",),
+        policy=_approved_policy(),
+        alpha_model=model,
+        approval=_approval(model),
+        strategies=(_FixedProposal(),),
+        recovery_path=checkpoint,
+    )
+    orchestrator.begin_recovery_session(started_at_utc=BASE_TIME - timedelta(seconds=1))
+    events = _events()
+    for event in events:
+        orchestrator.process(event, features.process(event))
+    before = orchestrator.snapshot(generated_at_utc=events[-1].received_at_utc)
+    orchestrator.close(closed_at_utc=events[-1].received_at_utc + timedelta(seconds=1))
+
+    restored = RealtimePaperOrchestrator(
+        ("KRW-BTC",),
+        policy=_approved_policy(),
+        alpha_model=model,
+        approval=_approval(model),
+        strategies=(_FixedProposal(),),
+        recovery_path=checkpoint,
+    )
+    restored.begin_recovery_session(
+        started_at_utc=events[-1].received_at_utc + timedelta(seconds=2)
+    )
+    after = restored.snapshot(generated_at_utc=events[-1].received_at_utc + timedelta(seconds=2))
+
+    assert after.recovery_status is PaperRecoveryStatus.VERIFIED_CLEAN
+    assert after.recovery_blocked is False
+    assert after.paper_order_simulation_enabled is True
+    assert after.paper_orders == before.paper_orders == 1
+    assert after.paper_fills == before.paper_fills == 1
+    assert after.turnover_krw == before.turnover_krw
+    assert after.portfolios[0].cash_balance == before.portfolios[0].cash_balance
+    assert after.portfolios[0].position_quantity == before.portfolios[0].position_quantity
+    restored.close(closed_at_utc=events[-1].received_at_utc + timedelta(seconds=3))
+
+
+def test_unclean_checkpoint_cancels_open_order_releases_cash_and_blocks_gate(
+    tmp_path: Path,
+) -> None:
+    checkpoint = tmp_path / "state/realtime-paper-recovery.json"
+    model = _ApprovedAlpha()
+    features = RealtimePaperPipeline(("KRW-BTC",))
+    interrupted = RealtimePaperOrchestrator(
+        ("KRW-BTC",),
+        policy=_approved_policy(),
+        alpha_model=model,
+        approval=_approval(model),
+        strategies=(_FixedProposal(),),
+        recovery_path=checkpoint,
+    )
+    interrupted.begin_recovery_session(started_at_utc=BASE_TIME - timedelta(seconds=1))
+    events = _events()
+    for event in events[:3]:
+        interrupted.process(event, features.process(event))
+    interrupted_snapshot = interrupted.snapshot(generated_at_utc=events[2].received_at_utc)
+    assert interrupted_snapshot.paper_orders == 1
+    assert interrupted_snapshot.paper_fills == 0
+    assert interrupted_snapshot.portfolios[0].locked_cash > 0
+
+    recovered = RealtimePaperOrchestrator(
+        ("KRW-BTC",),
+        policy=_approved_policy(),
+        alpha_model=model,
+        approval=_approval(model),
+        strategies=(_FixedProposal(),),
+        recovery_path=checkpoint,
+    )
+    recovered.begin_recovery_session(
+        started_at_utc=events[2].received_at_utc + timedelta(seconds=1)
+    )
+    snapshot = recovered.snapshot(generated_at_utc=events[2].received_at_utc + timedelta(seconds=1))
+
+    assert snapshot.recovery_status is PaperRecoveryStatus.UNCLEAN_RECONCILED
+    assert snapshot.recovery_blocked is True
+    assert snapshot.paper_order_simulation_enabled is False
+    assert snapshot.decision_reason == "PAPER_RECOVERY_BLOCKED"
+    assert snapshot.paper_orders == 1
+    assert snapshot.paper_fills == 0
+    assert snapshot.portfolios[0].locked_cash == 0
+    assert snapshot.portfolios[0].available_cash == snapshot.portfolios[0].cash_balance
+    recovered.close(closed_at_utc=events[2].received_at_utc + timedelta(seconds=2))
+
+
+def test_empty_unapproved_unclean_checkpoint_recovers_without_permanent_block(
+    tmp_path: Path,
+) -> None:
+    checkpoint = tmp_path / "state/realtime-paper-recovery.json"
+    interrupted = RealtimePaperOrchestrator(("KRW-BTC",), recovery_path=checkpoint)
+    interrupted.begin_recovery_session(started_at_utc=BASE_TIME)
+
+    recovered = RealtimePaperOrchestrator(("KRW-BTC",), recovery_path=checkpoint)
+    recovered.begin_recovery_session(started_at_utc=BASE_TIME + timedelta(seconds=1))
+    snapshot = recovered.snapshot(generated_at_utc=BASE_TIME + timedelta(seconds=1))
+
+    assert snapshot.recovery_status is PaperRecoveryStatus.EMPTY_UNCLEAN_RECOVERED
+    assert snapshot.recovery_blocked is False
+    assert snapshot.paper_order_simulation_enabled is False
+    assert snapshot.paper_orders == 0
+    assert snapshot.paper_fills == 0
+    recovered.close(closed_at_utc=BASE_TIME + timedelta(seconds=2))
+
+
+def test_tampered_recovery_checkpoint_fails_closed(tmp_path: Path) -> None:
+    checkpoint = tmp_path / "state/realtime-paper-recovery.json"
+    orchestrator = RealtimePaperOrchestrator(
+        ("KRW-BTC",),
+        recovery_path=checkpoint,
+    )
+    orchestrator.begin_recovery_session(started_at_utc=BASE_TIME)
+    orchestrator.close(closed_at_utc=BASE_TIME + timedelta(seconds=1))
+    payload = orjson.loads(checkpoint.read_bytes())
+    payload["turnover_krw"] = "1"
+    checkpoint.write_bytes(orjson.dumps(payload))
+
+    with pytest.raises(RealtimePaperBlocked, match="restore failed"):
+        RealtimePaperOrchestrator(("KRW-BTC",), recovery_path=checkpoint)

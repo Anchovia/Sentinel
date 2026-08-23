@@ -10,6 +10,10 @@ from quantforge.config import Environment, QuantForgeSettings
 from quantforge.domain import EventEnvelope
 from quantforge.exchange.upbit.errors import MalformedUpbitPayload, UpbitAdapterError
 from quantforge.operations import read_dashboard_snapshot
+from quantforge.runtime.paper_recovery import (
+    PaperRecoveryStatus,
+    read_realtime_paper_recovery_checkpoint,
+)
 from quantforge.runtime.paper_supervisor import (
     PaperRuntimeBlocked,
     PaperRuntimePolicy,
@@ -176,6 +180,8 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     assert "모의 판단" in monitor
     assert "모의 주문</span><strong>차단" in monitor
     assert "모델 검토" in monitor
+    assert "재시작 복구" in monitor
+    assert "재시작 복구</span><strong>신규" in monitor
     realtime = read_realtime_pipeline_snapshot(tmp_path / "runtime/ops/realtime-pipeline.json")
     assert realtime.processed_events == 2
     assert realtime.decision_state == "HOLD"
@@ -185,10 +191,17 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     )
     assert decision.processed_events == 2
     assert decision.model_approval_valid is False
+    assert decision.recovery_status is PaperRecoveryStatus.NEW
+    assert decision.recovery_blocked is False
     assert decision.paper_order_simulation_enabled is False
     assert decision.paper_orders == 0
     assert decision.paper_fills == 0
     assert decision.real_order_submission_available is False
+    recovery = read_realtime_paper_recovery_checkpoint(
+        tmp_path / "state/realtime-paper-recovery.json"
+    )
+    assert recovery.clean_shutdown is True
+    assert recovery.recovery_blocked is False
 
     serialized = json.loads((tmp_path / "runtime/ops/paper-runtime.json").read_text())
     forbidden = {"authorization", "access_key", "secret_key", "token", "password"}
@@ -210,6 +223,11 @@ async def test_supervisor_retains_totals_across_runs(tmp_path: Path) -> None:
     assert second_snapshot.retained_rows == 2
     assert second_snapshot.retained_files == first_snapshot.retained_files + 1
     assert second_snapshot.retained_bytes > first_snapshot.retained_bytes
+    decision = read_realtime_paper_decision_snapshot(
+        tmp_path / "runtime/ops/realtime-paper-decision.json"
+    )
+    assert decision.recovery_status is PaperRecoveryStatus.VERIFIED_CLEAN
+    assert decision.recovery_blocked is False
 
 
 @pytest.mark.asyncio
@@ -229,6 +247,28 @@ async def test_duration_bound_stops_a_blocked_client_cleanly(tmp_path: Path) -> 
     assert snapshot.state is PaperRuntimeState.STOPPED
     assert snapshot.shutdown_reason == "duration_elapsed"
     assert snapshot.websocket_connected is False
+
+
+@pytest.mark.asyncio
+async def test_external_stop_request_closes_recovery_checkpoint_cleanly(tmp_path: Path) -> None:
+    supervisor = _supervisor(
+        tmp_path,
+        _factory(block=True),
+        policy=PaperRuntimePolicy(heartbeat_seconds=0.01, flush_seconds=0.01),
+    )
+    task = asyncio.create_task(supervisor.run())
+    await asyncio.sleep(0)
+
+    await supervisor.request_stop(reason="signal_sigterm")
+    snapshot = await task
+
+    assert snapshot.state is PaperRuntimeState.STOPPED
+    assert snapshot.shutdown_reason == "signal_sigterm"
+    recovery = read_realtime_paper_recovery_checkpoint(
+        tmp_path / "state/realtime-paper-recovery.json"
+    )
+    assert recovery.clean_shutdown is True
+    assert recovery.recovery_blocked is False
 
 
 @pytest.mark.asyncio

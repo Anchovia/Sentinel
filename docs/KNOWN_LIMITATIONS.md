@@ -53,8 +53,14 @@
   credential recovery and no measured RPO/RTO. Production recovery is unimplemented.
 - Cancel-only and incident acknowledgement are local. Strategy pause is proposal-only, and
   cancel-all is blocked because no authenticated cancellation transport exists.
-- Paper broker, reservation, and portfolio ledger state are process-local. Deterministic state
-  recovery after a supervisor restart is not implemented, so the paper-order gate must remain closed.
+- Paper broker, reservation, fill, lot, and portfolio state now have verified clean-restart recovery.
+  An economically active unclean restart cancels open paper orders and releases locks but permanently
+  blocks new simulation pending a separately reviewed operator acknowledgement workflow, which is
+  not yet implemented. The interrupted session cannot be used as performance evidence. Only a
+  disabled, provably empty economic state may clear an unclean marker automatically.
+- Recovery checkpoints rewrite the complete local ledger on consequential state changes. This is
+  bounded by paper trade count rather than public event count but has not been load-tested for long
+  simulated histories or compacted into production storage.
 
 ## Automation and delivery
 

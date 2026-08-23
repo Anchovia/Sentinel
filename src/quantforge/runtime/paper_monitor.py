@@ -43,6 +43,17 @@ def _event_counts(snapshot: "PaperRuntimeSnapshot") -> str:
     )
 
 
+def _recovery_label(snapshot: "RealtimePaperDecisionSnapshot") -> str:
+    if snapshot.recovery_blocked:
+        return "확인 필요"
+    return {
+        "NOT_CONFIGURED": "미설정",
+        "NEW": "신규",
+        "VERIFIED_CLEAN": "정상",
+        "EMPTY_UNCLEAN_RECOVERED": "빈 상태 복구",
+    }.get(snapshot.recovery_status.value, snapshot.recovery_status.value)
+
+
 def _market_card(market: MarketView) -> str:
     quality = {
         HealthState.HEALTHY: ("정상", "ok"),
@@ -114,6 +125,7 @@ def render_paper_monitor(
         f"""<section class="panel"><h2>모의 판단</h2><div class="rows">
 <div class="row"><span class="label">모델 검토</span><strong>{"승인됨" if decision.model_approval_valid else "대기 중"}</strong></div>
 <div class="row"><span class="label">모의 주문</span><strong>{"허용" if decision.paper_order_simulation_enabled else "차단"}</strong></div>
+<div class="row"><span class="label">재시작 복구</span><strong>{_recovery_label(decision)}</strong></div>
 <div class="row"><span class="label">현재 상태</span><strong class="warn">{decision.decision_state.value}</strong></div>
 <div class="row"><span class="label">전략 제안</span><strong>{decision.strategy_trade_proposals:,}건</strong></div>
 <div class="row"><span class="label">모의 주문 / 체결</span><strong>{decision.paper_orders:,} / {decision.paper_fills:,}</strong></div>
