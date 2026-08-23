@@ -45,6 +45,11 @@ All notable changes are recorded here. The project follows semantic versioning o
   out-of-distribution abstention, sample warnings, and non-zero-cost OOS baseline comparison.
 - Immutable local model registry with artifact/metadata/manifest SHA-256 verification and no
   automatic promotion path.
+- Causal shared strategy/risk inputs, transparent order-flow momentum and liquidity-shock reversal
+  proposals, deterministic correlation-aware routing, and liquidity-aware universe selection.
+- Independent fail-closed paper risk gateway with intent/snapshot binding, hard health/exposure/loss/
+  turnover/rate limits, exact conservative sizing, and no strategy-side order capability.
+- Manual-release hash-chained kill switch and exact strategy/model/market/regime attribution ledger.
 
 ### Security
 

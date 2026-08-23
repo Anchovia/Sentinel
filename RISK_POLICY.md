@@ -39,6 +39,11 @@ No command-line flag, GUI toggle, configuration file, model output, or single ap
 
 The risk decision is one of `allow`, `reject`, `resize`, or `hold`, with reason codes and a versioned snapshot.
 
+The Phase 5 paper gateway also binds the snapshot to the intent market, signal time, net edge, and
+uncertainty. Reusing a snapshot for a different or newer proposal is a rejection. `allow` or
+`resize` can only be produced after every hard check passes; scaling may reduce but never enlarge
+the requested amount. `configs/risk.paper.yaml` is a simulation policy and grants no live approval.
+
 ## Kill switch
 
 `cancel_only` blocks new orders and requests cancellation of open orders. It is the default emergency behavior.

@@ -1,5 +1,6 @@
 """Immutable portfolio accounting and audit-ledger exports."""
 
+from quantforge.portfolio.attribution import AttributionEvent, AttributionLedger
 from quantforge.portfolio.ledger import (
     AccountingInvariantError,
     LedgerRecord,
@@ -11,6 +12,8 @@ from quantforge.portfolio.ledger import (
 
 __all__ = [
     "AccountingInvariantError",
+    "AttributionEvent",
+    "AttributionLedger",
     "LedgerRecord",
     "LedgerRecordType",
     "PortfolioLedger",

@@ -7,8 +7,8 @@ Read, in order: `AGENTS.md`, `SPEC.md`, `PLAN.md`, `PROGRESS.md`, `RISK_POLICY.m
 ## Current state
 
 - Date: 2026-08-23 KST
-- Completed phase: 4 — Baseline Models
-- Current phase: 5 — Strategy and Risk (`IN_PROGRESS`)
+- Completed phase: 5 — Strategy and Risk
+- Current phase: 6 — Private Exchange and Execution Safety (`IN_PROGRESS`)
 - Git branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Product/package: QuantForge / `quantforge`
@@ -17,10 +17,11 @@ Read, in order: `AGENTS.md`, `SPEC.md`, `PLAN.md`, `PROGRESS.md`, `RISK_POLICY.m
 - Live order code: not implemented
 - Actual orders: none
 - Production Secrets: not requested or accessed
-- Phase 0 checkpoint: `dafd09c feat: establish QuantForge safety-first foundation`
-- Phase 1 checkpoint: `3bc2fd0 feat: add keyless Upbit public data pipeline`
-- Phase 2 checkpoint: `2e48e6c feat: add deterministic replay bars and causal features`
-- Phase 3 checkpoint: `32370e4 feat: add conservative paper execution and backtesting`
+- Phase 0 checkpoint: `cfc1617 feat: QuantForge 안전 기반 구축`
+- Phase 1 checkpoint: `136295c feat: 업비트 공개 데이터 파이프라인 구축`
+- Phase 2 checkpoint: `41b64d1 feat: 결정적 재생과 인과 특징 구축`
+- Phase 3 checkpoint: `0f7e3a1 feat: 보수적 모의 체결과 백테스트 구축`
+- Phase 4 checkpoint: `b1a6b03 feat: 재현 가능한 기준 모델 연구 구축`
 
 ## Implemented
 
@@ -52,6 +53,13 @@ Read, in order: `AGENTS.md`, `SPEC.md`, `PLAN.md`, `PROGRESS.md`, `RISK_POLICY.m
   comparison reports.
 - Immutable model artifact metadata and hash-verified registry with no automatic promotion or
   deployment operation.
+- Causal strategy/market/model/portfolio/risk contracts and two transparent proposal-only strategy
+  candidates with no exchange or order capability.
+- Edge/priority/correlation-aware deterministic router, explicit lifecycle states, cooldown/loss/
+  capacity gates, and liquidity/coverage-aware paper universe selection.
+- Independent intent/risk gateway with snapshot binding, fail-closed hard checks, exact conservative
+  sizing, daily-loss/drawdown/stale-data rejection, and no live mode acceptance.
+- Reconciliation-gated hash-chain kill switch and exact strategy/model/market/regime attribution.
 
 ## Validation
 
@@ -77,6 +85,11 @@ Phase 4 experiments: PASS (preregistered search, failures retained, ledger verif
 Phase 4 baselines/evaluation: PASS (deterministic artifacts, calibration, abstention, positive costs)
 Phase 4 registry: PASS (roundtrip immutable, tamper detected, auto-promotion absent)
 Phase 4 container: PASS (`quantforge:phase4`, sha256:cd6314d9...e2b76, all gates closed)
+Phase 5 strategy/risk: PASS (proposal isolation, correlated dedup, cooldown, hard-limit resize/reject)
+Phase 5 emergency tests: PASS (kill switch, daily loss, stale data, manual reconciled release)
+Phase 5 validation: PASS (220 tests, 88.50% coverage, Ruff, format, mypy 75 files)
+Phase 5 security: PASS (210-file Secret scan, no known dependency vulnerabilities)
+Phase 5 container: PASS (`quantforge:phase5`, sha256:e006c71f...a202c, all gates closed)
 ```
 
 ## Important constraints
@@ -101,14 +114,18 @@ Phase 4 container: PASS (`quantforge:phase4`, sha256:cd6314d9...e2b76, all gates
   for a preregistered, adequately sampled production study.
 - Final-holdout one-shot state is in-process plus append-only record; durable authorization arrives
   with the later database/audit service.
-- Local `main` is ahead of `origin/main`; publishing source to GitHub awaits explicit owner approval.
+- The owner requires each completed phase to be committed on `main` with a concise Korean
+  Conventional Commit title and pushed to `origin/main`.
+- Phase 5 strategies are synthetic-fixture, long-only entry candidates and not profitability
+  evidence. Additional exit/cross-sectional/maker-taker work requires preregistered experiments.
+- The kill-switch ledger is in-process; durable storage and authenticated cancellation controls are
+  deferred. `cancel_and_flatten` remains approval- and liquidity-gated.
 - Scheduled tasks must not be registered until their skills, inputs, schemas, and manual dry runs exist.
 
 ## Next actions
 
-1. Commit the validated Phase 4 checkpoint on local `main`.
-2. Define shared strategy input/decision contracts and deterministic routing without exchange access.
-3. Implement an independent pre-trade risk engine, sizing, exposure/concentration, cooldown, stale
-   data, uncertainty, and portfolio constraints.
-4. Add kill-switch state/reason/audit contracts and tests that block every downstream submission.
-5. Add strategy/model/market/regime PnL attribution; keep all outputs paper-only.
+1. Commit and push the validated Phase 5 checkpoint on `main`.
+2. Refresh the official Upbit documentation snapshot before private/execution design work.
+3. Add authentication and private-stream interfaces backed only by fake transports and fixtures.
+4. Persist order-state/identifier/reconciliation contracts and test timeout/unknown/mismatch paths.
+5. Keep the live adapter disabled and make no credential, private endpoint, test-order, or real-order call.

@@ -134,6 +134,26 @@ Prediction contracts cover regime probabilities, alpha class probabilities/net e
 abstention, and execution fill/cost estimates. Analytical probabilities and features may use finite
 binary floats; order, fee, return/cost boundary, and accounting values remain Decimal.
 
+## Strategy, risk, and attribution
+
+`StrategyInput` binds one market's market/feature/regime/alpha/execution/portfolio snapshots and a
+read-only risk context to a UTC decision time. `StrategyDecision` records action, side, exact target,
+order preference, gross/cost/net edge, confidence, uncertainty, validity, invalidation, exit plan,
+reasons, strategy, and version. It is a proposal, not an order.
+
+`RiskSnapshot` records market and system health, freshness, model release, edge/cost, depth,
+portfolio/exposure, loss/drawdown, turnover, rate, lock, and unknown-order state. A `RiskDecision`
+binds its intent and policy version to the immutable snapshot ID.
+
+Kill-switch and attribution events are independently sequenced SHA-256 chains. Attribution uses:
+
+```text
+net_pnl = gross_edge_pnl - fees - spread_cost - slippage_cost - adverse_selection_cost
+```
+
+The formula describes analytical strategy attribution; actual portfolio equity remains reconciled
+from fill prices and does not subtract embedded costs twice.
+
 ## Transactional entities
 
 Minimum PostgreSQL entities:

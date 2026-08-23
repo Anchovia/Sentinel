@@ -74,6 +74,12 @@ preregistered trials may fit baselines. Calibration fits validation data; ordina
 test data but rejects final holdout. The artifact registry verifies immutable bytes and metadata but
 cannot promote or deploy a model.
 
+The Phase 5 decision path keeps strategy proposals separate from order authority. Strategies read
+causal snapshots and a read-only risk context, a deterministic router deduplicates correlated
+signals, and the only intent adapter immediately invokes the independent risk engine. Versioned
+hard limits and health checks may reject or resize but never expand an intent. Kill-switch release
+requires a manual request followed by successful reconciliation.
+
 ## Deployment target
 
 Initial deployment is one Linux host with Docker Compose: API/runtime, PostgreSQL, Prometheus, and Grafana. Market data and trading processes will gain separate service entry points in later phases. Redis/NATS, MLflow, MinIO, or Rust require measured justification and an ADR.

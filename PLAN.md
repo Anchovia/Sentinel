@@ -43,12 +43,12 @@ Exit criteria:
 - Dataset and label versioning, trial preregistration, simple regime/alpha/execution baselines, calibration, uncertainty, abstention, and model registry.
 - Time-based OOS validation, cost-adjusted metrics, reproducible artifacts, and untouched final holdout.
 
-## Phase 5 — Strategy and Risk (`IN_PROGRESS`)
+## Phase 5 — Strategy and Risk (`COMPLETE`)
 
 - Baseline strategies, router, universe selector, independent risk engine, sizing, attribution, and kill switch.
 - Tests proving strategies cannot bypass risk and that stale/unsafe state blocks orders.
 
-## Phase 6 — Private Exchange and Execution Safety (`PENDING`)
+## Phase 6 — Private Exchange and Execution Safety (`IN_PROGRESS`)
 
 - Authentication interface, private stream mappers, order policy, test-order adapter, state machine persistence, identifier, reconciliation, and disabled live adapter.
 - Mock-only validation for timeouts, idempotency, unknown orders, and balance mismatch. No real order.

@@ -1,0 +1,18 @@
+schema_version: 1
+scope: paper_only
+routes:
+  - strategy_id: ofi-microprice-momentum
+    status: ACTIVE
+    priority: 100
+    correlation_group: short-horizon-order-flow
+    capacity_notional: "50000"
+    cooldown_seconds: 30
+    max_strategy_loss: "20000"
+  - strategy_id: liquidity-shock-mean-reversion
+    status: ACTIVE
+    priority: 80
+    correlation_group: short-horizon-reversal
+    capacity_notional: "30000"
+    cooldown_seconds: 60
+    max_strategy_loss: "15000"
+note: Strategies produce proposals only and cannot submit orders.
