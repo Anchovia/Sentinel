@@ -2,7 +2,8 @@
 
 ## Safety first
 
-Phase 0 is paper-only. Do not add real credentials. If any command or screen suggests live submission is possible, stop and open a `CRITICAL` incident.
+QuantForge is paper-only. Phase 1 public collection does not need credentials. If any command or
+screen suggests live submission is possible, stop and open a `CRITICAL` incident.
 
 ## Developer start
 
@@ -13,6 +14,24 @@ uv run uvicorn quantforge.api.app:create_app --factory
 ```
 
 Expected safety output: trading mode `paper`, live submission `false`, and all live gates listed as failed.
+
+## Finite public-data collection
+
+Collect a bounded API-key-free sample:
+
+```text
+uv run quantforge collect-public \
+  --markets KRW-BTC \
+  --streams ticker,trade,orderbook \
+  --max-messages 100 \
+  --output data/raw
+```
+
+The command writes immutable ZSTD Parquet files and adjacent JSON manifests below
+`source=upbit/event_type=.../date=.../hour=...`. It reports `authentication_used=false` and
+`order_submission_available=false`. A collector failure must not be worked around by adding keys.
+Review rejected-message and reconnect metrics, preserve the malformed raw input outside logs if
+needed for incident analysis, and refresh official capability documentation before schema changes.
 
 Infrastructure, when Docker Compose is available:
 

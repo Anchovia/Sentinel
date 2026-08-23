@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "exchange": "upbit",
+  "retrieved_at_utc": "2026-08-23T10:14:19.465Z",
+  "official_index": "https://docs.upbit.com/kr/llms.txt",
+  "documents": [
+    {
+      "name": "WebSocket guide",
+      "url": "https://docs.upbit.com/kr/reference/websocket-guide.md",
+      "document_updated_at": "2026-03-24T02:33:54.000Z"
+    },
+    {
+      "name": "WebSocket best practice",
+      "url": "https://docs.upbit.com/kr/docs/websocket-best-practice.md",
+      "document_updated_at": "2026-07-14T09:05:34.000Z"
+    },
+    {
+      "name": "Rate limits",
+      "url": "https://docs.upbit.com/kr/reference/rate-limits.md",
+      "document_updated_at": "2026-08-21T11:06:48.000Z"
+    },
+    {
+      "name": "Ticker WebSocket",
+      "url": "https://docs.upbit.com/kr/reference/websocket-ticker.md",
+      "document_updated_at": "2026-01-07T10:54:24.000Z"
+    },
+    {
+      "name": "Trade WebSocket",
+      "url": "https://docs.upbit.com/kr/reference/websocket-trade.md",
+      "document_updated_at": "2026-01-07T10:54:25.000Z"
+    },
+    {
+      "name": "Orderbook WebSocket",
+      "url": "https://docs.upbit.com/kr/reference/websocket-orderbook.md",
+      "document_updated_at": "2026-01-07T10:54:26.000Z"
+    },
+    {
+      "name": "Python SDK guide",
+      "url": "https://docs.upbit.com/kr/docs/python-sdk.md",
+      "document_updated_at": "2026-05-05T09:57:51.000Z"
+    },
+    {
+      "name": "Official Python SDK package metadata",
+      "url": "https://raw.githubusercontent.com/upbit-official/upbit-sdk-python/main/pyproject.toml",
+      "observed_version": "0.9.0",
+      "observed_tag_commit": "8a77921def84e062ba39227fd9ed8cff4bb4aa84"
+    }
+  ],
+  "verification": {
+    "method": "manual official-source retrieval before implementation",
+    "notes": "This file records source identity and publisher update metadata, not a vendored copy. Re-fetch every source and review diffs before changing exchange behavior."
+  }
+}

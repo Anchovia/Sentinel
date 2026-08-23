@@ -2,52 +2,62 @@
 
 ## Current checkpoint
 
-- Phase: 0 — Foundation
+- Phase: 1 — Public Market Data
 - Status: `COMPLETE`
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; no live adapter or real order endpoint implemented
 - Actual orders executed: no
 - Secrets accessed: no
-- Data schema version: foundation-1
+- Data schema version: raw-event-envelope-1 / upbit-public-v1
 - Model schema version: not created
 
-## Completed in the current milestone
+## Completed in Phase 1
 
-- Connected local checkout to `origin/main`.
-- Selected Python 3.13.15 as the compatibility-first supported runtime; documented in ADR-001.
-- Added project packaging, safe defaults, initial developer commands, and container/CI skeleton.
-- Implemented the six-gate live submission guard.
-- Implemented Decimal-only monetary conversion and exchange-increment rounding.
-- Implemented order-intent validation and explicit order state transitions including `UNKNOWN` reconciliation.
-- Implemented recursive Secret/authorization redaction and non-secret API/CLI safety status.
-- Added initial unit tests.
+- Retrieved the official Upbit documentation index, WebSocket guide/best practice, rate limits,
+  ticker/trade/orderbook contracts, Python SDK guide, and official SDK package metadata.
+- Recorded the source snapshot and reviewed public-only capability manifest. ADR-005 documents why
+  the current official SDK was not installed under its declared `websockets <16` constraint.
+- Implemented Decimal-preserving public wire schemas, DEFAULT-format dynamic subscriptions,
+  per-connection message limiting, ping/pong policy, reconnect/backoff with jitter, and malformed
+  message isolation.
+- Implemented immutable raw event envelopes with exact payload text/hash, UTC/monotonic timestamps,
+  latency and clock-skew quality flags, and bounded duplicate detection.
+- Implemented atomic ZSTD Parquet partitions, adjacent JSON manifests, SHA-256 verification, orphan
+  temporary-file cleanup, market-data metrics, and a bounded API-key-free collection CLI.
+- Collected a real keyless twelve-message KRW-BTC sample spanning ticker, trade, and orderbook. The
+  three local Parquet files contain twelve rows and all manifest checksums verify.
 
 ## Validation evidence
 
 ```text
-uv sync: PASS — Python 3.13.15, 76 locked packages
+uv sync: PASS — Python 3.13.15, 78 locked packages
 ruff: PASS — all checks passed
-format check: PASS — 51 files formatted
-mypy: PASS — 18 source files, no issues
-pytest: PASS — 65 tests, 99.45% branch coverage
-secret scan: PASS — 107 text files checked
+format check: PASS — 77 files formatted
+mypy: PASS — 34 source files, no issues
+pytest: PASS — 119 tests, 95.45% branch coverage
+secret scan: PASS — 140 text files checked
 dependency audit: PASS — no known vulnerabilities
 compose validation: PASS — paper override renders successfully
-container build: PASS — quantforge:phase0 manifest sha256:366a76f628b5e626906747dd33bf79eac54ad7245bce0d1104d4430bcdde330b
+public WebSocket smoke: PASS — keyless, 12 accepted, 3 event types, 3 Parquet files
+Parquet verification: PASS — 12 rows, all 3 SHA-256 manifests valid
+container build: PASS — quantforge:phase1 image sha256:c4d3c3cf6254d6d7751ef9db020948b86c2ef7b28cd32e4dd48b95c158585e0f
 container safety smoke: PASS — paper, live=false, 6 failed gates
-container API smoke: PASS — /health ok, /safety paper/live=false
 ```
 
-The first dependency audit found `PYSEC-2026-1845` in pytest 8.4.2. The lock was updated to pytest 9.1.1 and the audit and entire validation suite were rerun successfully.
+The keyless smoke artifacts remain under ignored local `data/phase1-smoke/raw`; no exchange Secret
+was read, no private endpoint was called, and no order capability exists.
 
 ## Known constraints
 
 - Local `uv` is not globally installed; validation used a project-isolated bootstrap environment.
 - Docker Compose configuration and the application container were validated; the full PostgreSQL/Prometheus/Grafana stack was not left running.
 - GitHub CLI is not installed, so PR creation automation is not configured.
-- Exchange capabilities and package/image digests require live official-source verification in their implementing phases.
+- Documentation refresh is currently a reviewed manual operation rather than an automated semantic
+  diff.
+- Public collection is a bounded CLI path; a supervised long-running service is not configured yet.
 
 ## Next milestone
 
-Begin Phase 1 official Upbit capability discovery: retrieve the current official documentation index and selected pages, create a source snapshot and capability manifest, then implement public ticker/trade/orderbook schemas and fixture-first adapters.
+Begin Phase 2 with a deterministic virtual clock, immutable replay cursor/checkpoints, golden raw
+event sequence, explicit gap semantics, and 1s/5s/15s/1m bar contracts before feature work.

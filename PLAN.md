@@ -19,14 +19,14 @@ Exit criteria:
 - Default settings fail all six live gates.
 - `PROGRESS.md` and `docs/HANDOFF.md` contain reproducible evidence.
 
-## Phase 1 — Public Market Data (`IN_PROGRESS`)
+## Phase 1 — Public Market Data (`COMPLETE`)
 
 - Retrieve current Upbit `llms.txt` and official API/SDK documentation.
 - Create capability manifest and document snapshot.
 - Implement public ticker/trade/orderbook streams, dynamic subscriptions, heartbeat, reconnect/backoff, normalizer, raw envelope, append-only writer, fixtures, and metrics.
 - Validate keyless collection, malformed-message isolation, latency/clock-skew measurement, checksum manifests, and reconnect recovery.
 
-## Phase 2 — Replay, Bars, and Features (`PENDING`)
+## Phase 2 — Replay, Bars, and Features (`IN_PROGRESS`)
 
 - Deterministic virtual clock and replay checkpoints.
 - 1s/5s/15s/1m bars, data-gap semantics, L2/trade/volatility features, feature registry, quality checks, and runtime snapshots.

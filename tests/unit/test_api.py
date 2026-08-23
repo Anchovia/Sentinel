@@ -43,3 +43,5 @@ async def test_metrics_expose_non_secret_safety_state() -> None:
     assert response.status_code == 200
     assert "quantforge_live_submission_allowed 0.0" in response.text
     assert 'quantforge_trading_mode_info{mode="paper"} 1.0' in response.text
+    assert "quantforge_market_data_connected 0.0" in response.text
+    assert "quantforge_market_data_messages_received_total 0.0" in response.text

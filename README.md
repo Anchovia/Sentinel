@@ -12,7 +12,9 @@ The project is safety-first:
 
 ## Current status
 
-Phase 0 (foundation) is under construction. No real orders are implemented or executed.
+Phase 1 (public market data) is complete. QuantForge can collect keyless Upbit ticker, trade, and
+orderbook streams into checksummed ZSTD Parquet partitions. No private API or real orders are
+implemented or executed.
 
 See [SPEC.md](SPEC.md), [PLAN.md](PLAN.md), [PROGRESS.md](PROGRESS.md), and [RISK_POLICY.md](RISK_POLICY.md) before changing behavior.
 
@@ -30,6 +32,7 @@ uv run pytest
 uv run ruff check .
 uv run mypy src
 uv run quantforge safety-status
+uv run quantforge collect-public --max-messages 100
 ```
 
 `make bootstrap`, `make test`, `make lint`, and `make typecheck` wrap the same commands on systems with Make installed.

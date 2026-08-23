@@ -1,0 +1,70 @@
+schema_version: 1
+exchange: upbit
+retrieved_at_utc: "2026-08-23T10:14:19.465Z"
+source_snapshot: docs/upbit_document_snapshot.json
+
+public_websocket:
+  enabled: true
+  authentication: none
+  endpoint: wss://api.upbit.com/websocket/v1
+  minimum_tls: "1.2"
+  preferred_tls: "1.3"
+  format: DEFAULT
+  streams:
+    ticker:
+      enabled: true
+      schema: upbit-ticker-v1
+    trade:
+      enabled: true
+      schema: upbit-trade-v1
+      exchange_unique_field: sequential_id
+    orderbook:
+      enabled: true
+      schema: upbit-orderbook-v1
+      supported_depths: [1, 5, 15, 30]
+      default_depth: 30
+      grouped_level_krw_only: true
+  connection_policy:
+    idle_timeout_seconds: 120
+    ping_interval_seconds: 30
+    ping_timeout_seconds: 10
+    open_timeout_seconds: 10
+    close_timeout_seconds: 10
+    reconnect_backoff_initial_seconds: 1
+    reconnect_backoff_max_seconds: 60
+    reconnect_jitter_ratio: "0.20"
+  documented_rate_limits:
+    connections_per_second: 5
+    messages_per_second_per_connection: 5
+    messages_per_minute_per_connection: 100
+  origin_header:
+    send: false
+    reason: Upbit applies a separate one-request-per-ten-seconds policy when Origin is present.
+
+private_websocket:
+  enabled: false
+  endpoint: wss://api.upbit.com/websocket/v1/private
+  reason: Private streams and credentials are outside Phase 1.
+
+rest_api:
+  enabled: false
+  reason: Phase 1 uses keyless public WebSocket data only.
+
+official_python_sdk:
+  available: true
+  package: upbit-sdk
+  observed_version: 0.9.0
+  observed_tag_commit: 8a77921def84e062ba39227fd9ed8cff4bb4aa84
+  installed: false
+  decision: direct_public_transport_behind_adapter_boundary
+  reason: >-
+    The verified SDK release declares websockets >=13,<16 while this project uses websockets 17.
+    Phase 1 therefore keeps a small public-only transport behind QuantForge protocols and retains
+    original payloads. Reassess the official SDK on every capability refresh.
+
+safety:
+  api_keys_required: false
+  order_submission_present: false
+  external_payloads_are_untrusted: true
+  additive_unknown_response_fields: retained_in_raw_payload
+  malformed_messages: isolate_and_count

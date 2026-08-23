@@ -1,4 +1,4 @@
-"""Minimal Phase 0 API exposing health and non-secret safety state."""
+"""Read-oriented API exposing health, safety, and process metrics."""
 
 from typing import Any
 
@@ -7,7 +7,7 @@ from prometheus_client import make_asgi_app
 
 from quantforge import __version__
 from quantforge.config import QuantForgeSettings, get_settings
-from quantforge.monitoring import create_foundation_metrics
+from quantforge.monitoring import create_foundation_metrics, create_market_data_metrics
 from quantforge.runtime import LiveSubmissionGuard
 
 
@@ -15,6 +15,7 @@ def create_app(settings: QuantForgeSettings | None = None) -> FastAPI:
     active_settings = settings or get_settings()
     app = FastAPI(title="QuantForge", version=__version__)
     metrics = create_foundation_metrics(active_settings)
+    app.state.market_data_metrics = create_market_data_metrics(metrics.registry)
     app.mount("/metrics", make_asgi_app(registry=metrics.registry))
 
     @app.get("/health", tags=["system"])

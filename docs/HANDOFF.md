@@ -7,8 +7,8 @@ Read, in order: `AGENTS.md`, `SPEC.md`, `PLAN.md`, `PROGRESS.md`, `RISK_POLICY.m
 ## Current state
 
 - Date: 2026-08-23 KST
-- Completed phase: 0 — Foundation
-- Current phase: 1 — Public Market Data (`IN_PROGRESS`)
+- Completed phase: 1 — Public Market Data
+- Current phase: 2 — Replay, Bars, and Features (`IN_PROGRESS`)
 - Git branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Product/package: QuantForge / `quantforge`
@@ -17,25 +17,32 @@ Read, in order: `AGENTS.md`, `SPEC.md`, `PLAN.md`, `PROGRESS.md`, `RISK_POLICY.m
 - Live order code: not implemented
 - Actual orders: none
 - Production Secrets: not requested or accessed
+- Phase 0 checkpoint: `dafd09c feat: establish QuantForge safety-first foundation`
 
 ## Implemented
 
 - Root product/safety/architecture/research/data/security/operations contracts and ADRs.
 - Python package metadata, typed settings, Decimal boundary, order intent/state machine, risk decision contract, six-gate guard, Secret redaction, CLI, and minimal API.
 - Unit tests, CI skeleton, Docker/Compose infrastructure skeleton, and developer scripts.
+- Official Upbit public capability snapshot, isolated direct public transport, reviewed wire schemas,
+  dynamic subscriptions, heartbeat, throttling, reconnect/backoff, duplicate detection, and
+  malformed-message isolation.
+- Exact raw event lineage, append-only ZSTD Parquet writer, row/time/checksum manifests,
+  keyless finite collector, and public market-data metrics.
 
 ## Validation
 
 ```text
 Python: 3.13.15
-uv lock/sync: PASS (76 packages)
+uv lock/sync: PASS (78 packages)
 Ruff + format: PASS
-mypy: PASS (18 source files)
-pytest: PASS (65 tests, 99.45% branch coverage)
-Secret scan: PASS (107 text files)
-pip-audit: PASS (no known vulnerabilities after pytest security update)
+mypy: PASS (34 source files)
+pytest: PASS (119 tests, 95.45% branch coverage)
+Secret scan: PASS (140 text files)
+pip-audit: PASS (no known vulnerabilities)
 Compose config: PASS
-container build and paper safety/API smoke: PASS
+keyless Upbit smoke: PASS (12 events; ticker/trade/orderbook; 3 valid manifests)
+container build and paper safety smoke: PASS (`quantforge:phase1`)
 ```
 
 ## Important constraints
@@ -44,12 +51,16 @@ container build and paper safety/API smoke: PASS
 - Any missing live gate blocks submission.
 - `configs/risk.default.yaml` contains zero live limits intentionally.
 - No private Upbit adapter or production credential source exists.
+- The official Upbit SDK `0.9.0` is intentionally not installed under its verified incompatible
+  WebSocket constraint; see ADR-005.
+- Local Phase 1 smoke data is ignored at `data/phase1-smoke/raw` and may be deleted after inspection.
 - Scheduled tasks must not be registered until their skills, inputs, schemas, and manual dry runs exist.
 
 ## Next actions
 
-1. Commit the validated Phase 0 checkpoint on `main`.
-2. Retrieve current official Upbit `llms.txt`, SDK, WebSocket, rate-limit, and market-data documentation.
-3. Create `docs/upbit_document_snapshot.json` and `docs/upbit_capability_manifest.yaml` with retrieval timestamps and source URLs.
-4. Implement capability-aware public transport/domain mappings with recorded official fixtures.
-5. Add keyless public-stream collection and reconnect tests before any private adapter work.
+1. Commit the validated Phase 1 checkpoint on `main`.
+2. Implement a deterministic virtual clock and stable replay ordering/cursor contracts.
+3. Add replay checkpoint hashing and a golden sequence covering duplicates, out-of-order input,
+   reconnect boundaries, and explicit gaps.
+4. Build 1s/5s/15s/1m bars without silently treating missing intervals as zero volume.
+5. Add versioned L2/trade/volatility features only after golden replay determinism passes.
