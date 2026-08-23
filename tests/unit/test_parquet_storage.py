@@ -11,6 +11,7 @@ from quantforge.storage import (
     RawFileManifest,
     cleanup_orphan_temp_files,
     read_raw_events,
+    summarize_raw_storage,
     verify_manifest_checksum,
 )
 
@@ -59,6 +60,10 @@ def test_zstd_partition_manifest_and_checksum(tmp_path: Path) -> None:
     assert all(
         event.raw_payload_hash == restored_events[0].raw_payload_hash for event in restored_events
     )
+    summary = summarize_raw_storage(tmp_path)
+    assert summary.file_count == 1
+    assert summary.row_count == 2
+    assert summary.byte_size == manifest.byte_size
     assert writer.close() == []
 
 
@@ -127,6 +132,7 @@ def test_invalid_writer_buffer_is_rejected(tmp_path: Path) -> None:
 
 def test_reader_handles_empty_root_and_rejects_bad_manifest(tmp_path: Path) -> None:
     assert read_raw_events(tmp_path) == []
+    assert summarize_raw_storage(tmp_path).row_count == 0
     manifest_path = tmp_path / "bad.manifest.json"
     manifest_path.write_text("{}", encoding="utf-8")
     try:
@@ -135,3 +141,17 @@ def test_reader_handles_empty_root_and_rejects_bad_manifest(tmp_path: Path) -> N
         assert "invalid raw manifest" in str(exc)
     else:
         raise AssertionError("expected malformed manifest to fail")
+
+
+def test_storage_summary_rejects_file_size_damage(tmp_path: Path) -> None:
+    writer = ParquetRawEventWriter(tmp_path, max_rows=1)
+    manifest = writer.append(_event("trade.default.json", 1))[0]
+    with (tmp_path / manifest.data_file).open("ab") as stream:
+        stream.write(b"damage")
+
+    try:
+        summarize_raw_storage(tmp_path)
+    except RawDataIntegrityError as exc:
+        assert "size mismatch" in str(exc)
+    else:
+        raise AssertionError("expected damaged raw storage summary to fail")

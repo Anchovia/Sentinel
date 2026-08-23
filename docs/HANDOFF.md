@@ -9,7 +9,8 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 
 - Date: 2026-08-24 KST
 - Completed phases: 0–10
-- Current checkpoint: supervised public paper burn-in complete; sustained evidence next
+- Current checkpoint: Korean public-data monitor added to supervised public paper burn-in;
+  sustained evidence and real-time paper orchestration next
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
@@ -29,8 +30,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 7: `b71424e feat: 운영 대시보드와 감사 경계 구축`
 - Phase 8: `84b751c feat: 격리된 자동 감사 기반 구축`
 - Phase 9: `a2c0542 feat: 읽기 전용 실거래 준비도 검증 구축`
+- Phase 10: `34ac186 feat: 공개 페이퍼 감독 런타임 구축`
 
-## Implemented through Phase 10
+## Implemented through Phase 10.1
 
 - Safety-first Python modular monolith, six closed live gates, Decimal domain/accounting boundary,
   keyless Upbit public transport, versioned immutable raw lineage, deterministic replay/bars/features,
@@ -53,23 +55,30 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   reconnect/parser/duplicate/latency evidence, offline health status, and clean bounded shutdown.
 - A separate read-only Compose service stores paper raw data in a persistent volume and writes only
   redacted runtime exports. It has no private, model, strategy, risk, broker, ledger, or order path.
-- ADR-001 through ADR-014 record consequential design choices. README remains intentionally minimal.
+- A self-contained Korean local monitor refreshes from atomic exports every five seconds and shows
+  public market/collector health plus manifest-backed retained rows, files, and bytes. It needs no
+  server, token, account, or control path and excludes raw payloads and internal identifiers.
+- ADR-001 through ADR-015 record consequential design choices. README remains intentionally minimal.
 
 ## Latest validation
 
 ```text
 Python 3.13.15; no Phase 10 dependency added
-ruff + format: PASS (205 files)
-mypy: PASS (106 source files)
-pytest: PASS (304 tests, 86.52% branch coverage)
-Secret scan: PASS (305 text files)
+ruff + format: PASS (207 files)
+mypy: PASS (107 source files)
+pytest: PASS (307 tests, 86.60% branch coverage)
+Secret scan: PASS (307 text files)
 pip-audit: PASS (no known vulnerabilities)
 Compose config: PASS, including isolated paper-runtime
 Host public smoke: 30 accepted/committed, no parser error/reconnect/auth/private/order path
 Host offline replay: 30 verified inputs, stable dataset/output hashes
 Phase 10 image: PASS (quantforge:phase10, sha256:9fade54b...0522)
+Monitor image: PASS (quantforge-paper-runtime, sha256:37e8961e...1e087)
 Container safety: paper, live=false, credentials=false, all six gates closed
 Container public smoke: 10 accepted/committed; every auth/private/order/live flag false
+Korean monitor: PASS; atomic self-contained HTML, five-second reload, no server/token/control path
+Retained restart: 7,671 rows/48 files/1,568,641 bytes recovered; then increased to 8,109 rows/
+51 files/1,656,597 bytes with healthy public WebSocket and no parser error/reconnect
 Actual/private/test orders: none
 Scheduled tasks: not registered
 ```
@@ -90,8 +99,9 @@ Scheduled tasks: not registered
 - Public L2 fill/queue behavior is approximate. The collector is now supervised, but sustained
   coverage is not yet evidence and real-time paper strategy/execution is not composed. Models and
   strategies remain fixture-scale baselines with no profitability or promotion claim.
-- The current server-rendered dashboard/Grafana views are internal operations skeletons, not the
-  finished Korean GUI.
+- The Korean monitor currently covers only public feed/storage visibility. The authenticated
+  server-rendered dashboard/Grafana views remain internal operations skeletons, and there are no
+  paper strategy, order, position, or performance results to display yet.
 - Dashboard/recovery/authorization/network/storage hardening remains incomplete. Consult
   `docs/KNOWN_LIMITATIONS.md` and `docs/readiness/LIVE_READINESS.md`.
 - The Windows host lacks `uv` and `make` on PATH; exact Make targets were unavailable. Equivalent
@@ -105,7 +115,8 @@ Scheduled tasks: not registered
    failures, reconnects, restarts, disk growth, and retention without treating uptime as readiness.
 2. Compose causal real-time bars/features, baseline inference, proposal-only routing, independent
    paper risk, conservative broker, exact ledger, and representative performance/model/data exports.
-3. Build the polished Korean read-only GUI after the runtime export contracts are stable.
+3. Extend the Korean monitor with strategy, risk, simulated order/fill, portfolio, and performance
+   views only after those runtime export contracts are stable.
 4. Design production PostgreSQL persistence, encrypted off-host backup/restore with measured RPO/RTO,
    TLS/RBAC/rate limits, Secret delivery, network isolation, and monitoring retention.
 5. Under separate human authorization only, implement and review credential/order-test transport,

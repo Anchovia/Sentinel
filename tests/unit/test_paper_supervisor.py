@@ -13,6 +13,7 @@ from quantforge.operations import read_dashboard_snapshot
 from quantforge.runtime.paper_supervisor import (
     PaperRuntimeBlocked,
     PaperRuntimePolicy,
+    PaperRuntimeSnapshot,
     PaperRuntimeState,
     PaperRuntimeSupervisor,
     PublicStreamClient,
@@ -142,6 +143,9 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     assert snapshot.state is PaperRuntimeState.STOPPED
     assert snapshot.accepted_messages == 2
     assert snapshot.committed_rows == 2
+    assert snapshot.retained_rows == 2
+    assert snapshot.retained_files > 0
+    assert snapshot.retained_bytes > 0
     assert snapshot.parser_errors == 1
     assert snapshot.last_error_type == "MalformedUpbitPayload"
     assert snapshot.authentication_used is False
@@ -155,10 +159,36 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     assert dashboard.overview.trading_mode == "paper"
     assert dashboard.overview.live_submission_allowed is False
     assert dashboard.markets[0].market == "KRW-BTC"
+    monitor = (tmp_path / "runtime/ops/paper-monitor.html").read_text(encoding="utf-8")
+    assert "공개 데이터 모니터" in monitor
+    assert "누적 저장 행" in monitor
+    assert "2" in monitor
+    assert "실제 주문" in monitor
+    assert "완전 차단" in monitor
+    assert 'http-equiv="refresh" content="5"' in monitor
+    assert "raw_output" not in monitor
+    assert "policy_hash" not in monitor
 
     serialized = json.loads((tmp_path / "runtime/ops/paper-runtime.json").read_text())
     forbidden = {"authorization", "access_key", "secret_key", "token", "password"}
     assert forbidden.isdisjoint(serialized)
+
+
+@pytest.mark.asyncio
+async def test_supervisor_retains_totals_across_runs(tmp_path: Path) -> None:
+    first_event = make_trade_event(sequence=1, exchange_offset_ms=100, received_offset_ms=150)
+    second_event = make_trade_event(sequence=2, exchange_offset_ms=200, received_offset_ms=250)
+    first = _supervisor(tmp_path, _factory(events=(first_event,)))
+    first_snapshot = await first.run()
+    second = _supervisor(tmp_path, _factory(events=(second_event,)))
+
+    second_snapshot = await second.run()
+
+    assert first_snapshot.retained_rows == 1
+    assert second_snapshot.committed_rows == 1
+    assert second_snapshot.retained_rows == 2
+    assert second_snapshot.retained_files == first_snapshot.retained_files + 1
+    assert second_snapshot.retained_bytes > first_snapshot.retained_bytes
 
 
 @pytest.mark.asyncio
@@ -216,3 +246,33 @@ def test_policy_rejects_unbounded_values() -> None:
         PaperRuntimePolicy(duration_seconds=0)
     with pytest.raises(ValueError):
         PaperRuntimePolicy(max_messages=0)
+
+
+def test_version_one_runtime_snapshot_remains_read_compatible() -> None:
+    payload = {
+        "schema_version": "paper-runtime-1",
+        "run_id": "00000000-0000-0000-0000-000000000001",
+        "state": "RUNNING",
+        "started_at_utc": "2026-08-23T00:00:00Z",
+        "updated_at_utc": "2026-08-23T00:00:01Z",
+        "markets": ["KRW-BTC"],
+        "streams": ["ticker"],
+        "accepted_messages": 0,
+        "event_counts": [],
+        "duplicate_messages": 0,
+        "parser_errors": 0,
+        "reconnects": 0,
+        "committed_files": 0,
+        "committed_rows": 0,
+        "heartbeat_sequence": 1,
+        "websocket_connected": True,
+        "raw_output": "data/paper/raw",
+        "policy_hash": "a" * 64,
+    }
+
+    parsed = PaperRuntimeSnapshot.model_validate(payload)
+
+    assert parsed.schema_version == "paper-runtime-1"
+    assert parsed.retained_files == 0
+    assert parsed.retained_rows == 0
+    assert parsed.retained_bytes == 0

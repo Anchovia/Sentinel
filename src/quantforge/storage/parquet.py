@@ -2,6 +2,7 @@
 
 import os
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -64,6 +65,46 @@ class RawFileManifest(BaseModel):
 
 class RawDataIntegrityError(ValueError):
     """A raw file, manifest, or row failed immutable lineage validation."""
+
+
+@dataclass(frozen=True, slots=True)
+class RawStorageSummary:
+    """Manifest-backed retained raw-data totals without reading event payloads."""
+
+    file_count: int = 0
+    row_count: int = 0
+    byte_size: int = 0
+
+
+def summarize_raw_storage(root: Path) -> RawStorageSummary:
+    """Count retained immutable files from validated manifests and file sizes."""
+
+    if not root.exists():
+        return RawStorageSummary()
+    resolved_root = root.resolve()
+    data_files: set[Path] = set()
+    row_count = 0
+    byte_size = 0
+    for manifest_path in sorted(root.rglob("*.manifest.json")):
+        try:
+            manifest = RawFileManifest.model_validate_json(manifest_path.read_bytes())
+        except ValueError as exc:
+            raise RawDataIntegrityError(f"invalid raw manifest: {manifest_path}") from exc
+        data_path = (root / manifest.data_file).resolve()
+        if resolved_root not in data_path.parents:
+            raise RawDataIntegrityError(f"unsafe raw manifest path: {manifest.data_file}")
+        if data_path in data_files:
+            raise RawDataIntegrityError(f"duplicate raw manifest target: {manifest.data_file}")
+        if not data_path.is_file() or data_path.stat().st_size != manifest.byte_size:
+            raise RawDataIntegrityError(f"raw file size mismatch: {manifest.data_file}")
+        data_files.add(data_path)
+        row_count += manifest.row_count
+        byte_size += manifest.byte_size
+    return RawStorageSummary(
+        file_count=len(data_files),
+        row_count=row_count,
+        byte_size=byte_size,
+    )
 
 
 def _event_row(event: EventEnvelope) -> dict[str, object]:

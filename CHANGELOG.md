@@ -91,6 +91,9 @@ All notable changes are recorded here. The project follows semantic versioning o
   shutdown, and no authentication, private endpoint, or order capability.
 - A read-only `paper-status` health command, live public-market operations snapshots, and a separate
   read-only Compose service for sustained `KRW-BTC` public observation.
+- A self-contained Korean public-data monitor that refreshes every five seconds without a web
+  server, token, account access, or order control, plus manifest-backed retained row/file/byte
+  totals that survive supervised collector restarts.
 
 ### Security
 

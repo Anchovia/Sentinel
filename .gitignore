@@ -42,6 +42,7 @@ tmp/
 
 # Runtime exports and reports are generated; keep directory sentinels and schemas.
 runtime_exports/**/*.json
+runtime_exports/**/*.html
 !runtime_exports/**/.gitkeep
 reports/**/*.md
 reports/**/*.json

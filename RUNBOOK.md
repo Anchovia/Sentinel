@@ -79,6 +79,18 @@ network/order/live submission false. Stop the process normally so buffered rows 
 heartbeat are committed. After an abnormal stop, verify manifests and replay before trusting new
 coverage. Phase 10 observes and stores public data only; zero paper fills is expected.
 
+While the supervisor is running, open the generated local file directly in a browser:
+
+```text
+runtime_exports/ops/paper-monitor.html
+```
+
+The Korean read-only monitor reloads every five seconds. It shows public price, latest event age,
+connection/errors/reconnects, current-run counts, and manifest-backed retained rows/files/bytes.
+It needs no server or token and exposes no raw payload, account, credential, strategy control, or
+order action. Retained totals are reconstructed from immutable manifests after each restart; a
+storage integrity error blocks startup instead of showing an untrusted total.
+
 Infrastructure, when Docker Compose is available:
 
 ```text

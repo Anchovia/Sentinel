@@ -14,7 +14,7 @@ from hashlib import sha256
 from pathlib import Path
 from statistics import pstdev
 from time import monotonic
-from typing import Protocol
+from typing import Literal, Protocol
 from uuid import UUID, uuid4
 
 import orjson
@@ -34,7 +34,13 @@ from quantforge.operations.models import (
     SystemView,
 )
 from quantforge.runtime.live_guard import LiveSubmissionGuard
-from quantforge.storage import ParquetRawEventWriter, RawFileManifest, cleanup_orphan_temp_files
+from quantforge.runtime.paper_monitor import write_paper_monitor
+from quantforge.storage import (
+    ParquetRawEventWriter,
+    RawFileManifest,
+    cleanup_orphan_temp_files,
+    summarize_raw_storage,
+)
 
 
 class PaperRuntimeBlocked(RuntimeError):
@@ -53,7 +59,7 @@ class PaperRuntimeSnapshot(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: str = "paper-runtime-1"
+    schema_version: Literal["paper-runtime-1", "paper-runtime-2"] = "paper-runtime-2"
     run_id: UUID
     state: PaperRuntimeState
     started_at_utc: datetime
@@ -68,6 +74,9 @@ class PaperRuntimeSnapshot(BaseModel):
     reconnects: int = Field(ge=0)
     committed_files: int = Field(ge=0)
     committed_rows: int = Field(ge=0)
+    retained_files: int = Field(default=0, ge=0)
+    retained_rows: int = Field(default=0, ge=0)
+    retained_bytes: int = Field(default=0, ge=0)
     heartbeat_sequence: int = Field(ge=0)
     websocket_connected: bool
     last_event_at_utc: datetime | None = None
@@ -364,6 +373,10 @@ class PaperRuntimeSupervisor:
         self._parser_errors = 0
         self._committed_files = 0
         self._committed_rows = 0
+        retained = summarize_raw_storage(self.raw_output)
+        self._retained_files = retained.file_count
+        self._retained_rows = retained.row_count
+        self._retained_bytes = retained.byte_size
         self._heartbeat_sequence = 0
         self._last_event_at_utc: datetime | None = None
         self._last_exchange_at_utc: datetime | None = None
@@ -477,6 +490,9 @@ class PaperRuntimeSupervisor:
     def _record_manifests(self, manifests: Sequence[RawFileManifest]) -> None:
         self._committed_files += len(manifests)
         self._committed_rows += sum(manifest.row_count for manifest in manifests)
+        self._retained_files += len(manifests)
+        self._retained_rows += sum(manifest.row_count for manifest in manifests)
+        self._retained_bytes += sum(manifest.byte_size for manifest in manifests)
 
     async def _write_heartbeat(
         self,
@@ -504,6 +520,9 @@ class PaperRuntimeSupervisor:
             reconnects=self._client.reconnect_count,
             committed_files=self._committed_files,
             committed_rows=self._committed_rows,
+            retained_files=self._retained_files,
+            retained_rows=self._retained_rows,
+            retained_bytes=self._retained_bytes,
             heartbeat_sequence=self._heartbeat_sequence,
             websocket_connected=connected,
             last_event_at_utc=self._last_event_at_utc,
@@ -546,4 +565,5 @@ class PaperRuntimeSupervisor:
             ),
         )
         write_dashboard_snapshot(dashboard, self.output_root)
+        write_paper_monitor(dashboard, snapshot, self.output_root)
         return snapshot

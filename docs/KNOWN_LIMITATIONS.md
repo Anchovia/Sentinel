@@ -31,8 +31,10 @@
 
 - The dashboard has one bearer-authenticated operator role and no RBAC/SSO/TLS ingress/application
   rate limiter. Runtime producers do not yet populate every read view.
-- The existing server-rendered dashboard and Grafana views are developer/operations skeletons, not a
-  polished Korean end-user GUI.
+- The Korean local monitor covers public feed/storage visibility only. The authenticated
+  server-rendered dashboard and Grafana views are still developer/operations skeletons; no strategy,
+  simulated-order, position, or paper-performance view can be populated before Phase 11 composes
+  those runtime contracts.
 - Incident, control, order, experiment, risk, and attribution journals are local single-writer proofs,
   not transactional replicated production storage.
 - Backups are unencrypted, local development restore proofs with no PostgreSQL/off-host/raw-tick/
