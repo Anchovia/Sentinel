@@ -13,7 +13,9 @@ COPY pyproject.toml uv.lock README.md LICENSE ./
 COPY src ./src
 RUN uv sync --frozen --no-dev --no-install-project && uv sync --frozen --no-dev
 
-RUN useradd --create-home --uid 10001 quantforge
+RUN useradd --create-home --uid 10001 quantforge \
+    && mkdir -p /app/data/operations /app/runtime_exports \
+    && chown -R quantforge:quantforge /app/data /app/runtime_exports
 USER quantforge
 
 ENV PATH="/app/.venv/bin:$PATH" \

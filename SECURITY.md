@@ -55,3 +55,16 @@ fake. It implements no JWT signer or authenticated network client.
 External API payloads, headers, documentation, logs, and private events are untrusted input. Parse
 with strict schemas, preserve exact monetary values as Decimal, retain source hashes, fail closed on
 unknown fields that affect safety, and redact authorization material before any observation surface.
+
+## Operations-plane security
+
+- Dashboard access and CSRF Secrets are a separate externally supplied pair, never exchange keys.
+- Authentication absence returns fail-closed 503; bad bearer authentication returns 401 and a
+  metric; state changes also require a short-lived actor-bound CSRF proof.
+- Runtime exports reject sensitive field names, bearer/JWT-shaped values, and full account UUIDs.
+- Operator identity and idempotency values are one-way hashed in the audit log; confirmations and
+  credentials are not logged.
+- Controls have no exchange network capability, cannot release the kill switch, and cannot change
+  risk/model/strategy parameters or live approval state.
+- The server-rendered dashboard adds no browser package supply chain. Production exposure still
+  requires TLS ingress, rate limits, external Secret delivery, and hardened authorization.

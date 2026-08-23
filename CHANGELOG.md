@@ -58,6 +58,16 @@ All notable changes are recorded here. The project follows semantic versioning o
   fsynced hash-chain order journal, and exact order/balance reconciliation.
 - Mock-only test-order/private ports, identifier-first no-retry timeout/crash recovery, and a live
   adapter that remains disabled even when all six configuration gates pass.
+- Versioned Decimal-preserving operations read models, atomic Secret-rejecting runtime exports, an
+  authenticated server-rendered dashboard/API, and a provisioned Grafana paper-health dashboard.
+- Separate bearer/CSRF dashboard authentication, append-only incident/audit/control journals,
+  confirmed idempotent emergency requests, and fail-closed interrupted-result recovery.
+- Local-only cancel-only activation and incident acknowledgement; strategy pause stays a proposal
+  and cancel-all stays blocked because no exchange cancellation transport exists.
+- Explicit-source checksummed local backups and empty-target paper restore drills that reject
+  Secrets, symlinks, path traversal, unmanifested files, and checksum damage.
+- Secret-free `export-operations` CLI output and expanded Prometheus incident, control, exposure,
+  reconciliation, backup, disk, kill-switch, and authentication metrics.
 
 ### Security
 

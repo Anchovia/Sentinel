@@ -13,6 +13,8 @@ services:
       QF_RISK_POLICY_APPROVED: "false"
       QF_MODEL_RELEASE_APPROVED: "false"
       QF_OPERATOR_UNLOCK_PRESENT: "false"
+      QF_DASHBOARD_ACCESS_TOKEN: ${QF_DASHBOARD_ACCESS_TOKEN:-}
+      QF_DASHBOARD_CSRF_SECRET: ${QF_DASHBOARD_CSRF_SECRET:-}
       QF_DATABASE_URL: postgresql+asyncpg://quantforge:quantforge@postgres:5432/quantforge
     depends_on:
       postgres:
@@ -22,6 +24,8 @@ services:
     read_only: true
     tmpfs:
       - /tmp
+    volumes:
+      - operations-state:/app/data/operations
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
@@ -60,6 +64,7 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana
     ports:
       - "127.0.0.1:3000:3000"
@@ -68,3 +73,4 @@ services:
 volumes:
   postgres-data:
   grafana-data:
+  operations-state:

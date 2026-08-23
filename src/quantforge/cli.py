@@ -2,6 +2,8 @@
 
 import asyncio
 import json
+import shutil
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, cast
 
@@ -11,6 +13,11 @@ from quantforge.config import get_settings
 from quantforge.domain import DataGap, EventEnvelope
 from quantforge.exchange.upbit.public_ws import UpbitPublicWebSocketClient
 from quantforge.exchange.upbit.subscriptions import PublicStreamType, UpbitSubscription
+from quantforge.operations import (
+    LocalBackupManager,
+    create_operations_context,
+    write_dashboard_snapshot,
+)
 from quantforge.replay import ReplayEngine, VirtualClock
 from quantforge.runtime import DataQualitySnapshot, LiveSubmissionGuard, write_data_quality_snapshot
 from quantforge.storage import (
@@ -23,6 +30,8 @@ app = typer.Typer(no_args_is_help=True, help="QuantForge research and operations
 DEFAULT_RAW_OUTPUT = Path("data/raw")
 DEFAULT_REPLAY_INPUT = Path("data/raw")
 DEFAULT_DATA_QUALITY_OUTPUT = Path("runtime_exports/data_quality")
+DEFAULT_OPERATIONS_OUTPUT = Path("runtime_exports")
+DEFAULT_BACKUP_ROOT = Path("data/backups")
 
 
 @app.callback()
@@ -135,6 +144,124 @@ def replay_raw(
                 "snapshot": str(snapshot_path.resolve()),
                 "network_used": False,
                 "authentication_used": False,
+                "order_submission_available": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("export-operations")
+def export_operations(
+    output_root: Annotated[
+        Path, typer.Option(help="Secret-free operations export root")
+    ] = DEFAULT_OPERATIONS_OUTPUT,
+) -> None:
+    """Write a redacted paper-operations snapshot without exchange or order access."""
+
+    settings = get_settings()
+    now_utc = datetime.now(UTC)
+    output_root.mkdir(parents=True, exist_ok=True)
+    context = create_operations_context(settings, now_utc=now_utc, export_root=output_root)
+    snapshot = context.snapshot()
+    disk_free = shutil.disk_usage(output_root.parent.resolve()).free
+    snapshot = snapshot.model_copy(
+        update={
+            "generated_at_utc": now_utc,
+            "system": snapshot.system.model_copy(update={"disk_free_bytes": disk_free}),
+        }
+    )
+    destination = write_dashboard_snapshot(snapshot, output_root)
+    typer.echo(
+        json.dumps(
+            {
+                "snapshot": str(destination.resolve()),
+                "schema_version": snapshot.schema_version,
+                "trading_mode": snapshot.overview.trading_mode,
+                "live_submission_allowed": snapshot.overview.live_submission_allowed,
+                "authentication_used": False,
+                "network_used": False,
+                "order_submission_available": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("backup-local")
+def backup_local(
+    sources: Annotated[
+        list[Path], typer.Option("--source", help="Explicit workspace file or directory")
+    ],
+    source_revision: Annotated[
+        str, typer.Option(help="Reviewed source revision recorded in the manifest")
+    ],
+    backup_root: Annotated[
+        Path, typer.Option(help="Local development backup root")
+    ] = DEFAULT_BACKUP_ROOT,
+) -> None:
+    """Create a checksummed local paper restore proof; this is not an encrypted backup."""
+
+    manager = LocalBackupManager(Path.cwd())
+    destination = manager.create(
+        tuple(sources),
+        backup_root,
+        source_revision=source_revision,
+        created_at_utc=datetime.now(UTC),
+    )
+    manifest = manager.verify(destination)
+    typer.echo(
+        json.dumps(
+            {
+                "backup": str(destination.resolve()),
+                "backup_id": manifest.backup_id,
+                "object_count": len(manifest.objects),
+                "verified": True,
+                "trading_mode": manifest.trading_mode,
+                "encrypted_by_external_storage": manifest.encrypted_by_external_storage,
+                "production_ready": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("verify-backup")
+def verify_backup(
+    backup: Annotated[Path, typer.Option(help="Backup directory containing manifest.json")],
+) -> None:
+    """Verify every object and aggregate hash in a local backup proof."""
+
+    manifest = LocalBackupManager(Path.cwd()).verify(backup)
+    typer.echo(
+        json.dumps(
+            {
+                "backup_id": manifest.backup_id,
+                "object_count": len(manifest.objects),
+                "verified": True,
+                "objectives_measured": manifest.objectives_measured,
+                "production_ready": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("restore-drill")
+def restore_drill(
+    backup: Annotated[Path, typer.Option(help="Verified local backup directory")],
+    target: Annotated[Path, typer.Option(help="New or empty isolated restore directory")],
+) -> None:
+    """Restore into an empty paper-only directory without credentials or network access."""
+
+    manifest = LocalBackupManager(Path.cwd()).restore_drill(backup, target)
+    typer.echo(
+        json.dumps(
+            {
+                "backup_id": manifest.backup_id,
+                "target": str(target.resolve()),
+                "paper_only_marker": str((target / "RESTORE_PAPER_ONLY").resolve()),
+                "network_used": False,
                 "order_submission_available": False,
             },
             sort_keys=True,

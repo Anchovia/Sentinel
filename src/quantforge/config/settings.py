@@ -2,6 +2,7 @@
 
 from enum import StrEnum
 from functools import lru_cache
+from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import Field, SecretStr, field_validator, model_validator
@@ -50,9 +51,26 @@ class QuantForgeSettings(BaseSettings):
     database_url: str = "postgresql+asyncpg://quantforge:quantforge@localhost:5432/quantforge"
     log_level: str = "INFO"
     display_timezone: str = "Asia/Seoul"
+    runtime_export_root: Path = Path("runtime_exports")
+    operations_state_root: Path = Path("data/operations")
 
     upbit_access_key: SecretStr | None = Field(default=None, repr=False)
     upbit_secret_key: SecretStr | None = Field(default=None, repr=False)
+    dashboard_access_token: SecretStr | None = Field(default=None, repr=False)
+    dashboard_csrf_secret: SecretStr | None = Field(default=None, repr=False)
+
+    @field_validator(
+        "upbit_access_key",
+        "upbit_secret_key",
+        "dashboard_access_token",
+        "dashboard_csrf_secret",
+        mode="before",
+    )
+    @classmethod
+    def normalize_blank_secrets(cls, value: object) -> object:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
 
     @field_validator("display_timezone")
     @classmethod
@@ -77,6 +95,15 @@ class QuantForgeSettings(BaseSettings):
         has_secret = self.upbit_secret_key is not None
         if has_access != has_secret:
             raise ValueError("Upbit access and secret keys must be configured as a pair")
+        has_dashboard_token = self.dashboard_access_token is not None
+        has_csrf_secret = self.dashboard_csrf_secret is not None
+        if has_dashboard_token != has_csrf_secret:
+            raise ValueError("dashboard access and CSRF secrets must be configured as a pair")
+        if self.dashboard_access_token is not None and self.dashboard_csrf_secret is not None:
+            if len(self.dashboard_access_token.get_secret_value()) < 32:
+                raise ValueError("dashboard access token must contain at least 32 characters")
+            if len(self.dashboard_csrf_secret.get_secret_value()) < 32:
+                raise ValueError("dashboard CSRF secret must contain at least 32 characters")
         return self
 
 

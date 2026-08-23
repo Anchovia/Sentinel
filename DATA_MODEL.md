@@ -192,3 +192,17 @@ Order and ledger events are immutable append records; current views are derived.
 ## Runtime exports
 
 `runtime_exports` contains redacted, review-oriented snapshots for operations, performance, models, data quality, incidents, releases, and research. Exports exclude credentials, authorization material, raw account identifiers, and `.env` content. Schemas and Secret tests are mandatory before scheduled consumers are enabled.
+
+Phase 7 defines `operations-dashboard-1`, containing UTC generation time and fixed Overview,
+Markets, Positions, Orders, Strategies, Models, System, and Incidents views. Decimal is retained for
+assets, balances, prices, quantities, fees, exposure, and PnL. Exchange order UUIDs are represented
+only by a short one-way reference hash; account UUIDs are forbidden.
+
+Incident, emergency-control, and audit histories are append-only JSONL chains with sequence,
+previous hash, and record hash. Control records bind a hashed idempotency key to one request
+fingerprint and record status, result code, verified-effect flag, and `network_used=false`.
+
+The `operations-backup-1` manifest records creation time, source revision, paper mode, unmeasured
+RPO/RTO targets, external-encryption status, canonical relative paths, byte counts, per-object
+SHA-256, and an aggregate hash. A local manifest with encryption false is restore-drill evidence,
+not a production backup claim.

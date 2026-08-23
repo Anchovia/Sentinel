@@ -47,5 +47,13 @@ Verify the journal hash chain and state transitions, reconcile every pending/unk
 compare exact remote balances before rebuilding positions or allowing any new submission. A partial,
 corrupt, missing, or contradictory journal is a fail-closed incident requiring human review.
 
-Phase 6 validates this process with a file journal and fake exchange. Database recovery, backups,
-private stream replay, credential restoration, and authenticated cancellation remain unimplemented.
+Phase 6 validates order recovery with a file journal and fake exchange. Phase 7 adds an explicit-file
+local backup manifest and empty-directory paper restore drill. It verifies canonical paths, object
+counts, per-object and aggregate SHA-256, rejects Secret-shaped files/symlinks/extra objects, and
+writes a paper-only marker after restore.
+
+This local artifact is deliberately marked `encrypted_by_external_storage=false` and
+`objectives_measured=false`. It is development evidence, not a production backup or RPO/RTO claim.
+PostgreSQL-native backup/restore, off-host encrypted retention, key management, full raw-data policy,
+private-stream replay, credential restoration, and measured recovery objectives remain
+unimplemented. No restore drill may receive an exchange credential or order-capable network path.

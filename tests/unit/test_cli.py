@@ -5,6 +5,8 @@ from typer.testing import CliRunner
 
 from factories import make_trade_event
 from quantforge.cli import app
+from quantforge.config import get_settings
+from quantforge.operations import read_dashboard_snapshot
 from quantforge.runtime import DataQualitySnapshot
 from quantforge.storage import ParquetRawEventWriter
 
@@ -58,3 +60,21 @@ def test_replay_raw_rejects_empty_input(tmp_path: Path) -> None:
     result = runner.invoke(app, ["replay-raw", "--input-root", str(tmp_path)])
     assert result.exit_code != 0
     assert "no verified raw events" in result.output
+
+
+def test_export_operations_is_secret_free_and_non_ordering(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("QF_OPERATIONS_STATE_ROOT", str(tmp_path / "state"))
+    get_settings.cache_clear()
+    output = tmp_path / "exports"
+    try:
+        result = runner.invoke(app, ["export-operations", "--output-root", str(output)])
+    finally:
+        get_settings.cache_clear()
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["trading_mode"] == "paper"
+    assert payload["live_submission_allowed"] is False
+    assert payload["network_used"] is False
+    assert payload["order_submission_available"] is False
+    snapshot = read_dashboard_snapshot(output / "ops" / "dashboard.json")
+    assert snapshot.system.disk_free_bytes is not None

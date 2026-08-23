@@ -58,6 +58,13 @@ blocks trading. The same fail-closed rule applies after a restart with `SUBMISSI
 journal. Order-test responses are dry-run evidence only and cannot be queried, canceled, promoted to
 an actual order, or used as proof that a later real order is safe.
 
+The Phase 7 dashboard cannot alter this policy or release a kill switch. Its only verified safety
+effect is local `cancel_only` activation. Strategy pause is a proposal and cancel-all is blocked
+while authenticated cancellation transport is absent. Every emergency request requires bearer
+authentication, a short-lived CSRF proof, an exact confirmation phrase, an idempotency key, a
+durable request/result record, and a separate audit event. Interrupted requests become `UNKNOWN`
+and are not executed again automatically.
+
 ## Position sizing
 
 Initial sizing is conservative and combines hard notional caps with volatility, liquidity, confidence, uncertainty, correlation, and drawdown scaling. Full Kelly is forbidden. Risk limits are governance values, not model hyperparameters.

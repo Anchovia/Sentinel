@@ -2,100 +2,90 @@
 
 ## Current checkpoint
 
-- Phase: 6 — Private Exchange and Execution Safety
+- Phase: 7 — Dashboard and Operations
 - Status: `COMPLETE`
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
-- Live submission: blocked; no live adapter or real order endpoint implemented
+- Live submission: blocked; the live adapter has no network capability
 - Actual orders executed: no
-- Secrets accessed: no
-- Data schema version: raw-event-envelope-1 / trade-bar-1 / feature-snapshot-1 / paper-ledger-1 / research-dataset-1 / strategy-risk-1 / attribution-1 / private-event-1 / execution-journal-1 / reconciliation-1
-- Model schema version: model-artifact-1 / prediction-1
+- Private/authenticated Upbit calls: no
+- Production Secrets accessed: no
+- Runtime schema: `operations-dashboard-1` / `operations-backup-1`
+- Next phase: 8 — Work/Codex Automation Support (`IN_PROGRESS`)
 
-## Completed in Phase 6
+## Completed in Phase 7
 
-- Re-fetched the official Upbit AI document index and reviewed authentication, REST best practice,
-  rate limits, order chance/create/test/get/cancel, MyOrder, and MyAsset contracts. No authenticated
-  endpoint or credential was used.
-- Added ordered query-string/SHA-512 contracts and an opaque authorization interface, but no Secret
-  provider, JWT signer, authenticated HTTP/WebSocket client, or network-capable private adapter.
-- Added Decimal-preserving private MyOrder/MyAsset wire schemas, exchange-neutral domain mapping,
-  source hashes, and pure private-subscription message construction.
-- Added strict limit/price/market/best order shapes, IOC/FOK/post-only/SMP compatibility, dynamic
-  order-chance preflight, fee/balance/tick/notional/expiry checks, and risk-decision binding.
-- Added deterministic <=64-character identifiers and an append-only fsynced file journal that burns
-  identifiers, verifies chronology/state transitions, and rejects sequence/hash/identity damage.
-- Added fake/disabled private ports, a fake-only order-test adapter, idempotent submission coordinator,
-  and identifier lookup after timeout/restart. Unknown outcomes never retry create.
-- Added read-only remote order and exact balance reconciliation. Unknown/missing/state/balance
-  mismatch evidence sets `safe_to_resume=false`.
-- Added a disabled live adapter that has no network capability and still raises after all six live
-  configuration gates pass.
+- Added fixed, Decimal-preserving Overview, Markets, Positions, Orders, Strategies, Models, System,
+  and Incidents read models plus an atomic operations export. The export rejects credential field
+  names, bearer/JWT-shaped text, and full account UUIDs before writing.
+- Added `export-operations`; it reports paper mode, no authentication/network use, and no order
+  submission capability.
+- Added fail-closed dashboard authentication using a separately supplied strong bearer token and
+  server-side CSRF Secret. Unconfigured operations endpoints return 503; state-changing requests
+  also require a short-lived actor-bound CSRF proof.
+- Added authenticated dashboard, incident, and audit JSON APIs plus a dependency-free
+  server-rendered read-only dashboard. Added Prometheus operations metrics and a provisioned Grafana
+  `QuantForge Health` dashboard.
+- Added fsynced hash-chain incident, audit, and emergency-control journals. Audit records contain
+  hashed actor/idempotency references rather than credentials or confirmation material.
+- Added exact confirmation phrases, idempotency binding, request-before-effect persistence, result
+  verification, and interrupted-request `UNKNOWN` recovery. Duplicate requests are not re-executed.
+- Local `cancel_only` activation and incident acknowledgement are verified. Strategy pause is only a
+  recorded proposal; cancel-all is blocked because authenticated cancellation transport is absent.
+- Added explicit-source local backup manifests, per-object/aggregate SHA-256 verification, Secret/
+  symlink/path traversal checks, empty-target paper restore drills, and safe CLI commands. Local
+  manifests explicitly report external encryption false and recovery objectives unmeasured.
+- Added ADR-011 and updated architecture, data, risk, security, operations, recovery, and handoff
+  documentation. The public README remained unchanged and minimal.
 
 ## Validation evidence
 
 ```text
-uv sync: PASS — Python 3.13.15, 78 locked packages; no Phase 6 dependency added
+Python: PASS — 3.13.15; no Phase 7 dependency added
 ruff: PASS — all checks passed
-format check: PASS — 154 files formatted
-mypy: PASS — 87 source files, no issues
-pytest: PASS — 237 tests, 87.20% branch coverage
-secret scan: PASS — 228 text files checked
+format check: PASS — 169 files formatted
+mypy: PASS — 98 source files, no issues
+pytest: PASS — 254 tests, 87.17% branch coverage
+secret scan: PASS — 244 text files checked
 dependency audit: PASS — no known vulnerabilities
-official capability refresh: PASS — read-only source review recorded at 2026-08-23T12:23:09.117Z
-private schemas: PASS — MyOrder/MyAsset fixtures preserve Decimal and reject malformed input
-journal persistence: PASS — reopen/state/hash identity verified; tampering rejected
-idempotency: PASS — repeated successful submit makes one fake create call
-timeout/restart: PASS — identifier lookup only; unresolved outcome stays UNKNOWN; create not retried
-reconciliation: PASS — exact balance mismatch and unsafe resume verified
-network isolation: PASS — private/auth/coordinator/live modules contain no network client import
-disabled live: PASS — raises after all six gates; image reports live_network_capability=false
-container build: PASS — quantforge:phase6 image sha256:55d48899...8e105
-container safety smoke: PASS — paper, live=false, all 6 live gates failed closed
+Compose config: PASS — base + paper overlays
+operations API: PASS — 503/401 fail-closed auth, CSRF rejection, authenticated read views
+control safety: PASS — confirmation, idempotency, audit, blocked transport, interrupted UNKNOWN
+runtime export: PASS — atomic round trip and Secret/account-UUID rejection
+backup/restore: PASS — checksum round trip, paper marker, Secret and tamper rejection
+container build: PASS — quantforge:phase7 sha256:c52ccccf...5ae6a
+container safety: PASS — paper, live=false, all six gates failed closed
+container operations: PASS — auth default false; control/live network capability false
+container export: PASS — operations-dashboard-1, network/order/authentication use false
 ```
-
-The keyless smoke artifacts remain under ignored local `data/phase1-smoke/raw`; no exchange Secret
-was read, no private endpoint was called, and no order capability exists.
 
 ## Known constraints
 
-- Local `uv` is not globally installed; validation used a project-isolated bootstrap environment.
-- Docker Compose configuration and the application container were validated; the full PostgreSQL/Prometheus/Grafana stack was not left running.
-- GitHub CLI is not installed, so PR creation automation is not configured.
-- Documentation refresh is currently a reviewed manual operation rather than an automated semantic
-  diff.
-- Public collection is a bounded CLI path; a supervised long-running service is not configured yet.
-- The bounded collector does not persist positive coverage windows automatically. Bar consumers
-  must provide reviewed collector-health coverage; absent coverage safely becomes a data gap.
-- Snapshot-derived order-flow imbalance is not individual order flow or queue position.
-- Conservative queue position is an explicit approximation; public L2 depth decreases cannot
-  identify cancellations versus fills. `calibrated_l2` remains unavailable without lineage.
-- The Phase 3 ledger is single-market, long-only KRW spot. Multi-asset accounting and private
-  balance reconciliation are intentionally deferred.
-- Phase 3 fee values are simulation assumptions, not a claim about Upbit's current fee schedule.
-- Phase 4 models and Phase 5 strategies were validated on synthetic fixtures only. They are not
-  profitability evidence, promotion candidates, or live-ready strategies.
-- The Gaussian mixture is diagonal and dependency-light; HMMs, richer boosting/survival models,
-  drift monitoring, and advanced multiple-testing statistics remain unimplemented.
-- Final-holdout protection is enforced by evaluator, vault, and trial-ledger contracts; durable
-  operational access control will require the later database/audit service.
-- Initial Phase 5 strategies are long-only entry proposals; systematic exit strategies and broader
-  cross-sectional/maker-taker candidates remain unimplemented.
-- The Phase 5 kill switch is an in-process state/audit contract. Runtime cancellation orchestration,
-  durable storage, authentication, and operator controls are deferred to Phases 6 and 7.
-- `configs/risk.paper.yaml` is illustrative paper policy only and cannot approve live trading.
-- Phase 6 has no credential source, JWT signer, authenticated transport, private-stream supervisor,
-  REST parser for real responses, or real/test-order endpoint access. Only fixtures and fakes run.
-- The execution journal is a single-writer fsynced file proof. Transactional database persistence,
-  process locking, backups, and private-stream recovery are not implemented yet.
-- Dynamic order chance, fees, ticks, and minimums are fixture contracts in Phase 6, not current live
-  account values. The capability snapshot must be refreshed again before any exchange behavior change.
-- Cancellation is represented by the port/state contracts, but authenticated cancellation and
-  operator controls remain absent. The live adapter cannot submit or cancel under any settings.
+- The dashboard is an initial internal server-rendered view. It has one bearer-authenticated operator
+  role, no user database/RBAC/SSO, no hardened TLS reverse proxy, and no application rate limiter.
+- Dashboard Secrets must be delivered externally. The Docker development stack does not configure
+  them by default, so operations endpoints remain closed.
+- Incident, audit, and control persistence is a single-writer fsynced file proof without database
+  transactions, process locking, retention, or multi-host replication.
+- The operations snapshot supports every major screen but remains empty/default until runtime
+  producers populate markets, positions, models, strategy, reconciliation, and backup health.
+- The local backup proof is unencrypted and not off-host. It does not back up/restore PostgreSQL,
+  credentials, full raw ticks, or Grafana's runtime database; RPO/RTO targets are not measured.
+- Cancel-all has no executor, strategy pause does not mutate runtime state, and there is deliberately
+  no kill-switch release, flatten, risk/model edit, live activation, or order endpoint.
+- The Grafana and PostgreSQL credentials in Compose are localhost development defaults, not
+  production credentials. Production ingress, Secret delivery, and database security are absent.
+- Phase 6 still has no credential provider, JWT signer, authenticated HTTP/WebSocket client, private
+  stream supervisor, or real/test-order endpoint access. No private exchange network path exists.
+- Research models and strategies remain synthetic-fixture baselines, not profitability evidence or
+  promotion candidates. The conservative public-L2 fill model remains uncalibrated.
+- No Work/Codex skills or schedules have been registered. Scheduled jobs remain forbidden until
+  Phase 8 schemas, allowlists, manual dry runs, and worktree/no-op proofs pass.
 
 ## Next milestone
 
-Begin Phase 7 with an authenticated, read-oriented operations/dashboard surface over redacted local
-runtime exports, incidents, journal/reconciliation status, audit logs, backup/restore evidence, and
-confirmed emergency-control contracts. Do not add an authenticated exchange transport or enable
-live trading.
+Implement Phase 8 repository-local Work/Codex skills, automation prompt files, report/trigger
+schemas, strict write allowlists, dedicated-worktree instructions, and manual no-op dry runs. Work
+must remain report-only; Codex may create PR candidates only in scheduled dedicated worktrees. Do not
+register schedules until exports and every manual trial pass, and never auto-merge, deploy, promote,
+change risk, access Secrets, or call an order path.

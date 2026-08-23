@@ -86,6 +86,21 @@ in-memory fake port. A deterministic identifier is burned into an fsynced hash-c
 submission. Timeout or crash recovery performs identifier lookup and never repeats create. The live
 adapter has no network capability and remains disabled even if every configuration gate is true.
 
+The Phase 7 operations plane consumes only a strict redacted read model or local state journals.
+Authenticated JSON/HTML views, Prometheus metrics, incidents, and audit records sit outside the
+decision and order paths. State-changing HTTP requests terminate at a confirmed, CSRF-protected,
+idempotent control-request service. It may activate the local `cancel_only` block or acknowledge an
+incident; strategy pause remains a proposal and order cancellation remains blocked without a private
+transport. A pending request after restart becomes unknown and is not executed again.
+
+```text
+redacted runtime snapshot + local journals
+        -> authenticated read API / server-rendered dashboard / Prometheus
+        -> confirmed control request
+        -> fsynced control journal + audit chain
+        -> local safety effect | proposal recorded | blocked (no exchange transport)
+```
+
 ## Deployment target
 
 Initial deployment is one Linux host with Docker Compose: API/runtime, PostgreSQL, Prometheus, and Grafana. Market data and trading processes will gain separate service entry points in later phases. Redis/NATS, MLflow, MinIO, or Rust require measured justification and an ADR.

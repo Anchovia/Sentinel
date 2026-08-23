@@ -1,0 +1,88 @@
+{
+  "annotations": {"list": []},
+  "editable": false,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}, "overrides": []},
+      "gridPos": {"h": 5, "w": 4, "x": 0, "y": 0},
+      "id": 1,
+      "targets": [{"expr": "quantforge_live_submission_allowed", "refId": "A"}],
+      "title": "Live submission allowed",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}, "overrides": []},
+      "gridPos": {"h": 5, "w": 4, "x": 4, "y": 0},
+      "id": 2,
+      "targets": [{"expr": "quantforge_unknown_orders", "refId": "A"}],
+      "title": "Unknown orders",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}, "overrides": []},
+      "gridPos": {"h": 5, "w": 4, "x": 8, "y": 0},
+      "id": 3,
+      "targets": [{"expr": "quantforge_balance_mismatch", "refId": "A"}],
+      "title": "Balance mismatch",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 1}]}}, "overrides": []},
+      "gridPos": {"h": 5, "w": 4, "x": 12, "y": 0},
+      "id": 4,
+      "targets": [{"expr": "quantforge_kill_switch_active", "refId": "A"}],
+      "title": "Kill switch active",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"mappings": []}, "overrides": []},
+      "gridPos": {"h": 5, "w": 8, "x": 16, "y": 0},
+      "id": 5,
+      "targets": [{"expr": "sum by (severity) (quantforge_open_incidents)", "legendFormat": "{{severity}}", "refId": "A"}],
+      "title": "Open incidents",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
+      "gridPos": {"h": 7, "w": 8, "x": 0, "y": 5},
+      "id": 6,
+      "targets": [{"expr": "quantforge_disk_free_bytes", "refId": "A"}],
+      "title": "Disk free",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "gridPos": {"h": 7, "w": 8, "x": 8, "y": 5},
+      "id": 7,
+      "targets": [{"expr": "quantforge_reconciliation_age_seconds", "refId": "A"}],
+      "title": "Reconciliation age",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 7, "w": 8, "x": 16, "y": 5},
+      "id": 8,
+      "targets": [{"expr": "quantforge_market_data_connected", "refId": "A"}],
+      "title": "Market data connection",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 41,
+  "tags": ["quantforge", "paper", "operations"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "timezone": "browser",
+  "title": "QuantForge Health",
+  "uid": "quantforge-health",
+  "version": 1
+}

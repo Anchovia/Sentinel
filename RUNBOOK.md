@@ -108,4 +108,70 @@ Stop new intents, drain bounded work, persist checkpoints/manifests, record a cl
 5. Keep trading blocked while any order is unknown/missing/mismatched or any balance differs.
 6. Release only after successful reconciliation and explicit human approval.
 
-Phase 6 provides mock-only proof of this flow. It has no authenticated transport or operator action.
+Phase 6 provides mock-only proof of this flow. It has no authenticated exchange transport.
+
+## Operations export and dashboard
+
+Generate the Secret-free read model before opening the operations view:
+
+```text
+uv run quantforge export-operations --output-root runtime_exports
+```
+
+The command must report `paper`, `live_submission_allowed=false`, `network_used=false`, and
+`order_submission_available=false`. It writes `runtime_exports/ops/dashboard.json` atomically and
+rejects credential/authorization fields, bearer/JWT-shaped text, and full account UUIDs.
+
+Dashboard access is disabled until both `QF_DASHBOARD_ACCESS_TOKEN` and
+`QF_DASHBOARD_CSRF_SECRET` are supplied from an external Secret boundary. Do not store either in the
+repository or a runtime export. After starting the API, authenticated operators may read:
+
+```text
+GET /dashboard
+GET /api/v1/dashboard
+GET /api/v1/incidents
+GET /api/v1/audit
+```
+
+Grafana's `QuantForge Health` dashboard shows paper safety, unknown orders, balance mismatch, kill
+switch, incidents, disk, reconciliation age, and market-data connection. A zero or empty metric is
+not proof of health unless its source snapshot is fresh.
+
+## Emergency control requests
+
+State-changing requests require bearer authentication, a fresh CSRF proof from
+`GET /api/v1/session`, a unique `Idempotency-Key`, and the exact confirmation phrase. Reuse the same
+key only for the exact same request. A conflicting key is rejected; a request interrupted after its
+durable `REQUESTED` record becomes `UNKNOWN` and must be reconciled, not executed again.
+
+Allowed Phase 7 outcomes:
+
+- `activate_cancel_only`: activates and verifies the local new-order block.
+- `acknowledge_incident`: updates and verifies a local incident record.
+- `pause_strategy_request`: records a proposal but does not mutate strategy runtime state.
+- `cancel_all_orders_request`: returns `BLOCKED`; no authenticated cancellation transport exists.
+
+There is no dashboard action for kill-switch release, flattening, risk/model/strategy parameter
+changes, live activation, or order submission. Treat any claim otherwise as a critical incident.
+
+## Local backup and restore drill
+
+Create a local checksummed proof only from explicit non-Secret workspace paths:
+
+```text
+uv run quantforge backup-local \
+  --source runtime_exports \
+  --source configs \
+  --source ops \
+  --source-revision <reviewed-commit>
+
+uv run quantforge verify-backup --backup data/backups/<backup-id>
+uv run quantforge restore-drill \
+  --backup data/backups/<backup-id> \
+  --target data/restore-drill/<backup-id>
+```
+
+The restore target must be new or empty. The drill writes `RESTORE_PAPER_ONLY` and contains no
+credential or order capability. The manifest deliberately reports external encryption false and
+RPO/RTO unmeasured, so this artifact is not a production backup. A checksum failure, extra file,
+symlink, Secret-shaped file, or non-paper manifest invalidates the entire proof.

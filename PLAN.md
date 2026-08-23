@@ -53,12 +53,12 @@ Exit criteria:
 - Authentication interface, private stream mappers, order policy, test-order adapter, state machine persistence, identifier, reconciliation, and disabled live adapter.
 - Mock-only validation for timeouts, idempotency, unknown orders, and balance mismatch. No real order.
 
-## Phase 7 — Dashboard and Operations (`IN_PROGRESS`)
+## Phase 7 — Dashboard and Operations (`COMPLETE`)
 
 - Authenticated read-oriented dashboard, metrics, incidents, audit log, runtime exports, backups, and runbooks.
 - Emergency controls require confirmation, idempotency, result verification, and audit records.
 
-## Phase 8 — Work/Codex Automation Support (`PENDING`)
+## Phase 8 — Work/Codex Automation Support (`IN_PROGRESS`)
 
 - Project skills, automation prompts, report/trigger schemas, write allowlists, worktree guidance, and manual dry runs.
 - Register schedules only after required exports exist and manual trials pass.
