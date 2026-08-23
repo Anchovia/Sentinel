@@ -2,9 +2,9 @@
 
 ## Current checkpoint
 
-- Phase: 11.6 — Preregistered Short-Horizon Paper Research
+- Phase: 11.7 — Bounded Work Audit Exports
 - Status: checkpoint `COMPLETE`; Phase 11 `IN_PROGRESS`
-- Planned implementation phases: 0–10 complete; Phase 11.1–11.6 checkpoints complete
+- Planned implementation phases: 0–10 complete; Phase 11.1–11.7 checkpoints complete
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; the live adapter has no network capability
@@ -14,6 +14,23 @@
 - Production Secrets accessed: no
 - Scheduled task registration: none
 - Automatic merge/deploy/model promotion/live activation: unavailable
+
+## Completed in Phase 11.7
+
+- Corrected the first Work audit's ignore-aware discovery failure: generated runtime JSON remains
+  uncommitted, but Work is instructed to open exact local filesystem paths.
+- Added atomic `work-ops-1`, `work-incidents-1`, `work-performance-1`, and `work-models-1` snapshots
+  at the fixed paths consumed by the Work prompts. Live data quality now uses a backward-readable
+  version-2 contract with explicit source, measurement support, coverage, freshness, and queue data.
+- Missing private streams, reconciliation, incidents, database, backup, representative performance,
+  and drift evidence is explicit as `NOT_CONFIGURED`, `PARTIAL`, or `INSUFFICIENT_SAMPLE`; it is not
+  presented as a healthy zero.
+- Added one combined immutable baseline every 15 minutes with 30-day and 100MiB limits. The baseline
+  contains only small redacted audit models and cannot read raw D-drive payloads or call a network.
+- Added the empty versioned `research/papers.yaml` registry and updated Work prompts for exact-path
+  reads and current scheduled-local-file capability verification. No schedule was registered.
+- Added ADR-022. Authentication, private/order network, paper-order simulation, model approval,
+  real orders, live submission, and the public README remain unchanged.
 
 ## Completed in Phase 11.6
 
@@ -229,15 +246,17 @@
 ## Validation evidence
 
 ```text
-Python: PASS — 3.13.15; no Phase 11.6 dependency added
+Python: PASS — 3.13.15; no Phase 11.7 dependency added
 ruff: PASS — all checks passed
-format check: PASS — 164 Python files formatted
-mypy: PASS — 113 source files, no issues
-pytest: PASS — 361 tests, 85.81% branch coverage
-secret scan: PASS — 333 text files checked
+format check: PASS — 227 Python files formatted
+mypy: PASS — 114 source files, no issues
+pytest: PASS — 363 tests, 85.94% branch coverage
+secret scan: PASS — 344 text files checked
 dependency audit: PASS — no known vulnerabilities
 Compose config: PASS — base + paper overlays
-container build: PASS — quantforge:phase11-6 sha256:80d6854c...4cd555c1
+container build: PASS — quantforge-paper-runtime:latest a087495dc683
+Work audit exports: PASS — work-ops-1 RUNNING; data quality PARTIAL; incidents NOT_CONFIGURED;
+  performance/models INSUFFICIENT_SAMPLE; 15-minute baseline created; auth/order false
 synthetic registered entry/exit: PASS — deterministic conservative fills, positive net round trip,
   non-zero fees/slippage/adverse selection; neutral baseline orders/fills 0
 D-drive fixed-cutoff research inventory: PASS — 430,655 detailed events, 123 observed markets,
@@ -273,8 +292,9 @@ schedule registration: NONE
   must not be automatically relaxed and require human review plus a new consequential record.
 - The validator does not assemble evidence from production systems. Producers and human reviewers
   must create a Secret-free bundle with reproducible hashes; absent evidence stays absent.
-- Phase 8 tasks remain unregistered and representative performance/model/incident exports are not
-  populated. Local schedules require the computer and desktop app.
+- Phase 8 tasks remain unregistered. Standard performance/model/incident files now exist, but they
+  intentionally report unavailable or insufficient evidence rather than representative results.
+  Unattended local-file access must be proven on the current Work surface before scheduling.
 - The Windows host lacks `uv` and `make` on PATH, so exact Make targets were not run in this phase;
   their equivalent locked project-venv commands passed. Container builds use the pinned uv image.
 - The public collector, feature path, and neutral paper composition are supervised, but sustained
@@ -300,6 +320,9 @@ and submit an artifact for separate human paper review.
 Only clean recovery, a reviewed artifact, and a separately enabled paper-order gate may turn the
 already composed path from neutral to simulated entry/exit lifecycle and representative performance
 exports.
+Re-run all four Work prompts manually against the fixed-path standard exports. Operations can become
+report-only while performance/model/research may remain `BLOCKED` or `INSUFFICIENT_SAMPLE` until
+their actual evidence exists; do not weaken those conclusions to enable a schedule.
 Extend the monitor into a polished paper-performance GUI only after those contracts produce stable
 data. Production storage/backup/TLS/RBAC/network design and any authenticated dry-run work remain
 separately reviewed.

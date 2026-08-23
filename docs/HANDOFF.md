@@ -8,9 +8,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 ## Current state
 
 - Date: 2026-08-24 KST
-- Completed phases: 0–10; Phase 11.1–11.6 checkpoints complete
-- Current checkpoint: preregistered short-horizon research engine plus a retained insufficient-data
-  result; continue collection and optimize inventory scan before the next registered experiment
+- Completed phases: 0–10; Phase 11.1–11.7 checkpoints complete
+- Current checkpoint: fixed-path bounded Work audit exports and baselines; manually re-run the Work
+  prompts before considering any schedule
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
@@ -37,7 +37,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 11.6 preregistration: `4cb419c chore: 단타 전략 실험 사전등록`
 - Phase 11.6 implementation: `0e3040b feat: 단타 전략 연구 기반 구축`
 
-## Implemented through Phase 11.6
+## Implemented through Phase 11.7
 
 - Safety-first Python modular monolith, six closed live gates, Decimal domain/accounting boundary,
   keyless Upbit public transport, versioned immutable raw lineage, deterministic replay/bars/features,
@@ -76,6 +76,12 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - The first committed-cutoff result verified 430,655 detailed events across 123 markets but found
   zero eligible markets. `KRW-BTC` was longest at 4.70 hours with 18,637 trades and 108,102
   orderbooks. The result is `BLOCKED`; no trial or final-holdout access occurred.
+- Fresh Work inputs now exist at fixed `ops`, `data_quality`, `incidents`, `performance`, and
+  `models` paths. They are atomic, Secret-rejected, ignored by Git, and opened by direct filesystem
+  path so ignore-aware discovery cannot repeat the first false absence result.
+- Fifteen-minute combined audit baselines retain at most 30 days and 100MiB. Unsupported private,
+  incident, performance, and drift evidence remains explicitly unavailable or insufficient rather
+  than being converted into a healthy result. The versioned paper registry is present but empty.
 - The decision remains `HOLD` with no approved real-time model, strategy order, private network,
   account, or live capability.
 - An always-neutral alpha now exercises regime/execution inputs and the proposal/risk/paper/ledger
@@ -86,7 +92,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   blocks regardless of other feature or edge values.
 - A test-only approved fixture proves the complete simulated order/fill/accounting plumbing. It is
   not shipped or promoted. Atomic decision exports and the Korean monitor show review status,
-  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-021 record consequential
+  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-022 record consequential
   choices. README remains intentionally minimal.
 - `realtime-paper-recovery-1` now preserves policy-bound orders, fills, reservations, FIFO lots,
   exact balances, ledger chains, counters, and the event cursor in the durable paper volume. Clean
@@ -114,21 +120,23 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   after interruption. Active totals are always rebuilt from verified manifests.
 - `paper-runtime-5` enforces and reports 30-day retention, 50GiB maximum active raw data, a 20GiB
   free-space fail-closed stop, 15-minute maintenance, compacted/deleted files, reclaimed bytes, and
-  actual filesystem free space. ADR-001 through ADR-021 record consequential choices.
+  actual filesystem free space. ADR-001 through ADR-022 record consequential choices.
 - Compose grants the paper runtime a 60-second stop grace period. The final signal stop persisted a
   clean checkpoint and the next run reported `VERIFIED_CLEAN` before resuming full coverage.
 
 ## Latest validation
 
 ```text
-Python 3.13.15; no Phase 11.6 dependency added
-ruff + format: PASS (164 Python files)
-mypy: PASS (113 source files)
-pytest: PASS (361 tests, 85.81% branch coverage)
-Secret scan: PASS (333 text files)
+Python 3.13.15; no Phase 11.7 dependency added
+ruff + format: PASS (227 Python files)
+mypy: PASS (114 source files)
+pytest: PASS (363 tests, 85.94% branch coverage)
+Secret scan: PASS (344 text files)
 pip-audit: PASS (no known vulnerabilities)
 Compose config: PASS
-Phase 11.6 image: PASS (quantforge:phase11-6, sha256:80d6854c...4cd555c1)
+Phase 11.7 image: PASS (quantforge-paper-runtime:latest, a087495dc683)
+Work audit exports: work-ops-1 RUNNING; data quality PARTIAL; incidents NOT_CONFIGURED;
+performance/models INSUFFICIENT_SAMPLE; baseline created; authentication/order capability false
 Synthetic registered entry/exit: deterministic conservative fills, positive net round trip,
 non-zero fees/slippage/adverse selection; neutral baseline orders/fills zero
 D-drive fixed-cutoff inventory: 430,655 detailed events across 123 markets; 0 eligible; BLOCKED,
@@ -161,8 +169,9 @@ Scheduled tasks: not registered
   evidence. Numeric thresholds do not guarantee profitability, safety, capacity, or recovery.
 - The validator reads a prepared bundle; it does not query production systems. Evidence production
   must remain Secret-free, reproducible, and independently reviewed.
-- Work/Codex schedules are not active. Most representative exports are not populated. Follow the
-  manual-trial and first-three-run review process before registering any task.
+- Work/Codex schedules are not active. Standard files are populated, but representative strategy
+  performance, incident-store integration, and model drift are still unavailable. Repeat the manual
+  trials and prove unattended local-file access before registering any task.
 - No authenticated exchange client, credential provider, cancellation/order endpoint, order-capable
   live adapter, production database/recovery, or canary activation path exists.
 - Public L2 fill/queue behavior is approximate. The collector and neutral composition are supervised,
@@ -198,7 +207,9 @@ Scheduled tasks: not registered
 5. Under separate human authorization only, implement and review credential/order-test transport,
    identifier reconciliation, withdrawal-disabled/IP-allowlisted key policy, and multi-operator
    incident/cancel/recovery drills. Do not send a real order.
-6. Register Work/Codex schedules only after each manual prompt passes. Continue report-only/dedicated-
-   worktree boundaries and never auto-merge/deploy/promote/change risk/live state.
+6. Re-run all four Work prompts manually against exact local paths. Register only individually
+   passing tasks and only if the current scheduled surface proves unattended local-file access.
+   Continue report-only/dedicated-worktree boundaries and never auto-merge/deploy/promote/change
+   risk/live state.
 7. Assemble reviewed evidence and re-run `validate-live-readiness`. A manual canary remains a future
    separately approved project even if the output reaches manual-review eligibility.

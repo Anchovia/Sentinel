@@ -153,6 +153,11 @@ All notable changes are recorded here. The project follows semantic versioning o
 - Atomic blocked research reports and hash-chained experiment-ledger evidence when the registered
   24-hour/three-market minimum is absent, with zero trials, no favorable-interval search, and no
   final-holdout, authentication, order-network, real-order, model-promotion, or runtime-gate action.
+- Fixed-path Secret-free Work audit exports for operations, live data quality, incidents,
+  performance, and models, with explicit unavailable/partial/insufficient states instead of
+  fabricated healthy values.
+- Atomic 15-minute Work audit baselines with 30-day and 100MiB bounds, direct-filesystem discovery
+  guidance for ignored runtime JSON, and an empty versioned research paper registry.
 
 ### Security
 

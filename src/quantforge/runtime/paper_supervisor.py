@@ -34,16 +34,28 @@ from quantforge.operations.models import (
     OverviewView,
     SystemView,
 )
+from quantforge.runtime.audit_exports import (
+    AuditEvidenceState,
+    WorkAuditBaseline,
+    WorkAuditExportWriter,
+    WorkIncidentSnapshot,
+    WorkModelSnapshot,
+    WorkOperationsSnapshot,
+    WorkPerformanceSnapshot,
+)
 from quantforge.runtime.live_guard import LiveSubmissionGuard
 from quantforge.runtime.paper_monitor import write_paper_monitor
 from quantforge.runtime.realtime_decision import (
+    RealtimePaperDecisionSnapshot,
     RealtimePaperOrchestrator,
     write_realtime_paper_decision_snapshot,
 )
 from quantforge.runtime.realtime_pipeline import (
     RealtimePaperPipeline,
+    RealtimePipelineSnapshot,
     write_realtime_pipeline_snapshot,
 )
+from quantforge.runtime.snapshots import DataQualitySnapshot
 from quantforge.runtime.universe_scanner import (
     RealtimeUniverseScanner,
     write_realtime_universe_snapshot,
@@ -442,6 +454,7 @@ class PaperRuntimeSupervisor:
         self.streams = tuple(streams)
         self.raw_output = raw_output
         self.output_root = output_root
+        self._audit_export_writer = WorkAuditExportWriter(output_root)
         self.policy = policy
         self.client_factory = client_factory
         self._universe_scanner = universe_scanner
@@ -892,7 +905,181 @@ class PaperRuntimeSupervisor:
             decision=decision_snapshot,
             universe=universe_snapshot,
         )
+        self._write_work_audit_exports(
+            runtime=snapshot,
+            dashboard=dashboard,
+            realtime=realtime_snapshot,
+            decision=decision_snapshot,
+        )
         return snapshot
+
+    def _write_work_audit_exports(
+        self,
+        *,
+        runtime: PaperRuntimeSnapshot,
+        dashboard: DashboardSnapshot,
+        realtime: RealtimePipelineSnapshot,
+        decision: RealtimePaperDecisionSnapshot,
+    ) -> None:
+        generated_at_utc = runtime.updated_at_utc
+        portfolios = decision.portfolios
+
+        data_quality = DataQualitySnapshot.from_live_runtime(
+            generated_at_utc=generated_at_utc,
+            run_id=str(runtime.run_id),
+            policy_hash=runtime.policy_hash,
+            accepted_messages=runtime.accepted_messages,
+            processed_events=realtime.processed_events,
+            event_counts=runtime.event_counts,
+            duplicate_count=max(runtime.duplicate_messages, realtime.duplicate_events),
+            reconnects=runtime.reconnects,
+            parse_errors=runtime.parser_errors,
+            feature_frames=realtime.feature_frames,
+            inference_ready_frames=realtime.inference_ready_frames,
+            monitored_market_count=len(runtime.markets),
+            observed_market_count=len(realtime.latest_features),
+            last_event_at_utc=runtime.last_event_at_utc,
+            storage_queue_depth=runtime.storage_queue_depth,
+            storage_queue_overflows=runtime.storage_queue_overflows,
+            processing_budget_breaches=realtime.processing_budget_breaches,
+        )
+        gross_pnl = sum((item.gross_pnl for item in portfolios), start=Decimal(0))
+        net_pnl = sum((item.net_pnl for item in portfolios), start=Decimal(0))
+        fees = sum((item.fees for item in portfolios), start=Decimal(0))
+        spread_cost = sum((item.spread_cost for item in portfolios), start=Decimal(0))
+        slippage_cost = sum((item.slippage_cost for item in portfolios), start=Decimal(0))
+        adverse_selection_cost = sum(
+            (item.adverse_selection_cost for item in portfolios),
+            start=Decimal(0),
+        )
+        exposure = sum((item.market_value for item in portfolios), start=Decimal(0))
+        event_age = (
+            max(0.0, (generated_at_utc - runtime.last_event_at_utc).total_seconds())
+            if runtime.last_event_at_utc is not None
+            else None
+        )
+        baseline = WorkAuditBaseline(
+            generated_at_utc=generated_at_utc,
+            operations=WorkOperationsSnapshot(
+                generated_at_utc=generated_at_utc,
+                source_run_id=runtime.run_id,
+                source_started_at_utc=runtime.started_at_utc,
+                source_updated_at_utc=runtime.updated_at_utc,
+                runtime_state=runtime.state.value,
+                code_version=dashboard.overview.code_version,
+                market_scope=runtime.market_scope,
+                monitored_market_count=len(runtime.markets),
+                focused_market_count=len(runtime.focused_markets),
+                warning_market_count=runtime.warning_market_count,
+                caution_market_count=runtime.caution_market_count,
+                public_websocket_state=dashboard.system.websocket_state.value,
+                last_event_at_utc=runtime.last_event_at_utc,
+                market_event_age_seconds=event_age,
+                accepted_messages=runtime.accepted_messages,
+                event_counts=runtime.event_counts,
+                duplicate_messages=runtime.duplicate_messages,
+                parser_errors=runtime.parser_errors,
+                reconnects=runtime.reconnects,
+                storage_queue_depth=runtime.storage_queue_depth,
+                storage_queue_capacity=runtime.storage_queue_capacity,
+                storage_queue_overflows=runtime.storage_queue_overflows,
+                max_ingress_latency_ms=runtime.max_ingress_latency_ms,
+                feature_latency_p99_ms=realtime.processing_latency_p99_ms,
+                decision_latency_p99_ms=decision.decision_latency_p99_ms,
+                paper_orders=decision.paper_orders,
+                paper_fills=decision.paper_fills,
+                unknown_orders=0,
+                ledger_records=decision.ledger_records,
+                recovery_status=decision.recovery_status.value,
+                recovery_blocked=decision.recovery_blocked,
+                gross_pnl_krw=gross_pnl,
+                net_pnl_krw=net_pnl,
+                fees_krw=fees,
+                spread_cost_krw=spread_cost,
+                slippage_cost_krw=slippage_cost,
+                adverse_selection_cost_krw=adverse_selection_cost,
+                exposure_krw=exposure,
+                turnover_krw=decision.turnover_krw,
+                retained_files=runtime.retained_files,
+                retained_rows=runtime.retained_rows,
+                retained_bytes=runtime.retained_bytes,
+                storage_retention_days=runtime.storage_retention_days,
+                storage_max_bytes=runtime.storage_max_bytes,
+                storage_min_free_bytes=runtime.storage_min_free_bytes,
+                disk_free_bytes=runtime.disk_free_bytes,
+                storage_compaction_runs=runtime.storage_compaction_runs,
+                storage_deleted_files=(
+                    runtime.storage_retention_deleted_files + runtime.storage_capacity_deleted_files
+                ),
+                model_release_status=decision.model_release_status.value,
+                model_approval_valid=decision.model_approval_valid,
+            ),
+            data_quality=data_quality,
+            incidents=WorkIncidentSnapshot(
+                generated_at_utc=generated_at_utc,
+                source_state=AuditEvidenceState.NOT_CONFIGURED,
+                complete=False,
+                open_count=0,
+                acknowledged_count=0,
+                limitation=(
+                    "The public paper runtime is not connected to the operations incident store."
+                ),
+            ),
+            performance=WorkPerformanceSnapshot(
+                generated_at_utc=generated_at_utc,
+                source_run_id=runtime.run_id,
+                window_started_at_utc=runtime.started_at_utc,
+                sample_state=(
+                    AuditEvidenceState.PARTIAL
+                    if decision.paper_fills
+                    else AuditEvidenceState.INSUFFICIENT_SAMPLE
+                ),
+                representative=False,
+                observed_market_count=len(portfolios),
+                paper_order_count=decision.paper_orders,
+                paper_fill_count=decision.paper_fills,
+                closed_trade_count=None,
+                strategy_trade_proposals=decision.strategy_trade_proposals,
+                risk_approvals=decision.risk_approvals,
+                gross_pnl_krw=gross_pnl,
+                fees_krw=fees,
+                spread_cost_krw=spread_cost,
+                slippage_cost_krw=slippage_cost,
+                adverse_selection_cost_krw=adverse_selection_cost,
+                net_pnl_krw=net_pnl,
+                turnover_krw=decision.turnover_krw,
+                exposure_krw=exposure,
+                model_release_status=decision.model_release_status.value,
+                model_approval_valid=decision.model_approval_valid,
+                paper_order_simulation_enabled=(decision.paper_order_simulation_enabled),
+                limitation=(
+                    "No reviewed alpha or representative completed paper trade sample exists."
+                ),
+            ),
+            models=WorkModelSnapshot(
+                generated_at_utc=generated_at_utc,
+                source_state=AuditEvidenceState.INSUFFICIENT_SAMPLE,
+                active_approved_model_available=decision.model_approval_valid,
+                model_release_status=decision.model_release_status.value,
+                model_approval_valid=decision.model_approval_valid,
+                observed_components=(
+                    "always-neutral-alpha-baseline",
+                    "rule-regime-baseline",
+                    "execution-rule-baseline",
+                ),
+                inference_frames=decision.inference_frames,
+                inference_latency_p99_ms=decision.decision_latency_p99_ms,
+                feature_distribution_state=AuditEvidenceState.PARTIAL,
+                prediction_distribution_state=AuditEvidenceState.INSUFFICIENT_SAMPLE,
+                calibration_state=AuditEvidenceState.INSUFFICIENT_SAMPLE,
+                drift_state=AuditEvidenceState.INSUFFICIENT_SAMPLE,
+                limitation=(
+                    "Only unapproved neutral baseline inference is active; "
+                    "drift claims are unavailable."
+                ),
+            ),
+        )
+        self._audit_export_writer.write(baseline)
 
     async def _refresh_dynamic_focus(self, now_utc: datetime) -> None:
         if self._universe_scanner is None or self._subscription_builder is None:

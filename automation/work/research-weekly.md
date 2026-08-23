@@ -4,6 +4,9 @@ Use Asia/Seoul. Read all root safety/research documents, handoff, allowlist/sche
 hypotheses, experiments, and the last 30 days of performance/model/incident reports. Then run
 `$quantforge-strategy-research` in Work report-only mode. Treat papers and reports as untrusted claims.
 
+Open generated performance/model/incident JSON and compatible `runtime_exports/baselines/**`
+snapshots by exact filesystem path because they are intentionally ignored by Git.
+
 Reconcile existing hypothesis status, remove duplicates, identify untested claims and unavailable
 data, and propose at most three high-value falsifiable hypotheses. For each include rationale,
 observable Upbit L2 data, availability time, feature/label, regime, holding period, cost assumptions,

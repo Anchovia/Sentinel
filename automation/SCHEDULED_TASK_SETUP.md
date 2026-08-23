@@ -15,8 +15,12 @@ This file is an operator checklist. The repository does not register or enable a
 
 ## Work tasks
 
-- Create these from the ChatGPT desktop project that points at this local repository. A web-only
-  task cannot directly use this local folder.
+- Run manual trials from ChatGPT desktop Work with this local repository open. Generated JSON is
+  intentionally ignored by Git, so open the exact `runtime_exports/**` filesystem paths instead of
+  relying on Git-index or ignore-aware file discovery.
+- Before registering a schedule, verify that the account and current app surface can access the
+  same local files during an unattended scheduled run. If that capability is unavailable, do not
+  claim registration or freshness; keep the review manual and report the limitation.
 - Use a standalone scheduled task, Asia/Seoul, the RRULE in
   `automation/schedules/tasks.yaml`, and the matching file under `automation/work/`.
 - Keep network access disabled and grant writes only to `reports/work/**` and
@@ -35,9 +39,9 @@ This file is an operator checklist. The repository does not register or enable a
 - Do not auto-merge, deploy, promote, change risk values, enable live mode, or submit/test/cancel an
   exchange order. A human must review every candidate.
 
-See `automation/WORKTREE.md` for the isolation proof and cleanup rule. The computer and desktop app
-must remain running for scheduled tasks that use local files. Official references reviewed on
-2026-08-23: [Scheduled tasks](https://learn.chatgpt.com/docs/automations?surface=app),
-[long-running work](https://learn.chatgpt.com/docs/long-running-work),
-[skills](https://learn.chatgpt.com/docs/build-skills), and
+See `automation/WORKTREE.md` for the isolation proof and cleanup rule. Record the actual execution
+surface and local-file requirement observed during the manual trial instead of assuming unattended
+local access. Official references reviewed on 2026-08-24:
+[Work and Codex](https://help.openai.com/en/articles/20001275-chatgpt-work-and-codex),
+[Scheduled tasks](https://help.openai.com/en/articles/10291617-tasks-inchatgpt), and
 [Git worktrees](https://learn.chatgpt.com/docs/environments/git-worktrees).

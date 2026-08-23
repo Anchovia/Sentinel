@@ -86,13 +86,16 @@
 
 ## Automation and delivery
 
-- Repository skills, prompts, schemas, allowlists, and an RRULE catalog exist, but no Work/Codex
-  scheduled task is registered. Missing representative exports should return `BLOCKED`.
+- Repository skills, prompts, schemas, allowlists, an RRULE catalog, and fixed-path standard Work
+  inputs exist, but no Work/Codex scheduled task is registered. Representative performance,
+  incident-store, and drift evidence remains unavailable and should still return `BLOCKED` or
+  `INSUFFICIENT_SAMPLE` as appropriate.
 - The write allowlist and validator are repository controls, not operating-system path ACLs. Work
   requires before/after Git evidence; every Codex candidate still needs human diff/PR review.
 - Only a detached no-op background worktree was exercised. No automated branch, PR, merge, deploy,
   model promotion, risk change, live activation, or order path exists.
-- Local-file schedules require the computer and desktop app to remain running. The catalog does not
-  claim account-specific task capacity or next-run calculations.
+- The manual desktop Work trial can read ignored local JSON by exact path. Unattended scheduled
+  access to the same files has not been proven on the current product surface, so local-file tasks
+  must not be registered or described as active until that separate capability check passes.
 - Docker/Compose validation passes, but the full stack has no sustained production health or backup
   test. Development credentials and the restrictive placeholder license are not production choices.

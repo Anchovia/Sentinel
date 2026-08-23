@@ -70,3 +70,62 @@ def test_snapshot_rejects_naive_time_and_nonfinite_ratio() -> None:
         DataQualitySnapshot.model_validate(
             {**snapshot.model_dump(), "coverage_ratio": float("nan")}
         )
+
+
+def test_live_data_quality_snapshot_is_partial_and_versioned() -> None:
+    snapshot = DataQualitySnapshot.from_live_runtime(
+        generated_at_utc=BASE_TIME,
+        run_id="paper-run",
+        policy_hash="a" * 64,
+        accepted_messages=20,
+        processed_events=18,
+        event_counts=(("orderbook", 10), ("trade", 10)),
+        duplicate_count=2,
+        reconnects=0,
+        parse_errors=0,
+        feature_frames=18,
+        inference_ready_frames=9,
+        monitored_market_count=3,
+        observed_market_count=2,
+        last_event_at_utc=BASE_TIME,
+        storage_queue_depth=0,
+        storage_queue_overflows=0,
+        processing_budget_breaches=0,
+    )
+
+    assert snapshot.schema_version == 2
+    assert snapshot.source_kind == "public_paper_runtime"
+    assert snapshot.measurement_status == "PARTIAL"
+    assert snapshot.dataset_hash_scope == "live_counter_snapshot"
+    assert snapshot.coverage_ratio == 0.5
+    assert snapshot.gap_measurement_supported is False
+    assert snapshot.checksum_measurement_supported is False
+    assert len(snapshot.dataset_hash) == 64
+
+
+def test_version_one_data_quality_snapshot_remains_readable() -> None:
+    replay, _, _ = _phase2_inputs()
+    current = DataQualitySnapshot.from_phase2(replay, [], [], generated_at_utc=BASE_TIME)
+    legacy = current.model_dump()
+    legacy["schema_version"] = 1
+    for field in (
+        "source_kind",
+        "measurement_status",
+        "dataset_hash_scope",
+        "monitored_market_count",
+        "observed_market_count",
+        "last_event_at_utc",
+        "event_counts",
+        "storage_queue_depth",
+        "storage_queue_overflows",
+        "processing_budget_breaches",
+        "gap_measurement_supported",
+        "checksum_measurement_supported",
+        "limitation",
+    ):
+        legacy.pop(field)
+
+    restored = DataQualitySnapshot.model_validate(legacy)
+
+    assert restored.schema_version == 1
+    assert restored.source_kind == "deterministic_replay"

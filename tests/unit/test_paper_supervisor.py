@@ -1,6 +1,7 @@
 import asyncio
 import json
 from collections.abc import Awaitable, Callable, Sequence
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,14 @@ from quantforge.config import Environment, QuantForgeSettings
 from quantforge.domain import EventEnvelope
 from quantforge.exchange.upbit.errors import MalformedUpbitPayload, UpbitAdapterError
 from quantforge.operations import read_dashboard_snapshot
+from quantforge.runtime.audit_exports import (
+    WorkAuditExportWriter,
+    WorkIncidentSnapshot,
+    WorkModelSnapshot,
+    WorkOperationsSnapshot,
+    WorkPerformanceSnapshot,
+    read_work_audit_baseline,
+)
 from quantforge.runtime.paper_recovery import (
     PaperRecoveryStatus,
     read_realtime_paper_recovery_checkpoint,
@@ -26,6 +35,7 @@ from quantforge.runtime.paper_supervisor import (
 )
 from quantforge.runtime.realtime_decision import read_realtime_paper_decision_snapshot
 from quantforge.runtime.realtime_pipeline import read_realtime_pipeline_snapshot
+from quantforge.runtime.snapshots import DataQualitySnapshot
 from quantforge.storage import RawStoragePolicy, read_raw_events
 
 
@@ -209,6 +219,69 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     )
     assert recovery.clean_shutdown is True
     assert recovery.recovery_blocked is False
+
+    work_ops = WorkOperationsSnapshot.model_validate_json(
+        (tmp_path / "runtime/ops/latest.json").read_bytes()
+    )
+    assert work_ops.runtime_state == "STOPPED"
+    assert work_ops.trading_mode == "paper"
+    assert work_ops.paper_orders == 0
+    assert work_ops.private_websocket_state == "NOT_CONFIGURED"
+    assert work_ops.safety.real_order_submission_available is False
+    quality = DataQualitySnapshot.model_validate_json(
+        (tmp_path / "runtime/data_quality/latest.json").read_bytes()
+    )
+    assert quality.schema_version == 2
+    assert quality.source_kind == "public_paper_runtime"
+    assert quality.measurement_status == "PARTIAL"
+    assert quality.delivered_events == 2
+    assert quality.gap_measurement_supported is False
+    incidents = WorkIncidentSnapshot.model_validate_json(
+        (tmp_path / "runtime/incidents/open.json").read_bytes()
+    )
+    assert incidents.complete is False
+    assert incidents.source_state == "NOT_CONFIGURED"
+    performance = WorkPerformanceSnapshot.model_validate_json(
+        (tmp_path / "runtime/performance/latest.json").read_bytes()
+    )
+    assert performance.representative is False
+    assert performance.sample_state == "INSUFFICIENT_SAMPLE"
+    assert performance.closed_trade_count is None
+    models = WorkModelSnapshot.model_validate_json(
+        (tmp_path / "runtime/models/latest.json").read_bytes()
+    )
+    assert models.active_approved_model_available is False
+    assert models.drift_state == "INSUFFICIENT_SAMPLE"
+    baselines = tuple((tmp_path / "runtime/baselines").glob("**/*-audit-baseline.json"))
+    assert len(baselines) == 1
+    audit_baseline = read_work_audit_baseline(baselines[0])
+    assert audit_baseline.operations.runtime_state == "STARTING"
+    assert audit_baseline.performance.representative is False
+    bounded_root = tmp_path / "bounded-audit"
+    bounded_writer = WorkAuditExportWriter(
+        bounded_root,
+        baseline_interval_seconds=60,
+        baseline_retention_days=1,
+    )
+    bounded_writer.write(audit_baseline)
+    bounded_writer.write(
+        audit_baseline.model_copy(
+            update={"generated_at_utc": audit_baseline.generated_at_utc + timedelta(seconds=30)}
+        )
+    )
+    assert len(tuple((bounded_root / "baselines").glob("**/*.json"))) == 1
+    bounded_writer.write(
+        audit_baseline.model_copy(
+            update={"generated_at_utc": audit_baseline.generated_at_utc + timedelta(seconds=61)}
+        )
+    )
+    assert len(tuple((bounded_root / "baselines").glob("**/*.json"))) == 2
+    bounded_writer.write(
+        audit_baseline.model_copy(
+            update={"generated_at_utc": audit_baseline.generated_at_utc + timedelta(days=2)}
+        )
+    )
+    assert len(tuple((bounded_root / "baselines").glob("**/*.json"))) == 1
 
     serialized = json.loads((tmp_path / "runtime/ops/paper-runtime.json").read_text())
     forbidden = {"authorization", "access_key", "secret_key", "token", "password"}

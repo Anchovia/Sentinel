@@ -16,5 +16,13 @@
 | ADR-012 | Schema-guard report automation and isolate code automation | Accepted | 2026-08-23 |
 | ADR-013 | Keep live readiness evidence-only and activation-free | Accepted | 2026-08-23 |
 | ADR-014 | Supervise public paper burn-in before strategy execution | Accepted | 2026-08-24 |
+| ADR-015 | Provide a local public-data monitor without an order/control path | Accepted | 2026-08-24 |
+| ADR-016 | Keep the incremental real-time pipeline HOLD-only | Accepted | 2026-08-24 |
+| ADR-017 | Compose neutral real-time paper decisions behind independent gates | Accepted | 2026-08-24 |
+| ADR-018 | Restore paper state deterministically and block unclean recovery | Accepted | 2026-08-24 |
+| ADR-019 | Monitor all KRW tickers with a bounded rotating detailed tier | Accepted | 2026-08-24 |
+| ADR-020 | Bound D-drive paper storage by age, capacity, and free space | Accepted | 2026-08-24 |
+| ADR-021 | Preregister short-horizon hypotheses before experiments | Accepted | 2026-08-24 |
+| ADR-022 | Publish bounded local audit exports for report-only Work | Accepted | 2026-08-24 |
 
 Consequential changes require a new ADR; do not silently rewrite accepted rationale.
