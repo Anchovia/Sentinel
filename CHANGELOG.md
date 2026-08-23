@@ -127,6 +127,15 @@ All notable changes are recorded here. The project follows semantic versioning o
   simulation with no economic or ledger activity can clear an unclean marker automatically.
 - Active public WebSocket closure during a stop request so stalled network receive cannot prevent
   storage flush, paper-order cancellation, reservation release, or clean checkpoint persistence.
+- Credential-free dynamic discovery of every current Upbit KRW pair, with strict public catalog and
+  quote-ticker schema validation, warning-market exclusion, and market-set-hashed recovery state.
+- A tiered all-KRW paper universe: ticker monitoring across the full listing set and rotating dense
+  trade/five-level-orderbook processing for 20 liquid, fresh, active short-horizon candidates.
+- Atomic `realtime-universe-1` evidence, `paper-runtime-4` scope/focus counters, bounded focus dwell,
+  and a compact Korean monitor view showing total coverage, focused markets, exclusions, and
+  rotations. All model, paper-order, private, and real-order controls remain closed.
+- Incremental exact portfolio aggregates that keep focused risk decisions from rescanning every
+  monitored market on each event.
 
 ### Security
 

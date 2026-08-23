@@ -2,9 +2,9 @@
 
 ## Current checkpoint
 
-- Phase: 11.3 — Fail-Closed Paper State Recovery
+- Phase: 11.4 — Tiered All-KRW Paper Universe
 - Status: checkpoint `COMPLETE`; Phase 11 `IN_PROGRESS`
-- Planned implementation phases: 0–10 complete; Phase 11.1–11.3 checkpoints complete
+- Planned implementation phases: 0–10 complete; Phase 11.1–11.4 checkpoints complete
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; the live adapter has no network capability
@@ -14,6 +14,32 @@
 - Production Secrets accessed: no
 - Scheduled task registration: none
 - Automatic merge/deploy/model promotion/live activation: unavailable
+
+## Completed in Phase 11.4
+
+- Replaced the fixed runtime market argument with credential-free startup discovery from Upbit's
+  official detailed pair catalog and KRW quote-ticker snapshot. The runtime fails closed on network,
+  size, JSON, schema, or empty-universe failure and never falls back to a stale committed list.
+- The current official response contained 285 KRW pairs. All 285 receive broad ticker monitoring;
+  the six official warning pairs remain observable but cannot enter dense processing.
+- Added a two-tier WebSocket request: every KRW pair is watched by ticker while only 20 focused
+  pairs receive trade and five-level orderbook streams. This avoids applying full L2 storage and
+  inference cost to every illiquid listing.
+- Added deterministic 60-second activity/move/liquidity ranking, inactive/suspended/warning/stale/
+  low-turnover exclusion, a one-minute minimum focus dwell, and rate-limited dynamic subscription
+  replacement. Rotation is disabled if paper-order simulation is ever enabled.
+- Replaced per-decision full-universe portfolio recomputation with exact incremental aggregate
+  exposure/equity totals. Dense decision cost therefore remains bounded by the focused event instead
+  of growing linearly with every monitored listing.
+- Added atomic `realtime-universe-1` evidence and `paper-runtime-4` scope/focus/exclusion fields. The
+  compact Korean monitor shows total KRW coverage, detailed focus, ticker coverage, warning
+  exclusions, rotations, and at most five leading market cards.
+- Namespaced paper recovery by the full discovered market-set hash, preventing an accounting
+  checkpoint from a different listing universe from being restored. Existing fixed-market recovery
+  behavior and evidence remain compatible.
+- The final paper process remained keyless and healthy with model approval, paper-order permission,
+  authentication, private network, real-order submission, and live submission all false.
+- Added ADR-019 and kept the public README unchanged.
 
 ## Completed in Phase 11.3
 
@@ -155,22 +181,26 @@
 ## Validation evidence
 
 ```text
-Python: PASS — 3.13.15; no Phase 11.3 dependency added
+Python: PASS — 3.13.15; no Phase 11.4 dependency added
 ruff: PASS — all checks passed
-format check: PASS — 213 files formatted
-mypy: PASS — 109 source files, no issues
-pytest: PASS — 340 tests, 86.62% branch coverage
-secret scan: PASS — 317 text files checked
+format check: PASS — 220 files formatted
+mypy: PASS — 112 source files, no issues
+pytest: PASS — 350 tests, 86.14% branch coverage
+secret scan: PASS — 323 text files checked
 dependency audit: PASS — no known vulnerabilities
 Compose config: PASS — base + paper overlays including healthy paper-runtime
-container build: PASS — quantforge-paper-runtime sha256:33680a3c...eff37
-verified 10,000-event neutral decision replay: PASS — 2,286.57 events/s; feature p99 0.352ms;
-  decision p99 0.850ms; combined p99 1.133ms; max 2.602ms; 3,328 inference frames
-sustained public runtime: PASS — 895 accepted, 561 periodic committed, retained rows 70,517;
-  queue depth 0/65,536; overflows/parser errors/reconnects 0; HOLD; order capability false
-live decision snapshot: PASS — p99 1.079ms; max 1.289ms; 0 budget breaches; recovery
-  VERIFIED_CLEAN; recovery block/model approval/paper-order gate/proposals/risk approvals/paper
-  orders/fills/authentication/private/real/live capability all false or 0
+container build: PASS — quantforge-paper-runtime sha256:3c96b213...956656
+verified 10,000-event neutral decision replay: PASS — 2,184.73 events/s; feature p99 0.371ms;
+  decision p99 0.822ms; combined p99 1.124ms; max 3.678ms; 3,328 inference frames
+all-KRW public runtime: PASS — 285/285 ticker coverage, 279 eligible, rotating 20-market focus,
+  27,208 accepted at 64.32 events/s over 423 seconds, seven focus rotations
+live latency snapshot: PASS — feature p99 0.378ms; decision p99 1.390ms; a small number of
+  scheduler/validation-contention outliers exceeded 5ms; parser errors/reconnects/queue overflows 0;
+  HOLD
+storage sample: 1.04MB added over 136 seconds; observed throughput projects roughly 20–70GB per
+  30 days before compaction/retention, depending on market activity and Parquet batching
+model approval/paper-order gate/proposals/risk approvals/paper orders/fills/authentication/private/
+  real/live capability all false or 0
 actual/private/test orders: NONE
 schedule registration: NONE
 ```
@@ -203,10 +233,12 @@ schedule registration: NONE
 
 ## Next milestone
 
-Do not enable live trading. Keep the public burn-in and Korean monitor running; measure coverage,
-restarts, parser failures, gaps, disk growth, and retention. Next, preregister falsifiable alpha and
-exit hypotheses, evaluate challengers on cost-inclusive chronological data, add a reviewed operator
-acknowledgement for unclean paper recovery, and submit an artifact for separate human paper review.
+Do not enable live trading. First add measured Parquet compaction, age/size retention, disk-watermark
+alerts, and a fail-closed low-space stop before leaving all-KRW burn-in unattended. Keep measuring
+coverage, restarts, parser failures, gaps, and real disk growth. Then preregister falsifiable alpha
+and exit hypotheses, evaluate challengers on cost-inclusive chronological data, add a reviewed
+operator acknowledgement for unclean paper recovery, and submit an artifact for separate human
+paper review.
 Only clean recovery, a reviewed artifact, and a separately enabled paper-order gate may turn the
 already composed path from neutral to simulated entry/exit lifecycle and representative performance
 exports.

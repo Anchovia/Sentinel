@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from quantforge.runtime.paper_supervisor import PaperRuntimeSnapshot
     from quantforge.runtime.realtime_decision import RealtimePaperDecisionSnapshot
     from quantforge.runtime.realtime_pipeline import RealtimePipelineSnapshot
+    from quantforge.runtime.universe_scanner import RealtimeUniverseSnapshot
 
 
 def _number(value: int | float | Decimal, *, decimals: int = 0) -> str:
@@ -81,6 +82,7 @@ def render_paper_monitor(
     runtime: "PaperRuntimeSnapshot",
     realtime: "RealtimePipelineSnapshot | None" = None,
     decision: "RealtimePaperDecisionSnapshot | None" = None,
+    universe: "RealtimeUniverseSnapshot | None" = None,
 ) -> str:
     """Render only public-market and fail-closed collection information."""
 
@@ -89,6 +91,7 @@ def render_paper_monitor(
         "runtime": runtime.model_dump(mode="json", exclude={"raw_output", "policy_hash"}),
         "realtime": realtime.model_dump(mode="json") if realtime is not None else None,
         "decision": decision.model_dump(mode="json") if decision is not None else None,
+        "universe": universe.model_dump(mode="json") if universe is not None else None,
     }
     assert_runtime_export_safe(safe_payload)
     state = {
@@ -99,7 +102,10 @@ def render_paper_monitor(
     }[runtime.state.value]
     connected = ("연결됨", "ok") if runtime.websocket_connected else ("연결 안 됨", "bad")
     last_event = runtime.last_event_at_utc.isoformat() if runtime.last_event_at_utc else ""
-    markets = "".join(_market_card(market) for market in dashboard.markets)
+    visible_markets = tuple(
+        sorted(dashboard.markets, key=lambda market: market.turnover_24h_krw, reverse=True)[:5]
+    )
+    markets = "".join(_market_card(market) for market in visible_markets)
     if not markets:
         markets = "<div class='empty'>첫 공개 시세를 기다리고 있습니다.</div>"
     generated = runtime.updated_at_utc.isoformat()
@@ -120,6 +126,17 @@ def render_paper_monitor(
         if realtime is not None
         else """<section class="panel"><h2>밀리초 처리</h2>
 <p class="label">실시간 처리 코어를 기다리고 있습니다.</p></section>"""
+    )
+    universe_panel = (
+        f"""<section class="panel"><h2>시장 범위</h2><div class="rows">
+<div class="row"><span class="label">전체 원화마켓 감시</span><strong>{universe.monitored_market_count:,}개</strong></div>
+<div class="row"><span class="label">집중 분석</span><strong>{len(universe.focused_markets):,}개</strong></div>
+<div class="row"><span class="label">현재가 수신</span><strong>{universe.ticker_coverage_count:,}개</strong></div>
+<div class="row"><span class="label">경보 제외</span><strong>{len(universe.warning_markets):,}개</strong></div>
+<div class="row"><span class="label">집중 종목 교체</span><strong>{universe.focus_rotation_count:,}회</strong></div>
+</div></section>"""
+        if universe is not None
+        else ""
     )
     paper_panel = (
         f"""<section class="panel"><h2>모의 판단</h2><div class="rows">
@@ -184,6 +201,7 @@ border:1px dashed var(--line);border-radius:18px;color:var(--muted);margin-botto
 <div class="total"><span class="label">누적 파일</span><strong>{runtime.retained_files:,}</strong></div>
 <div class="total"><span class="label">누적 용량</span><strong>{_bytes(runtime.retained_bytes)}</strong></div></div></div>
 <div><span class="label">이번 실행에서 받은 메시지</span><div class="events">{_event_counts(runtime)}</div></div></section>
+{universe_panel}
 {markets}
 <div class="columns"><section class="panel"><h2>수집 상태</h2><div class="rows">
 <div class="row"><span class="label">마지막 데이터</span><strong><time id="event-age" data-utc="{escape(last_event)}">{escape(last_event or "대기 중")}</time></strong></div>
@@ -217,6 +235,7 @@ def write_paper_monitor(
     *,
     realtime: "RealtimePipelineSnapshot | None" = None,
     decision: "RealtimePaperDecisionSnapshot | None" = None,
+    universe: "RealtimeUniverseSnapshot | None" = None,
 ) -> Path:
     """Atomically replace the local monitor so browser refreshes never see a partial file."""
 
@@ -226,7 +245,7 @@ def write_paper_monitor(
     temporary = destination_dir / f".paper-monitor.{uuid4().hex}.tmp"
     try:
         temporary.write_text(
-            render_paper_monitor(dashboard, runtime, realtime, decision),
+            render_paper_monitor(dashboard, runtime, realtime, decision, universe),
             encoding="utf-8",
         )
         os.replace(temporary, destination)

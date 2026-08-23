@@ -1,9 +1,10 @@
 """Validated dynamic subscription messages for Upbit public streams."""
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from hashlib import sha256
-from typing import Literal
+from typing import Literal, cast
 from uuid import UUID, uuid4
 
 import orjson
@@ -82,3 +83,35 @@ def build_subscription_request(
         subscription_id=subscription_id,
         payload=payload,
     )
+
+
+def build_tiered_public_subscriptions(
+    markets: Sequence[str],
+    focused_markets: Sequence[str],
+    streams: Sequence[str],
+    *,
+    orderbook_depth: int = 5,
+) -> tuple[UpbitSubscription, ...]:
+    """Watch every market by ticker and reserve dense streams for the current focus."""
+
+    monitored = tuple(markets)
+    focused = tuple(focused_markets)
+    selected_streams = tuple(streams)
+    allowed = {"ticker", "trade", "orderbook"}
+    if not monitored or not focused:
+        raise ValueError("tiered subscriptions require monitored and focused markets")
+    if not set(focused).issubset(set(monitored)):
+        raise ValueError("focused markets must belong to the monitored universe")
+    if not selected_streams or any(stream not in allowed for stream in selected_streams):
+        raise ValueError("tiered subscriptions accept ticker, trade, and orderbook only")
+    subscriptions: list[UpbitSubscription] = []
+    for stream in selected_streams:
+        codes = monitored if stream == "ticker" else focused
+        subscriptions.append(
+            UpbitSubscription(
+                cast(PublicStreamType, stream),
+                codes,
+                orderbook_depth=orderbook_depth if stream == "orderbook" else None,
+            )
+        )
+    return tuple(subscriptions)

@@ -7,9 +7,12 @@
 - Private order/asset and order-policy behavior is fixture/fake-port evidence only. Public WebSocket
   collection now has a supervised burn-in service, but its sustained uptime/retention evidence has
   not yet accumulated.
-- Upbit capability observations were reviewed on 2026-08-23 and are not an automatic semantic diff.
+- Upbit capability observations were reviewed on 2026-08-24 and are not an automatic semantic diff.
   The official Python SDK remains excluded because its declared WebSocket constraint conflicts with
   the reviewed direct transport.
+- The live Korean ticker feed returned `PREDELISTING` for three scheduled-removal pairs although the
+  reviewed ticker page did not enumerate that state. It is accepted only as non-active public data
+  and can never enter the focused universe; future undocumented states still fail schema validation.
 - Public L2 snapshots cannot reveal exact queue position or hidden liquidity. Paper fills, slippage,
   and adverse-selection estimates are conservative approximations and remain uncalibrated.
 
@@ -30,6 +33,9 @@
   inference, strategy, risk, simulated execution, ledger, network, and exchange latency and is not a
   profitability, fill-speed, capacity, or high-frequency-trading claim. Python on a retail Upbit
   connection is not a colocated HFT system.
+- All-KRW mode monitors every current KRW ticker but reserves trade and five-level orderbook streams
+  for 20 rotating candidates. It is not full-depth capture for all pairs, and the activity/move
+  ranking is a data-allocation policy rather than validated alpha.
 - The approved alpha used by the end-to-end paper fill test is a deterministic fixture, not a
   registered research result, profitability claim, or deployable artifact. No production alpha,
   automated approval, exit controller, round-trip lifecycle, sustained paper performance, or
@@ -43,10 +49,9 @@
 
 - The dashboard has one bearer-authenticated operator role and no RBAC/SSO/TLS ingress/application
   rate limiter. Runtime producers do not yet populate every read view.
-- The Korean local monitor covers public feed/storage visibility only. The authenticated
-  server-rendered dashboard and Grafana views are still developer/operations skeletons; no strategy,
-  simulated-order, position, or paper-performance view can be populated before the remaining Phase
-  11 runtime contracts are composed.
+- The Korean local monitor covers public feed/storage, universe coverage, and neutral paper counters.
+  The authenticated server-rendered dashboard and Grafana views are still developer/operations
+  skeletons; representative strategy, position, and paper-performance views do not exist.
 - Incident, control, order, experiment, risk, and attribution journals are local single-writer proofs,
   not transactional replicated production storage.
 - Backups are unencrypted, local development restore proofs with no PostgreSQL/off-host/raw-tick/
@@ -61,6 +66,10 @@
 - Recovery checkpoints rewrite the complete local ledger on consequential state changes. This is
   bounded by paper trade count rather than public event count but has not been load-tested for long
   simulated histories or compacted into production storage.
+- Raw paper data has no automatic compaction, retention, archive, or disk-watermark stop yet.
+  A short all-KRW sample added 1.04MB in 136 seconds. Variable event activity and file batching make
+  the current honest planning range roughly 20–70GB per 30 days, so burn-in capacity cannot be
+  extrapolated indefinitely and the collector should not be left unattended before storage guards.
 
 ## Automation and delivery
 

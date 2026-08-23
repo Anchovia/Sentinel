@@ -8,9 +8,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 ## Current state
 
 - Date: 2026-08-24 KST
-- Completed phases: 0–10; Phase 11.1–11.3 checkpoints complete
-- Current checkpoint: neutral real-time inference/strategy/risk/paper-broker/ledger composition;
-  preregistered alpha and exit research plus separate paper approval next
+- Completed phases: 0–10; Phase 11.1–11.4 checkpoints complete
+- Current checkpoint: all-KRW broad monitoring with rotating 20-market dense paper analysis;
+  storage retention and preregistered alpha/exit research next
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
@@ -32,8 +32,10 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 9: `a2c0542 feat: 읽기 전용 실거래 준비도 검증 구축`
 - Phase 10: `34ac186 feat: 공개 페이퍼 감독 런타임 구축`
 - Phase 11.1: `eb8a4da feat: 저지연 실시간 처리 기반 구축`
+- Phase 11.2: `af50599 feat: 중립 실시간 모의 판단 경로 구축`
+- Phase 11.3: `f067442 feat: 모의 거래 재시작 복구 구축`
 
-## Implemented through Phase 11.3
+## Implemented through Phase 11.4
 
 - Safety-first Python modular monolith, six closed live gates, Decimal domain/accounting boundary,
   keyless Upbit public transport, versioned immutable raw lineage, deterministic replay/bars/features,
@@ -55,7 +57,8 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   atomic lifecycle heartbeats, periodic immutable raw flushes, public market operations views,
   reconnect/parser/duplicate/latency evidence, offline health status, and clean bounded shutdown.
 - A separate read-only Compose service stores paper raw data in a persistent volume and writes only
-  redacted runtime exports. It has no private, model, strategy, risk, broker, ledger, or order path.
+  redacted runtime exports. It has no authenticated/private/real-order path; its composed paper
+  decision path remains neutral and independently gated.
 - A self-contained Korean local monitor refreshes from atomic exports every five seconds and shows
   public market/collector health plus manifest-backed retained rows, files, and bytes. It needs no
   server, token, account, or control path and excludes raw payloads and internal identifiers.
@@ -72,7 +75,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   blocks regardless of other feature or edge values.
 - A test-only approved fixture proves the complete simulated order/fill/accounting plumbing. It is
   not shipped or promoted. Atomic decision exports and the Korean monitor show review status,
-  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-018 record consequential
+  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-019 record consequential
   choices. README remains intentionally minimal.
 - `realtime-paper-recovery-1` now preserves policy-bound orders, fills, reservations, FIFO lots,
   exact balances, ledger chains, counters, and the event cursor in the durable paper volume. Clean
@@ -81,24 +84,38 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Container signals now use the clean shutdown path. A disabled and provably empty economic state may
   report `EMPTY_UNCLEAN_RECOVERED`; any order, fill, lock, lot, ledger record, cost, turnover, or
   balance change preserves the unclean block.
+- The paper runtime now discovers every current KRW pair from Upbit's credential-free official
+  catalog at startup. All pairs receive ticker monitoring while a deterministic, fresh, liquid,
+  warning-free 20-market focus receives trade and five-level orderbook streams.
+- Focus ranking uses the latest 60-second activity and short move with 24-hour turnover, enforces a
+  one-minute dwell, and replaces the validated subscription through the existing limiter. The
+  complete focus evidence is exported as `realtime-universe-1` and the Korean monitor stays compact.
+- Exact incremental portfolio aggregates keep focused risk decisions from rescanning all monitored
+  ledgers on every event; live decision p99 remained below the 5ms budget during validation.
+- Full-list recovery checkpoints are namespaced by the discovered market-set hash. BTC/USDT quote
+  markets remain outside the KRW accounting and risk contracts. ADR-001 through ADR-019 record
+  consequential choices; README remains intentionally minimal.
 
 ## Latest validation
 
 ```text
-Python 3.13.15; no Phase 11.3 dependency added
-ruff + format: PASS (213 files)
-mypy: PASS (109 source files)
-pytest: PASS (340 tests, 86.62% branch coverage)
-Secret scan: PASS (317 text files)
+Python 3.13.15; no Phase 11.4 dependency added
+ruff + format: PASS (220 files)
+mypy: PASS (112 source files)
+pytest: PASS (350 tests, 86.14% branch coverage)
+Secret scan: PASS (323 text files)
 pip-audit: PASS (no known vulnerabilities)
 Compose config: PASS; paper-runtime healthy
-Final image: PASS (quantforge-paper-runtime, sha256:33680a3c...eff37)
-Verified 10,000-event neutral decision replay: 2,286.57 events/s; feature p99 0.352ms;
-decision p99 0.850ms; combined p99 1.133ms; max 2.602ms; 3,328 inference frames
-Sustained runtime: 895 accepted, 561 periodic committed, retained rows 70,517;
-queue 0/65,536, overflows/parser errors/reconnects zero
-Live decision snapshot: p99 1.079ms; max 1.289ms; zero 5ms breaches; recovery VERIFIED_CLEAN;
-recovery block, model approval, paper-order gate, proposals, risk approvals, paper orders/fills,
+Final image: PASS (quantforge-paper-runtime, sha256:3c96b213...956656)
+Verified 10,000-event neutral decision replay: 2,184.73 events/s; feature p99 0.371ms;
+decision p99 0.822ms; combined p99 1.124ms; max 3.678ms; 3,328 inference frames
+All-KRW runtime: 285/285 ticker coverage, 279 eligible, rotating 20-market dense focus;
+27,208 accepted at 64.32 events/s over 423 seconds; seven rotations
+Live snapshot: feature p99 0.378ms; decision p99 1.390ms; parser errors/reconnects/queue
+overflows zero; a small number of scheduler/validation-contention outliers exceeded 5ms
+Observed storage sample: 1.04MB/136 seconds, projecting roughly 20–70GB per 30 days before
+compaction/retention depending on activity and batching
+Model approval, paper-order gate, proposals, risk approvals, paper orders/fills,
 authentication/private/real/live capability all false or zero
 Actual/private/test orders: none
 Scheduled tasks: not registered
@@ -135,8 +152,9 @@ Scheduled tasks: not registered
 
 ## Next actions
 
-1. Keep paper mode. Run and observe the supervised public burn-in; measure coverage, gaps, parser
-   failures, reconnects, restarts, disk growth, and retention without treating uptime as readiness.
+1. Keep paper mode. Add bounded Parquet compaction, age/size retention, disk-watermark alerts, and a
+   fail-closed low-space stop before leaving the all-KRW collector unattended. Continue measuring
+   coverage, gaps, parser failures, reconnects, restarts, and actual disk growth.
 2. Preregister falsifiable alpha and exit hypotheses, run cost-inclusive chronological challengers,
    preserve negative results, and present any candidate artifact for separate human paper review.
 3. Add a reviewed operator acknowledgement workflow for unclean paper recovery. Only after clean

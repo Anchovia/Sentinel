@@ -1,6 +1,6 @@
 schema_version: 1
 exchange: upbit
-retrieved_at_utc: "2026-08-23T15:18:25.093Z"
+retrieved_at_utc: "2026-08-23T18:29:26.401Z"
 source_snapshot: docs/upbit_document_snapshot.json
 
 public_websocket:
@@ -14,6 +14,9 @@ public_websocket:
     ticker:
       enabled: true
       schema: upbit-ticker-v1
+      delisting_date_shape: null_or_year_month_day_object
+      observed_nonactive_state: PREDELISTING
+      observed_nonactive_state_documented: false
     trade:
       enabled: true
       schema: upbit-trade-v1
@@ -40,6 +43,25 @@ public_websocket:
   origin_header:
     send: false
     reason: Upbit applies a separate one-request-per-ten-seconds policy when Origin is present.
+
+public_rest:
+  enabled: true
+  authentication: none
+  base_url: https://api.upbit.com
+  startup_only: true
+  endpoints:
+    market_catalog:
+      path: /v1/market/all?is_details=true
+      rate_group: market
+      requests_per_second_per_ip: 10
+      purpose: dynamic KRW membership and warning/caution evidence
+    quote_tickers:
+      path: /v1/ticker/all?quote_currencies=KRW
+      rate_group: ticker
+      requests_per_second_per_ip: 10
+      purpose: Decimal 24-hour turnover for initial focus ranking
+  credentials_sent: false
+  order_capability: false
 
 private_websocket:
   enabled: false

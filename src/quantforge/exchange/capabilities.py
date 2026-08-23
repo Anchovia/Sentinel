@@ -37,6 +37,17 @@ class DisabledCapability(BaseModel):
     reason: str = Field(min_length=1)
 
 
+class PublicRestCapabilities(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+    enabled: Literal[True]
+    authentication: Literal["none"]
+    base_url: str = Field(pattern=r"^https://")
+    startup_only: Literal[True]
+    credentials_sent: Literal[False]
+    order_capability: Literal[False]
+
+
 class UpbitCapabilityManifest(BaseModel):
     model_config = ConfigDict(frozen=True, extra="allow")
 
@@ -44,6 +55,7 @@ class UpbitCapabilityManifest(BaseModel):
     exchange: Literal["upbit"]
     source_snapshot: str
     public_websocket: PublicWebSocketCapabilities
+    public_rest: PublicRestCapabilities
     private_websocket: DisabledCapability
     rest_api: DisabledCapability
 
@@ -51,6 +63,8 @@ class UpbitCapabilityManifest(BaseModel):
     def require_public_only(self) -> "UpbitCapabilityManifest":
         if not self.public_websocket.enabled:
             raise ValueError("Phase 1 requires the reviewed public WebSocket capability")
+        if not self.public_rest.enabled:
+            raise ValueError("all-KRW discovery requires reviewed credential-free public REST")
         return self
 
 

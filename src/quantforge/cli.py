@@ -5,7 +5,7 @@ import json
 import math
 import shutil
 import signal
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
@@ -24,8 +24,16 @@ from quantforge.automation import (
 from quantforge.config import get_settings
 from quantforge.domain import DataGap, EventEnvelope
 from quantforge.exchange.upbit.errors import UpbitAdapterError
+from quantforge.exchange.upbit.market_catalog import (
+    UpbitMarketCatalogError,
+    UpbitPublicMarketCatalog,
+)
 from quantforge.exchange.upbit.public_ws import UpbitPublicWebSocketClient
-from quantforge.exchange.upbit.subscriptions import PublicStreamType, UpbitSubscription
+from quantforge.exchange.upbit.subscriptions import (
+    PublicStreamType,
+    UpbitSubscription,
+    build_tiered_public_subscriptions,
+)
 from quantforge.operations import (
     LocalBackupManager,
     create_operations_context,
@@ -43,6 +51,8 @@ from quantforge.runtime import (
     LiveSubmissionGuard,
     RealtimePaperOrchestrator,
     RealtimePaperPipeline,
+    RealtimeUniversePolicy,
+    RealtimeUniverseScanner,
     write_data_quality_snapshot,
 )
 from quantforge.runtime.paper_supervisor import (
@@ -178,8 +188,16 @@ def collect_public(
 
 @app.command("run-paper")
 def run_paper(
-    markets: str = typer.Option("KRW-BTC", help="Comma-separated uppercase KRW market codes"),
+    markets: str = typer.Option(
+        "KRW-BTC", help="Comma-separated uppercase KRW market codes or ALL-KRW"
+    ),
     streams: str = typer.Option("ticker,trade,orderbook", help="Public stream names"),
+    focus_markets: int = typer.Option(
+        20,
+        min=1,
+        max=100,
+        help="Detailed trade/orderbook markets when ALL-KRW is selected",
+    ),
     duration_seconds: int = typer.Option(
         0,
         min=0,
@@ -202,10 +220,13 @@ def run_paper(
 ) -> None:
     """Run supervised keyless public collection with every live/order gate closed."""
 
+    dynamic_all_krw = markets.strip().upper() == "ALL-KRW"
     selected_markets = tuple(item.strip() for item in markets.split(",") if item.strip())
     selected_streams = tuple(item.strip() for item in streams.split(",") if item.strip())
     allowed_streams = {"ticker", "trade", "orderbook"}
-    if not selected_markets or any(not market.startswith("KRW-") for market in selected_markets):
+    if not dynamic_all_krw and (
+        not selected_markets or any(not market.startswith("KRW-") for market in selected_markets)
+    ):
         raise typer.BadParameter(
             "paper runtime accepts uppercase KRW market codes only", param_hint="--markets"
         )
@@ -213,10 +234,48 @@ def run_paper(
         raise typer.BadParameter(
             "streams must contain only ticker, trade, or orderbook", param_hint="--streams"
         )
-    subscriptions = tuple(
-        UpbitSubscription(cast(PublicStreamType, stream), selected_markets)
-        for stream in selected_streams
-    )
+    universe = None
+    scanner = None
+    subscription_builder = None
+    recovery_path = None
+    if dynamic_all_krw:
+        try:
+            universe = UpbitPublicMarketCatalog().fetch_krw_universe(focus_limit=focus_markets)
+        except UpbitMarketCatalogError as exc:
+            raise typer.BadParameter(str(exc), param_hint="--markets") from exc
+        selected_markets = universe.monitored_markets
+        scanner = RealtimeUniverseScanner(
+            selected_markets,
+            eligible_markets=universe.eligible_markets,
+            initial_focus_markets=universe.initial_focus_markets,
+            warning_markets=universe.warning_markets,
+            caution_markets=universe.caution_markets,
+            market_set_hash=universe.market_set_hash,
+            policy=RealtimeUniversePolicy(focus_limit=focus_markets),
+        )
+
+        def build_dynamic_subscriptions(
+            selected_focus: Sequence[str],
+        ) -> tuple[UpbitSubscription, ...]:
+            return build_tiered_public_subscriptions(
+                selected_markets,
+                selected_focus,
+                selected_streams,
+                orderbook_depth=5,
+            )
+
+        subscription_builder = build_dynamic_subscriptions
+        subscriptions = subscription_builder(universe.initial_focus_markets)
+        recovery_path = (
+            raw_output.parent
+            / "state"
+            / f"realtime-paper-recovery-{universe.market_set_hash[:16]}.json"
+        )
+    else:
+        subscriptions = tuple(
+            UpbitSubscription(cast(PublicStreamType, stream), selected_markets)
+            for stream in selected_streams
+        )
 
     def client_factory(
         on_event: Callable[[EventEnvelope], Awaitable[None]],
@@ -238,6 +297,9 @@ def run_paper(
         output_root=output_root,
         policy=policy,
         client_factory=client_factory,
+        universe_scanner=scanner,
+        subscription_builder=subscription_builder,
+        recovery_path=recovery_path,
     )
     snapshot = asyncio.run(_run_paper_with_signals(supervisor))
     typer.echo(
@@ -250,6 +312,10 @@ def run_paper(
                 "retained_rows": snapshot.retained_rows,
                 "retained_files": snapshot.retained_files,
                 "retained_bytes": snapshot.retained_bytes,
+                "market_scope": snapshot.market_scope,
+                "monitored_market_count": len(snapshot.markets),
+                "focused_market_count": len(snapshot.focused_markets),
+                "warning_market_count": snapshot.warning_market_count,
                 "parser_errors": snapshot.parser_errors,
                 "reconnects": snapshot.reconnects,
                 "runtime_snapshot": str((output_root / "ops" / "paper-runtime.json").resolve()),

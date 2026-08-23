@@ -204,6 +204,26 @@ configuration is disabled. The public collector continues in neutral mode. Conse
 order/accounting changes are synchronously checkpointed and their durability cost is included in
 decision latency; neutral heartbeats refresh the checkpoint off the market-event hot path.
 
+Phase 11.4 widens observation without applying dense processing to every listing:
+
+```text
+credential-free market catalog + KRW quote snapshot
+                 -> all KRW ticker monitoring -> 60-second opportunity ranking
+                                                   |
+                                                   v
+                                  20-market trade + five-level orderbook focus
+                                                   |
+                                                   v
+                         causal feature -> neutral paper decision composition
+```
+
+Catalog failure stops startup. Official warning markets remain observable but are never focused;
+inactive, suspended, stale, and low-turnover pairs are excluded by the scanner. Focus replacement
+is rate-limited and held for at least one minute. The complete market set remains in the raw and
+feature boundaries, while neutral inference/risk/paper accounting runs only for the current focus.
+The market-set hash namespaces recovery evidence so a listing change cannot restore state from a
+different universe. BTC/USDT quote accounting remains outside this KRW-only boundary.
+
 ## Deployment target
 
 Initial deployment is one Linux host with Docker Compose: API, supervised public paper burn-in,

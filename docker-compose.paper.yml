@@ -16,7 +16,9 @@ services:
       - quantforge
       - run-paper
       - --markets
-      - KRW-BTC
+      - ALL-KRW
+      - --focus-markets
+      - "20"
       - --streams
       - ticker,trade,orderbook
       - --heartbeat-seconds

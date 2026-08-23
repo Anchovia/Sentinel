@@ -199,6 +199,18 @@ markets/streams, accepted/event/duplicate/parser/reconnect/committed counts, lat
 exchange times, maximum observed ingress latency, heartbeat sequence, and terminal reason. Its
 credential, authentication, private-network, order, and live-submission fields are false-only.
 
+Phase 11.4 versions that lifecycle view as `paper-runtime-4` and adds fixed/all-KRW scope, complete
+monitored-market membership, current focused markets, and warning/caution counts. The companion
+`realtime-universe-1` snapshot binds the market-set hash to total/eligible/ticker-covered counts,
+warning and caution sets, focused markets, deterministic activity/move/turnover scores, and focus
+rotation count. It is selection evidence, not a strategy recommendation or order approval.
+
+For `ALL-KRW`, raw ticker events are retained for every KRW pair while trade and five-level
+orderbook events are retained only for the rotating focus. Files remain partitioned by source,
+event type, UTC date, and hour rather than by market, so expanding the universe increases bytes and
+rows without multiplying the scheduled small-file count by every pair. Market-set and focus
+evidence must accompany any later dataset or paper-performance claim.
+
 Phase 7 defines `operations-dashboard-1`, containing UTC generation time and fixed Overview,
 Markets, Positions, Orders, Strategies, Models, System, and Incidents views. Decimal is retained for
 assets, balances, prices, quantities, fees, exposure, and PnL. Exchange order UUIDs are represented

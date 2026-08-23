@@ -6,7 +6,7 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Any, Literal, cast
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from quantforge.domain import JSONValue, MonetaryDecimal
 from quantforge.exchange.upbit.errors import MalformedUpbitPayload, UpbitPayloadError
@@ -38,6 +38,24 @@ class UpbitWireModel(BaseModel):
     stream_type: StreamType
 
 
+class UpbitDelistingDate(BaseModel):
+    """Documented object representation used for a scheduled trading-support end date."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    year: int = Field(ge=2000, le=9999)
+    month: int = Field(ge=1, le=12)
+    day: int = Field(ge=1, le=31)
+
+    @model_validator(mode="after")
+    def require_calendar_date(self) -> "UpbitDelistingDate":
+        self.as_date()
+        return self
+
+    def as_date(self) -> date:
+        return date(self.year, self.month, self.day)
+
+
 class UpbitTicker(UpbitWireModel):
     type: Literal["ticker"]
     opening_price: MonetaryDecimal
@@ -65,8 +83,8 @@ class UpbitTicker(UpbitWireModel):
     highest_52_week_date: date
     lowest_52_week_price: MonetaryDecimal
     lowest_52_week_date: date
-    market_state: Literal["PREVIEW", "ACTIVE", "DELISTED"]
-    delisting_date: date | None
+    market_state: Literal["PREVIEW", "ACTIVE", "PREDELISTING", "DELISTED"]
+    delisting_date: date | UpbitDelistingDate | None
     is_trading_suspended: bool | None = None
     market_warning: Literal["NONE", "CAUTION"] | None = None
 

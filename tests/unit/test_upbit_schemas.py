@@ -6,6 +6,7 @@ from pydantic import ValidationError
 
 from quantforge.exchange.upbit.errors import MalformedUpbitPayload, UpbitPayloadError
 from quantforge.exchange.upbit.schemas import (
+    UpbitDelistingDate,
     UpbitOrderbook,
     UpbitTicker,
     UpbitTrade,
@@ -43,6 +44,18 @@ def test_ticker_additive_field_is_retained() -> None:
     assert isinstance(message, UpbitTicker)
     assert message.model_extra == {"future_additive_field": "kept"}
     assert payload["future_additive_field"] == "kept"
+
+
+def test_predelisting_ticker_uses_documented_object_date_and_stays_nonactive() -> None:
+    payload = decode_json_object((FIXTURES / "ticker.default.json").read_bytes())
+    payload["market_state"] = "PREDELISTING"
+    payload["delisting_date"] = {"year": 2026, "month": 9, "day": 7}
+
+    ticker = UpbitTicker.model_validate(payload)
+
+    assert ticker.market_state == "PREDELISTING"
+    assert isinstance(ticker.delisting_date, UpbitDelistingDate)
+    assert ticker.delisting_date.as_date().isoformat() == "2026-09-07"
 
 
 @pytest.mark.parametrize("raw", ["not-json", "[]", "{}", '{"type":"unknown"}'])

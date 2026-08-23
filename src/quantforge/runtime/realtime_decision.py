@@ -10,7 +10,7 @@ from enum import StrEnum
 from hashlib import sha256
 from pathlib import Path
 from time import perf_counter_ns
-from typing import Annotated, Literal, Protocol
+from typing import Annotated, Literal, Protocol, cast
 from uuid import UUID, uuid4
 
 import orjson
@@ -351,6 +351,10 @@ class RealtimePaperOrchestrator:
         self._neutral = AlwaysNeutralAlphaBaseline()
         self._neutral_hash = sha256(self._neutral.artifact_bytes).hexdigest()
         self._latest_marks: dict[str, Decimal] = {}
+        self._cached_market_values: dict[str, Decimal] = {}
+        self._cached_equities: dict[str, Decimal] = {}
+        self._total_exposure_krw = Decimal(0)
+        self._total_equity_krw = self.policy.initial_cash_krw * Decimal(len(markets))
         self._latencies_ms: deque[float] = deque(maxlen=self.policy.latency_window_size)
         self._order_times: deque[datetime] = deque()
         self._market_order_times: dict[str, deque[datetime]] = {
@@ -386,6 +390,12 @@ class RealtimePaperOrchestrator:
         self._recovery_dirty = False
         if recovery_path is not None and recovery_path.exists():
             self._restore_checkpoint(recovery_path)
+            checkpoint = cast(RealtimePaperRecoveryCheckpoint, self._loaded_checkpoint)
+            for market in self._latest_marks:
+                self._record_portfolio_totals(
+                    market,
+                    self._portfolio(market, checkpoint.generated_at_utc),
+                )
 
     @property
     def paper_order_simulation_available(self) -> bool:
@@ -709,6 +719,7 @@ class RealtimePaperOrchestrator:
             adverse_selection_bps=self.policy.execution.adverse_selection_bps,
         )
         portfolio = self._portfolio(market, now)
+        self._record_portfolio_totals(market, portfolio)
         drawdown = self._drawdown(market, portfolio.equity)
         limits = self.policy.risk_limits
         daily_loss = max(Decimal(0), -portfolio.net_pnl)
@@ -854,23 +865,8 @@ class RealtimePaperOrchestrator:
             opposing_depth_notional=depth,
             reference_price=inputs.market.mid_price,
             position_notional=portfolio.market_value,
-            total_exposure_krw=sum(
-                (
-                    self._portfolio(item, now).market_value
-                    for item in self.markets
-                    if item in self._latest_marks
-                ),
-                start=Decimal(0),
-            ),
-            total_equity_krw=sum(
-                (
-                    self._portfolio(item, now).equity
-                    if item in self._latest_marks
-                    else self.policy.initial_cash_krw
-                    for item in self.markets
-                ),
-                start=Decimal(0),
-            ),
+            total_exposure_krw=self._total_exposure_krw,
+            total_equity_krw=self._total_equity_krw,
             concurrent_positions=sum(
                 ledger.position_quantity > 0 for ledger in self._ledgers.values()
             ),
@@ -960,6 +956,14 @@ class RealtimePaperOrchestrator:
     def _portfolio(self, market: str, at_utc: datetime) -> PortfolioSnapshot:
         mark = self._latest_marks[market]
         return self._ledgers[market].view(mark_price=mark, as_of=at_utc)
+
+    def _record_portfolio_totals(self, market: str, portfolio: PortfolioSnapshot) -> None:
+        previous_value = self._cached_market_values.get(market, Decimal(0))
+        previous_equity = self._cached_equities.get(market, self.policy.initial_cash_krw)
+        self._total_exposure_krw += portfolio.market_value - previous_value
+        self._total_equity_krw += portfolio.equity - previous_equity
+        self._cached_market_values[market] = portfolio.market_value
+        self._cached_equities[market] = portfolio.equity
 
     def _drawdown(self, market: str, equity: Decimal) -> Decimal:
         self._peak_equity[market] = max(self._peak_equity[market], equity)

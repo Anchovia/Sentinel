@@ -13,6 +13,9 @@ def test_reviewed_capability_manifest_is_public_only() -> None:
     assert manifest.exchange == "upbit"
     assert manifest.public_websocket.authentication == "none"
     assert manifest.public_websocket.format == "DEFAULT"
+    assert manifest.public_rest.authentication == "none"
+    assert manifest.public_rest.credentials_sent is False
+    assert manifest.public_rest.order_capability is False
     assert manifest.private_websocket.enabled is False
     assert manifest.rest_api.enabled is False
 

@@ -25,6 +25,7 @@ from quantforge.config import Environment, QuantForgeSettings, TradingMode
 from quantforge.domain import EventEnvelope
 from quantforge.exchange.upbit.errors import UpbitAdapterError
 from quantforge.exchange.upbit.schemas import AskBid, UpbitOrderbook, UpbitTicker, UpbitTrade
+from quantforge.exchange.upbit.subscriptions import UpbitSubscription
 from quantforge.operations.exports import assert_runtime_export_safe, write_dashboard_snapshot
 from quantforge.operations.models import (
     DashboardSnapshot,
@@ -42,6 +43,10 @@ from quantforge.runtime.realtime_decision import (
 from quantforge.runtime.realtime_pipeline import (
     RealtimePaperPipeline,
     write_realtime_pipeline_snapshot,
+)
+from quantforge.runtime.universe_scanner import (
+    RealtimeUniverseScanner,
+    write_realtime_universe_snapshot,
 )
 from quantforge.storage import (
     ParquetRawEventWriter,
@@ -67,15 +72,19 @@ class PaperRuntimeSnapshot(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal["paper-runtime-1", "paper-runtime-2", "paper-runtime-3"] = (
-        "paper-runtime-3"
-    )
+    schema_version: Literal[
+        "paper-runtime-1", "paper-runtime-2", "paper-runtime-3", "paper-runtime-4"
+    ] = "paper-runtime-4"
     run_id: UUID
     state: PaperRuntimeState
     started_at_utc: datetime
     updated_at_utc: datetime
     stopped_at_utc: datetime | None = None
     markets: tuple[str, ...] = Field(min_length=1)
+    market_scope: Literal["fixed", "all_krw"] = "fixed"
+    focused_markets: tuple[str, ...] = ()
+    warning_market_count: int = Field(default=0, ge=0)
+    caution_market_count: int = Field(default=0, ge=0)
     streams: tuple[str, ...] = Field(min_length=1)
     accepted_messages: int = Field(ge=0)
     event_counts: tuple[tuple[str, int], ...]
@@ -137,6 +146,8 @@ class PaperRuntimeSnapshot(BaseModel):
             raise ValueError("runtime stop cannot precede its start")
         if self.committed_rows > self.accepted_messages:
             raise ValueError("committed rows cannot exceed accepted messages")
+        if self.focused_markets and not set(self.focused_markets).issubset(set(self.markets)):
+            raise ValueError("focused markets must belong to the monitored market scope")
         if self.state in {PaperRuntimeState.STOPPED, PaperRuntimeState.FAILED}:
             if self.stopped_at_utc is None or self.websocket_connected:
                 raise ValueError("terminal runtime snapshots must be stopped and disconnected")
@@ -209,6 +220,8 @@ class PublicStreamClient(Protocol):
 
     async def run(self, *, max_messages: int | None = None) -> int: ...
 
+    async def replace_subscriptions(self, subscriptions: Sequence[UpbitSubscription]) -> None: ...
+
     async def stop(self) -> None: ...
 
 
@@ -216,6 +229,7 @@ type PublicClientFactory = Callable[
     [Callable[[EventEnvelope], Awaitable[None]], Callable[[UpbitAdapterError], Awaitable[None]]],
     PublicStreamClient,
 ]
+type PublicSubscriptionBuilder = Callable[[Sequence[str]], Sequence[UpbitSubscription]]
 
 
 class _MarketAccumulator:
@@ -251,10 +265,14 @@ class _MarketAccumulator:
             self._books[event.market] = UpbitOrderbook.model_validate(event.raw_payload)
 
     def market_views(
-        self, now_utc: datetime, *, stale_after_seconds: float
+        self,
+        now_utc: datetime,
+        *,
+        stale_after_seconds: float,
+        selected_markets: Sequence[str] | None = None,
     ) -> tuple[MarketView, ...]:
         views: list[MarketView] = []
-        for market in self._markets:
+        for market in selected_markets or self._markets:
             book = self._books.get(market)
             if book is None:
                 continue
@@ -378,6 +396,9 @@ class PaperRuntimeSupervisor:
         output_root: Path,
         policy: PaperRuntimePolicy,
         client_factory: PublicClientFactory,
+        universe_scanner: RealtimeUniverseScanner | None = None,
+        subscription_builder: PublicSubscriptionBuilder | None = None,
+        recovery_path: Path | None = None,
     ) -> None:
         self.settings = settings
         self.markets = tuple(markets)
@@ -386,9 +407,15 @@ class PaperRuntimeSupervisor:
         self.output_root = output_root
         self.policy = policy
         self.client_factory = client_factory
+        self._universe_scanner = universe_scanner
+        self._subscription_builder = subscription_builder
         self.failed_live_gates = validate_paper_runtime_settings(settings)
         if not self.markets or not self.streams:
             raise ValueError("paper runtime requires markets and streams")
+        if (self._universe_scanner is None) != (self._subscription_builder is None):
+            raise ValueError("dynamic universe scanner and subscription builder must be paired")
+        if self._universe_scanner is not None and self._universe_scanner.markets != self.markets:
+            raise ValueError("dynamic universe markets must match the paper runtime")
 
         self.run_id = uuid4()
         self.started_at_utc = datetime.now(UTC)
@@ -415,7 +442,11 @@ class PaperRuntimeSupervisor:
         self._realtime = RealtimePaperPipeline(self.markets)
         self._decision = RealtimePaperOrchestrator(
             self.markets,
-            recovery_path=self.raw_output.parent / "state" / "realtime-paper-recovery.json",
+            recovery_path=(
+                recovery_path
+                if recovery_path is not None
+                else self.raw_output.parent / "state" / "realtime-paper-recovery.json"
+            ),
         )
         self._writer = ParquetRawEventWriter(
             self.raw_output, max_rows=self.policy.max_rows_per_file
@@ -544,8 +575,16 @@ class PaperRuntimeSupervisor:
             raise PaperRuntimeBlocked(
                 "bounded raw-storage queue overflowed; public processing stopped"
             ) from exc
+        if self._universe_scanner is not None:
+            self._universe_scanner.ingest(event)
         frame = self._realtime.process(event)
-        self._decision.process(event, frame)
+        focused = (
+            self._universe_scanner.focused_markets
+            if self._universe_scanner is not None
+            else self.markets
+        )
+        if event.market in focused:
+            self._decision.process(event, frame)
         self._event_counts[event.event_type] += 1
         if event.is_duplicate:
             self._duplicate_messages += 1
@@ -628,6 +667,8 @@ class PaperRuntimeSupervisor:
     ) -> PaperRuntimeSnapshot:
         self._heartbeat_sequence += 1
         now_utc = datetime.now(UTC)
+        if state in {PaperRuntimeState.STARTING, PaperRuntimeState.RUNNING}:
+            await self._refresh_dynamic_focus(now_utc)
         connected = self._client.connected if stopped_at_utc is None else False
         snapshot = PaperRuntimeSnapshot(
             run_id=self.run_id,
@@ -636,6 +677,22 @@ class PaperRuntimeSupervisor:
             updated_at_utc=now_utc,
             stopped_at_utc=stopped_at_utc,
             markets=self.markets,
+            market_scope="all_krw" if self._universe_scanner is not None else "fixed",
+            focused_markets=(
+                self._universe_scanner.focused_markets
+                if self._universe_scanner is not None
+                else self.markets
+            ),
+            warning_market_count=(
+                len(self._universe_scanner.warning_markets)
+                if self._universe_scanner is not None
+                else 0
+            ),
+            caution_market_count=(
+                len(self._universe_scanner.caution_markets)
+                if self._universe_scanner is not None
+                else 0
+            ),
             streams=self.streams,
             accepted_messages=sum(self._event_counts.values()),
             event_counts=tuple(sorted(self._event_counts.items())),
@@ -681,7 +738,13 @@ class PaperRuntimeSupervisor:
                 code_version=__version__,
             ),
             markets=self._market.market_views(
-                now_utc, stale_after_seconds=self.policy.stale_after_seconds
+                now_utc,
+                stale_after_seconds=self.policy.stale_after_seconds,
+                selected_markets=(
+                    self._universe_scanner.focused_markets
+                    if self._universe_scanner is not None
+                    else None
+                ),
             ),
             system=SystemView(
                 websocket_state=system_state,
@@ -695,6 +758,10 @@ class PaperRuntimeSupervisor:
         write_dashboard_snapshot(dashboard, self.output_root)
         realtime_snapshot = self._realtime.snapshot(generated_at_utc=now_utc)
         write_realtime_pipeline_snapshot(realtime_snapshot, self.output_root)
+        universe_snapshot = None
+        if self._universe_scanner is not None:
+            universe_snapshot = self._universe_scanner.snapshot(generated_at_utc=now_utc)
+            write_realtime_universe_snapshot(universe_snapshot, self.output_root)
         if state in {PaperRuntimeState.STARTING, PaperRuntimeState.RUNNING}:
             self._decision.persist_recovery_checkpoint(
                 generated_at_utc=now_utc,
@@ -708,5 +775,17 @@ class PaperRuntimeSupervisor:
             self.output_root,
             realtime=realtime_snapshot,
             decision=decision_snapshot,
+            universe=universe_snapshot,
         )
         return snapshot
+
+    async def _refresh_dynamic_focus(self, now_utc: datetime) -> None:
+        if self._universe_scanner is None or self._subscription_builder is None:
+            return
+        if self._decision.paper_order_simulation_available:
+            return
+        previous = self._universe_scanner.focused_markets
+        selected = self._universe_scanner.select(now_utc=now_utc)
+        if selected == previous:
+            return
+        await self._client.replace_subscriptions(self._subscription_builder(selected))

@@ -1,9 +1,9 @@
 schema_version: 1
 scope: paper_only
-max_markets: 3
-max_data_age_ms: 2000
+max_markets: 20
+max_data_age_ms: 5000
 min_coverage_ratio: 0.99
 min_quote_volume_24h: "1000000000"
 max_relative_spread_bps: "20"
 min_depth_notional: "10000000"
-note: Illustrative paper-selection policy; current capability values must be refreshed before use.
+note: All KRW pairs are monitored by ticker; only the ranked focus receives dense paper processing.

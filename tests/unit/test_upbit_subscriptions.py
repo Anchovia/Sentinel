@@ -6,6 +6,7 @@ import pytest
 from quantforge.exchange.upbit.subscriptions import (
     UpbitSubscription,
     build_subscription_request,
+    build_tiered_public_subscriptions,
 )
 
 
@@ -60,3 +61,16 @@ def test_invalid_subscription_fails_before_network(subscription: object) -> None
 def test_empty_request_is_rejected() -> None:
     with pytest.raises(ValueError, match="at least one"):
         build_subscription_request(())
+
+
+def test_tiered_subscriptions_watch_all_tickers_and_focus_dense_streams() -> None:
+    subscriptions = build_tiered_public_subscriptions(
+        ("KRW-BTC", "KRW-ETH", "KRW-XRP"),
+        ("KRW-ETH",),
+        ("ticker", "trade", "orderbook"),
+        orderbook_depth=5,
+    )
+
+    assert subscriptions[0].codes == ("KRW-BTC", "KRW-ETH", "KRW-XRP")
+    assert subscriptions[1].codes == ("KRW-ETH",)
+    assert subscriptions[2].as_data_type_object()["codes"] == ["KRW-ETH.5"]

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "exchange": "upbit",
-  "retrieved_at_utc": "2026-08-23T15:18:25.093Z",
+  "retrieved_at_utc": "2026-08-23T18:29:26.401Z",
   "official_index": "https://docs.upbit.com/kr/llms.txt",
   "documents": [
     {
@@ -20,12 +20,26 @@
       "name": "Rate limits",
       "url": "https://docs.upbit.com/kr/reference/rate-limits.md",
       "document_updated_at": "2026-08-21T11:06:48.000Z",
-      "verified_at_utc": "2026-08-23T15:18:25.093Z"
+      "verified_at_utc": "2026-08-23T18:29:26.401Z"
+    },
+    {
+      "name": "List trading pairs",
+      "url": "https://docs.upbit.com/kr/reference/list-trading-pairs.md",
+      "verified_at_utc": "2026-08-23T18:29:26.401Z",
+      "observed_contract": "Unauthenticated GET /v1/market/all; is_details exposes warning and caution status; market rate group up to 10 requests per second per IP"
+    },
+    {
+      "name": "List tickers by quote market",
+      "url": "https://docs.upbit.com/kr/reference/list-quote-tickers.md",
+      "verified_at_utc": "2026-08-23T18:29:26.401Z",
+      "observed_contract": "Unauthenticated GET /v1/ticker/all with quote_currencies; ticker rate group up to 10 requests per second per IP"
     },
     {
       "name": "Ticker WebSocket",
       "url": "https://docs.upbit.com/kr/reference/websocket-ticker.md",
-      "document_updated_at": "2026-01-07T10:54:24.000Z"
+      "document_updated_at": "2026-01-07T10:54:24.000Z",
+      "verified_at_utc": "2026-08-23T18:29:26.401Z",
+      "observed_contract": "delisting_date is null or an object with year/month/day; live Korean feed also returned undocumented PREDELISTING, which is retained as non-active and excluded from focus"
     },
     {
       "name": "Trade WebSocket",
@@ -99,6 +113,6 @@
   ],
   "verification": {
     "method": "manual official-source retrieval before implementation",
-    "notes": "This file records source identity and reviewed contract observations, not a vendored copy. Phase 10 re-fetched llms.txt, WebSocket best practice, and rate-limit documentation before the public burn-in implementation. Public endpoint, idle timeout, ping/pong, reconnection, and WebSocket message-limit observations remained compatible. Verification used no private endpoint, authenticated endpoint, order endpoint, credential, or Secret. Re-fetch every source and review diffs before changing exchange behavior."
+    "notes": "This file records source identity and reviewed contract observations, not a vendored copy. Phase 11.4 re-fetched the official market-list, quote-ticker, WebSocket, and rate-limit documentation before all-KRW discovery. Public catalog and ticker startup requests use no authentication; one WebSocket subscription message carries all broad and focused codes. Verification used no private endpoint, authenticated endpoint, order endpoint, credential, or Secret. Re-fetch every source and review diffs before changing exchange behavior."
   }
 }

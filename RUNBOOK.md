@@ -157,6 +157,12 @@ docker compose ps
 
 Default endpoints bind to localhost: API 8000, Grafana 3000, Prometheus 9090, PostgreSQL 5432. The committed Grafana/PostgreSQL passwords are development-only and must not be used in production.
 
+The paper Compose service resolves `ALL-KRW` at startup without credentials. It monitors every
+current KRW pair by ticker and assigns trade/five-level-orderbook processing to 20 focused pairs.
+Confirm `runtime_exports/ops/realtime-universe.json` reports full ticker coverage, a nonempty focus,
+and no order capability. A catalog/schema failure must stop startup; do not replace it with a stale
+hard-coded list. Watch raw-volume growth and disk free space before increasing the focus limit.
+
 ## Validation
 
 ```text

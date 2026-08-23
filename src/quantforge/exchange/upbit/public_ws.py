@@ -44,7 +44,7 @@ class PublicWebSocketPolicy:
     backoff_initial_seconds: float = 1.0
     backoff_max_seconds: float = 60.0
     jitter_ratio: float = 0.20
-    max_queue: int = 1024
+    max_queue: int = 16_384
 
     def __post_init__(self) -> None:
         if not self.endpoint.startswith("wss://"):
