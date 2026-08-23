@@ -86,11 +86,16 @@ Exit criteria:
 - Phase 11.1 (`COMPLETE`): validate each public event once, update causal incremental orderbook/trade
   features in memory, measure per-event processing latency, and move immutable persistence behind a
   bounded asynchronous queue that fails the runtime on overflow rather than dropping data.
-- Keep the decision state at `HOLD` until a reviewed real-time model artifact is explicitly composed;
-  the feature checkpoint has no strategy order, private-network, account, or live capability.
-- Phase 11.2 onward: compose versioned baseline inference, proposal-only strategy routing,
-  independent risk approval, conservative paper execution, exact ledger accounting, and redacted
-  performance exports. Measure each additional stage before expanding the monitor.
+- Phase 11.2 (`COMPLETE`): compose an always-neutral unapproved baseline, proposal-only strategy
+  router, independent risk gateway, conservative paper broker, and exact read-only portfolio view.
+  Bind any future actionable alpha artifact to a separate time-bounded human paper approval and an
+  independently disabled-by-default paper-order simulation gate.
+- Keep the supervised runtime at `HOLD`: no alpha artifact is approved, so strategy proposals, risk
+  approvals, simulated orders, and fills remain zero. A human-approved test fixture proves the full
+  paper-only plumbing without adding authentication, private network, or real-order capability.
+- Phase 11.3 onward: preregister and test falsifiable alpha/exit challengers, add deterministic
+  broker/ledger restart recovery, review an artifact for paper status, add complete entry/exit
+  lifecycle and performance exports, and measure every stage before expanding the monitor further.
 
 ## Milestone discipline
 

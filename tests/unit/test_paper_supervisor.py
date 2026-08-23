@@ -20,6 +20,7 @@ from quantforge.runtime.paper_supervisor import (
     read_paper_runtime_snapshot,
     validate_paper_runtime_settings,
 )
+from quantforge.runtime.realtime_decision import read_realtime_paper_decision_snapshot
 from quantforge.runtime.realtime_pipeline import read_realtime_pipeline_snapshot
 from quantforge.storage import read_raw_events
 
@@ -172,10 +173,22 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     assert "밀리초 처리" in monitor
     assert "처리 지연 p99" in monitor
     assert "현재 판단" in monitor
+    assert "모의 판단" in monitor
+    assert "모의 주문</span><strong>차단" in monitor
+    assert "모델 검토" in monitor
     realtime = read_realtime_pipeline_snapshot(tmp_path / "runtime/ops/realtime-pipeline.json")
     assert realtime.processed_events == 2
     assert realtime.decision_state == "HOLD"
     assert realtime.order_submission_available is False
+    decision = read_realtime_paper_decision_snapshot(
+        tmp_path / "runtime/ops/realtime-paper-decision.json"
+    )
+    assert decision.processed_events == 2
+    assert decision.model_approval_valid is False
+    assert decision.paper_order_simulation_enabled is False
+    assert decision.paper_orders == 0
+    assert decision.paper_fills == 0
+    assert decision.real_order_submission_available is False
 
     serialized = json.loads((tmp_path / "runtime/ops/paper-runtime.json").read_text())
     forbidden = {"authorization", "access_key", "secret_key", "token", "password"}

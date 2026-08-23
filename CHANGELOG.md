@@ -104,6 +104,21 @@ All notable changes are recorded here. The project follows semantic versioning o
   `realtime-pipeline-1` HOLD-only snapshot, and a minimal millisecond-processing panel in the local
   Korean monitor. No approved model, strategy order, private network, account, or live capability
   was added.
+- A fail-closed real-time paper orchestrator that composes causal features, an unapproved
+  always-neutral baseline, proposal-only strategies, independent risk, conservative simulated
+  execution, and exact Decimal portfolio accounting while keeping the deployed state at `HOLD`.
+- A strict time-bounded human paper-approval contract bound to alpha model version, artifact SHA-256,
+  and market scope. No approval artifact is shipped; a test-only approved fixture exercises the full
+  strategy-to-risk-to-paper-fill-to-ledger path.
+- A separate disabled-by-default paper-order simulation gate, so a matching model approval alone
+  cannot create even a simulated order.
+- A strategy-level invariant requiring the alpha decision to be explicitly `TRADE`; both `HOLD` and
+  `ABSTAIN` now block every baseline strategy before an order intent can exist.
+- Atomic `realtime-paper-decision-1` exports, a verified `benchmark-paper-decision` command, and a
+  compact monitor panel for model review, proposals, simulated orders/fills, and paper PnL.
+- Read-only portfolio valuation that avoids one ledger append per market event and reconciles rare
+  Decimal associativity remainders to authoritative cash and position balances while preserving
+  prior frozen replay hashes.
 
 ### Security
 

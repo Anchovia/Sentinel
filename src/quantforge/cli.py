@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import math
 import shutil
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
@@ -39,6 +40,7 @@ from quantforge.replay import ReplayEngine, VirtualClock
 from quantforge.runtime import (
     DataQualitySnapshot,
     LiveSubmissionGuard,
+    RealtimePaperOrchestrator,
     RealtimePaperPipeline,
     write_data_quality_snapshot,
 )
@@ -347,6 +349,75 @@ def benchmark_realtime(
                 "private_network_used": snapshot.private_network_used,
                 "order_submission_available": snapshot.order_submission_available,
                 "live_submission_allowed": snapshot.live_submission_allowed,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("benchmark-paper-decision")
+def benchmark_paper_decision(
+    input_root: Annotated[
+        Path, typer.Option(help="Checksummed raw Parquet root to replay without network access")
+    ] = DEFAULT_PAPER_RAW_OUTPUT,
+    max_events: Annotated[int, typer.Option(min=1)] = 10_000,
+) -> None:
+    """Benchmark the unapproved neutral model through the complete paper decision boundary."""
+
+    events = sorted(
+        read_raw_events(input_root),
+        key=lambda event: (
+            event.received_at_utc,
+            str(event.connection_id),
+            event.local_sequence,
+            str(event.event_id),
+        ),
+    )
+    if not events:
+        raise typer.BadParameter("no verified raw events were found", param_hint="--input-root")
+    selected = events[:max_events]
+    markets = tuple(sorted({event.market for event in selected}))
+    features = RealtimePaperPipeline(markets)
+    decision = RealtimePaperOrchestrator(markets)
+    event_latencies_ms: list[float] = []
+    started = perf_counter()
+    for event in selected:
+        event_started = perf_counter()
+        frame = features.process(event)
+        decision.process(event, frame)
+        event_latencies_ms.append((perf_counter() - event_started) * 1_000)
+    elapsed_seconds = max(perf_counter() - started, 1e-12)
+    feature_snapshot = features.snapshot(generated_at_utc=selected[-1].received_at_utc)
+    decision_snapshot = decision.snapshot(generated_at_utc=selected[-1].received_at_utc)
+    ordered = sorted(event_latencies_ms)
+    p99_index = min(len(ordered) - 1, math.ceil(len(ordered) * 0.99) - 1)
+    typer.echo(
+        json.dumps(
+            {
+                "processed_events": decision_snapshot.processed_events,
+                "feature_ready_frames": decision_snapshot.feature_ready_frames,
+                "inference_frames": decision_snapshot.inference_frames,
+                "feature_latency_p99_ms": feature_snapshot.processing_latency_p99_ms,
+                "decision_latency_p99_ms": decision_snapshot.decision_latency_p99_ms,
+                "end_to_end_latency_p99_ms": ordered[p99_index],
+                "end_to_end_latency_max_ms": max(ordered),
+                "replay_events_per_second": len(selected) / elapsed_seconds,
+                "model_release_status": decision_snapshot.model_release_status,
+                "model_approval_valid": decision_snapshot.model_approval_valid,
+                "paper_order_simulation_enabled": (
+                    decision_snapshot.paper_order_simulation_enabled
+                ),
+                "decision_state": decision_snapshot.decision_state,
+                "strategy_trade_proposals": decision_snapshot.strategy_trade_proposals,
+                "risk_approvals": decision_snapshot.risk_approvals,
+                "paper_orders": decision_snapshot.paper_orders,
+                "paper_fills": decision_snapshot.paper_fills,
+                "authentication_used": decision_snapshot.authentication_used,
+                "private_network_used": decision_snapshot.private_network_used,
+                "real_order_submission_available": (
+                    decision_snapshot.real_order_submission_available
+                ),
+                "live_submission_allowed": decision_snapshot.live_submission_allowed,
             },
             sort_keys=True,
         )

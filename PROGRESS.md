@@ -2,9 +2,9 @@
 
 ## Current checkpoint
 
-- Phase: 11.1 — Low-Latency Real-Time Feature Path
+- Phase: 11.2 — Neutral Real-Time Paper Decision Path
 - Status: checkpoint `COMPLETE`; Phase 11 `IN_PROGRESS`
-- Planned implementation phases: 0–10 complete; Phase 11.1 feature-path checkpoint complete
+- Planned implementation phases: 0–10 complete; Phase 11.1–11.2 checkpoints complete
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; the live adapter has no network capability
@@ -14,6 +14,34 @@
 - Production Secrets accessed: no
 - Scheduled task registration: none
 - Automatic merge/deploy/model promotion/live activation: unavailable
+
+## Completed in Phase 11.2
+
+- Composed ready feature frames into versioned regime/execution inference, an always-neutral alpha,
+  proposal-only strategy routing, independent risk, conservative paper execution, and exact Decimal
+  accounting. The supervised alpha has no paper approval and always abstains.
+- Added a separate human paper-approval contract bound to model version, artifact SHA-256, market
+  scope, approval time, and validity. No approval or actionable alpha artifact is present in the
+  runtime or repository.
+- Added an independent disabled-by-default paper-order simulation gate. A valid model approval alone
+  cannot create a simulated order, and the supervised runtime leaves both controls closed.
+- Enforced an explicit alpha `TRADE` action in both baseline strategies; alpha `HOLD` or `ABSTAIN`
+  cannot create a strategy trade even if individual feature or edge thresholds happen to pass.
+- Exercised the complete paper-only path with a human-approved test fixture: one proposal crossed
+  independent risk sizing, cash reservation, latency-aware simulated fill, fee/cost attribution,
+  release, and verified ledger. The fixture is not market, research, or performance evidence.
+- Added read-only portfolio valuation so market marks do not grow the ledger on every event. Rare
+  Decimal associativity remainders reconcile to authoritative balances without changing frozen
+  Phase 3 replay hashes.
+- Added atomic `realtime-paper-decision-1`, the `benchmark-paper-decision` verified replay, and a
+  compact monitor panel for model review, proposals, simulated order/fill counts, and paper PnL.
+- Replayed 10,000 retained events through the final neutral path: 2,179.38 events/s, feature p99
+  0.362ms, downstream decision p99 0.896ms, combined p99 1.185ms, combined max 2.892ms. All 3,328
+  ready frames ran inference; proposals, risk approvals, orders, fills, and real capabilities were 0.
+- Confirmed the final public runtime remained healthy while 1,439 events were accepted and 1,436 were
+  periodically committed: decision p99 1.221ms, 0/1,439 over 5ms, queue depth/overflow 0, `HOLD`, and
+  no approved model, paper-order permission, paper order, authentication, private network, or live
+  capability.
 
 ## Completed in Phase 11.1
 
@@ -94,21 +122,22 @@
 ## Validation evidence
 
 ```text
-Python: PASS — 3.13.15; no Phase 11.1 dependency added
+Python: PASS — 3.13.15; no Phase 11.2 dependency added
 ruff: PASS — all checks passed
-format check: PASS — 210 files formatted
-mypy: PASS — 108 source files, no issues
-pytest: PASS — 322 tests, 86.83% branch coverage
-secret scan: PASS — 311 text files checked
+format check: PASS — 213 files formatted
+mypy: PASS — 109 source files, no issues
+pytest: PASS — 332 tests, 86.94% branch coverage
+secret scan: PASS — 315 text files checked
 dependency audit: PASS — no known vulnerabilities
 Compose config: PASS — base + paper overlays including healthy paper-runtime
-container build: PASS — quantforge-paper-runtime sha256:326bfe81...bae663a
-verified 10,000-event feature replay: PASS — 5,912.84 events/s; p50 0.169ms;
-  p95 0.285ms; p99 0.332ms; max 0.750ms; 0/10,000 over 5ms
-sustained public runtime: PASS — 437 accepted, 436 periodic committed, retained rows 27,493;
+container build: PASS — quantforge-paper-runtime sha256:efd0b824...e2907
+verified 10,000-event neutral decision replay: PASS — 2,179.38 events/s; feature p99 0.362ms;
+  decision p99 0.896ms; combined p99 1.185ms; max 2.892ms; 3,328 inference frames
+sustained public runtime: PASS — 1,439 accepted, 1,436 periodic committed, retained rows 52,330;
   queue depth 0/65,536; overflows/parser errors/reconnects 0; HOLD; order capability false
-live feature snapshot: PASS — p50 0.331ms; p95 0.509ms; p99 0.582ms; max 0.711ms;
-  0 budget breaches; no approved model/private/order/live capability
+live decision snapshot: PASS — p99 1.221ms; max 1.827ms; 0 budget breaches; model approval,
+  paper-order gate, proposals, risk approvals, paper orders/fills, authentication/private/real/live
+  capability all false or 0
 actual/private/test orders: NONE
 schedule registration: NONE
 ```
@@ -129,22 +158,24 @@ schedule registration: NONE
   populated. Local schedules require the computer and desktop app.
 - The Windows host lacks `uv` and `make` on PATH, so exact Make targets were not run in this phase;
   their equivalent locked project-venv commands passed. Container builds use the pinned uv image.
-- The public collector and incremental feature path are supervised, but sustained coverage has not
-  accumulated and real-time inference/strategy/risk/paper-broker/ledger/performance orchestration is
-  not yet composed.
-- The Korean public-data monitor shows the supervised feed and retained storage only. The
-  authenticated dashboard and Grafana remain developer/operations skeletons, and strategy/risk/
-  broker/ledger results do not exist yet.
+- The public collector, feature path, and neutral paper composition are supervised, but sustained
+  coverage has not accumulated and no alpha or exit lifecycle has paper approval. The full-path
+  simulated fill is a fixture only; representative performance does not exist.
+- Paper broker, reservations, and portfolio state are process-local and are not deterministically
+  restored after restart. The separate paper-order gate must stay closed until recovery is complete.
+- The Korean monitor now shows neutral decision, proposal, simulated-order/fill, and portfolio
+  counters. The authenticated dashboard and Grafana remain developer/operations skeletons.
 - Dashboard, local journals, backup proof, public-L2 fill approximation, missing authenticated
   transport, and synthetic research limitations remain documented.
 
 ## Next milestone
 
 Do not enable live trading. Keep the public burn-in and Korean monitor running; measure coverage,
-restarts, parser failures, gaps, disk growth, and retention. The next implementation composes
-versioned baseline inference with proposal-only strategies, independent paper risk, the conservative
-paper broker, exact ledger, and representative performance/model/data exports on the measured
-causal feature path.
+restarts, parser failures, gaps, disk growth, and retention. Next, preregister falsifiable alpha and
+exit hypotheses, evaluate challengers on cost-inclusive chronological data, implement deterministic
+paper order/portfolio restart recovery, and submit an artifact for separate human paper review. Only
+a reviewed artifact plus a separately enabled paper-order gate may turn the already composed path
+from neutral to simulated entry/exit lifecycle and representative performance exports.
 Extend the monitor into a polished paper-performance GUI only after those contracts produce stable
 data. Production storage/backup/TLS/RBAC/network design and any authenticated dry-run work remain
 separately reviewed.

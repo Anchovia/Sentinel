@@ -378,6 +378,24 @@ def test_non_trade_decision_cannot_create_an_intent() -> None:
     assert result.risk_decision is None
 
 
+@pytest.mark.parametrize("strategy", (OfiMicropriceMomentum(), LiquidityShockMeanReversion()))
+def test_alpha_hold_or_abstain_cannot_create_a_strategy_trade(strategy: object) -> None:
+    inputs = _strategy_input()
+    for action in (DecisionAction.HOLD, DecisionAction.ABSTAIN):
+        alpha = inputs.alpha.model_copy(
+            update={
+                "action": action,
+                "abstention_reasons": ("TEST_ABSTAIN",) if action is DecisionAction.ABSTAIN else (),
+            }
+        )
+        guarded = inputs.model_copy(update={"alpha": alpha})
+
+        decision = strategy.evaluate(guarded)  # type: ignore[attr-defined]
+
+        assert decision.action is not StrategyAction.TRADE
+        assert decision.order_preference is OrderPreference.NO_ORDER
+
+
 @pytest.mark.parametrize(
     ("updates", "reason"),
     (

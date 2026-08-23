@@ -166,6 +166,32 @@ that path in bounded batches, and queue overflow stops the supervisor instead of
 events. The processing histogram covers event validation and feature calculation only, not future
 model, strategy, risk, broker, ledger, network, or exchange latency.
 
+Phase 11.2 composes the downstream paper boundary while keeping the deployed alpha neutral:
+
+```text
+incremental feature frame -> neutral/approved alpha inference -> proposal-only strategy router
+        -> independent risk gateway -> conservative paper broker -> exact Decimal ledger
+                                         |
+                                         +-> real/private/live capability: unavailable
+```
+
+The runtime contains no approved alpha artifact. Its neutral baseline returns `ABSTAIN`, so the
+router cannot create an intent and the paper broker remains empty. An alpha model can become
+actionable only when its version and SHA-256 exactly match a separate, human-authored, time-bounded
+`PAPER` approval for the market and the independent paper-order simulation gate is explicitly
+enabled. Both controls default closed. Tests inject such a fixture to prove strategy, risk,
+simulated fill, reservation release, and ledger invariants; the fixture is not stored, promoted, or
+used at runtime.
+
+Portfolio views do not append a valuation record on every market event. Fills and order states still
+append to the verified hash chain, while hot-path mark-to-market reads reconcile exact account equity
+without unbounded ledger growth. `realtime-paper-decision-1` exposes only redacted paper counters,
+latency, and balances.
+
+The paper broker and portfolio ledger are currently process-local. Their state is not reconstructed
+after a supervisor restart, so the paper-order simulation gate must remain closed until deterministic
+order, reservation, fill, and position recovery is implemented and tested.
+
 ## Deployment target
 
 Initial deployment is one Linux host with Docker Compose: API, supervised public paper burn-in,

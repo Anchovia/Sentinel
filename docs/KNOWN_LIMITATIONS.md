@@ -21,12 +21,19 @@
 - Continuous coverage records, longer/event/volume/imbalance bars, full production feature/model
   families, sustained paper history, and representative performance/model exports are incomplete.
 - The supervised public burn-in now calculates causal incremental features and publishes processing
-  latency, but model, strategy, risk, paper-broker, ledger, and performance orchestration remains
-  incomplete. Every real-time decision therefore remains `HOLD`.
+  latency and runs the always-neutral inference/strategy/risk/paper-broker/ledger composition, but no
+  alpha artifact has human paper approval. Every deployed real-time decision therefore remains
+  `HOLD`, with zero strategy proposal, risk approval, simulated order, and fill.
+- A separate paper-order simulation gate defaults closed. Model approval alone cannot enable even
+  simulated orders, and no runtime activation interface is provided.
 - Phase 11.1 latency measures event validation and feature calculation only. It excludes future
   inference, strategy, risk, simulated execution, ledger, network, and exchange latency and is not a
   profitability, fill-speed, capacity, or high-frequency-trading claim. Python on a retail Upbit
   connection is not a colocated HFT system.
+- The approved alpha used by the end-to-end paper fill test is a deterministic fixture, not a
+  registered research result, profitability claim, or deployable artifact. No production alpha,
+  automated approval, exit controller, round-trip lifecycle, sustained paper performance, or
+  representative performance export exists yet.
 - Final-holdout controls and experiment retention exist, but they do not remove selection bias,
   multiple testing, regime change, or limited sample risk.
 - Readiness policy thresholds are configurable governance defaults, not guarantees. The validator
@@ -46,6 +53,8 @@
   credential recovery and no measured RPO/RTO. Production recovery is unimplemented.
 - Cancel-only and incident acknowledgement are local. Strategy pause is proposal-only, and
   cancel-all is blocked because no authenticated cancellation transport exists.
+- Paper broker, reservation, and portfolio ledger state are process-local. Deterministic state
+  recovery after a supervisor restart is not implemented, so the paper-order gate must remain closed.
 
 ## Automation and delivery
 

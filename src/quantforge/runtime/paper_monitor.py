@@ -14,6 +14,7 @@ from quantforge.operations.models import DashboardSnapshot, HealthState, MarketV
 
 if TYPE_CHECKING:
     from quantforge.runtime.paper_supervisor import PaperRuntimeSnapshot
+    from quantforge.runtime.realtime_decision import RealtimePaperDecisionSnapshot
     from quantforge.runtime.realtime_pipeline import RealtimePipelineSnapshot
 
 
@@ -68,6 +69,7 @@ def render_paper_monitor(
     dashboard: DashboardSnapshot,
     runtime: "PaperRuntimeSnapshot",
     realtime: "RealtimePipelineSnapshot | None" = None,
+    decision: "RealtimePaperDecisionSnapshot | None" = None,
 ) -> str:
     """Render only public-market and fail-closed collection information."""
 
@@ -75,6 +77,7 @@ def render_paper_monitor(
         "dashboard": dashboard.model_dump(mode="json"),
         "runtime": runtime.model_dump(mode="json", exclude={"raw_output", "policy_hash"}),
         "realtime": realtime.model_dump(mode="json") if realtime is not None else None,
+        "decision": decision.model_dump(mode="json") if decision is not None else None,
     }
     assert_runtime_export_safe(safe_payload)
     state = {
@@ -107,6 +110,19 @@ def render_paper_monitor(
         else """<section class="panel"><h2>밀리초 처리</h2>
 <p class="label">실시간 처리 코어를 기다리고 있습니다.</p></section>"""
     )
+    paper_panel = (
+        f"""<section class="panel"><h2>모의 판단</h2><div class="rows">
+<div class="row"><span class="label">모델 검토</span><strong>{"승인됨" if decision.model_approval_valid else "대기 중"}</strong></div>
+<div class="row"><span class="label">모의 주문</span><strong>{"허용" if decision.paper_order_simulation_enabled else "차단"}</strong></div>
+<div class="row"><span class="label">현재 상태</span><strong class="warn">{decision.decision_state.value}</strong></div>
+<div class="row"><span class="label">전략 제안</span><strong>{decision.strategy_trade_proposals:,}건</strong></div>
+<div class="row"><span class="label">모의 주문 / 체결</span><strong>{decision.paper_orders:,} / {decision.paper_fills:,}</strong></div>
+<div class="row"><span class="label">모의 순손익</span><strong>{_number(decision.portfolios[0].net_pnl, decimals=0) if decision.portfolios else "0"}원</strong></div>
+</div></section>"""
+        if decision is not None
+        else """<section class="panel"><h2>모의 판단</h2>
+<p class="label">모의 판단 코어를 기다리고 있습니다.</p></section>"""
+    )
     return f"""<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <meta http-equiv="refresh" content="5"><title>QuantForge 공개 데이터 모니터</title><style>
@@ -135,7 +151,7 @@ align-items:flex-start}}.eyebrow{{font-size:12px;font-weight:750;letter-spacing:
 .price{{font-size:clamp(30px,5vw,48px);font-weight:800;letter-spacing:-.04em;margin:17px 0}}
 .market-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}}.market-grid div{{border-top:1px solid
 var(--line);padding-top:11px}}.market-grid strong{{display:block;margin-top:3px}}
-.columns{{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}}.panel,.safe{{padding:20px}}
+.columns{{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}}.panel,.safe{{padding:20px}}
 .panel h2,.safe h2{{margin-bottom:14px}}.rows{{display:grid;gap:0}}.row{{display:flex;justify-content:
 space-between;gap:20px;padding:10px 0;border-bottom:1px solid #1a3149}}.row:last-child{{border:0}}
 .safe{{margin-top:16px;border-color:#1b684f;background:linear-gradient(145deg,#0b3029,#0a1c27)}}
@@ -169,7 +185,7 @@ border:1px dashed var(--line);border-radius:18px;color:var(--muted);margin-botto
 <div class="row"><span class="label">남은 디스크</span><strong>{disk_free}</strong></div>
 <div class="row"><span class="label">수집 시작</span><strong><time data-full="true" data-utc="{escape(started)}">{escape(started)}</time></strong></div>
 <div class="row"><span class="label">화면 자동 갱신</span><strong>5초</strong></div>
-</div></section>{processing_panel}</div>
+</div></section>{processing_panel}{paper_panel}</div>
 <section class="safe"><h2>안전 상태</h2><div class="safe-grid">
 <div><span class="label">실제 주문</span><strong>완전 차단</strong></div>
 <div><span class="label">API 인증</span><strong>사용 안 함</strong></div>
@@ -188,6 +204,7 @@ def write_paper_monitor(
     output_root: Path,
     *,
     realtime: "RealtimePipelineSnapshot | None" = None,
+    decision: "RealtimePaperDecisionSnapshot | None" = None,
 ) -> Path:
     """Atomically replace the local monitor so browser refreshes never see a partial file."""
 
@@ -196,7 +213,10 @@ def write_paper_monitor(
     destination = destination_dir / "paper-monitor.html"
     temporary = destination_dir / f".paper-monitor.{uuid4().hex}.tmp"
     try:
-        temporary.write_text(render_paper_monitor(dashboard, runtime, realtime), encoding="utf-8")
+        temporary.write_text(
+            render_paper_monitor(dashboard, runtime, realtime, decision),
+            encoding="utf-8",
+        )
         os.replace(temporary, destination)
     finally:
         temporary.unlink(missing_ok=True)

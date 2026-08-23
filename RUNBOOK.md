@@ -106,6 +106,24 @@ no approved model, and every private/order/live capability false. Review
 `runtime_exports/ops/realtime-pipeline.json` together with `paper-runtime.json`; any storage queue
 overflow is a runtime failure, not a permissible loss counter.
 
+Replay the same verified data through features, neutral inference, strategy routing, paper risk,
+broker state, and read-only portfolio accounting:
+
+```text
+uv run quantforge benchmark-paper-decision \
+  --input-root data/paper/raw \
+  --max-events 10000
+```
+
+Until a separately reviewed artifact and human paper approval exist, the output must show
+`EXPERIMENTAL`, approval false, `HOLD`, and zero strategy proposals, risk approvals, paper orders,
+and fills. It must also show `paper_order_simulation_enabled: false`. A matching model approval is
+insufficient on its own: the independent paper-order simulation gate defaults closed and must remain
+closed until deterministic broker/ledger restart recovery exists. The matching live shadow snapshot
+is `runtime_exports/ops/realtime-paper-decision.json`. Do not create or edit approval or gate data
+merely to make these counters nonzero. The fixture exercising a simulated fill exists only in tests
+and is not market or performance evidence.
+
 Infrastructure, when Docker Compose is available:
 
 ```text

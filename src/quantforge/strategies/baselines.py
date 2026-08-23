@@ -65,13 +65,17 @@ class OfiMicropriceMomentum:
         self.min_net_edge_bps = min_net_edge_bps
 
     def evaluate(self, inputs: StrategyInput) -> StrategyDecision:
-        if inputs.alpha.action is DecisionAction.ABSTAIN:
+        if inputs.alpha.action is not DecisionAction.TRADE:
             return _non_trade(
                 inputs,
-                action=StrategyAction.ABSTAIN,
+                action=(
+                    StrategyAction.ABSTAIN
+                    if inputs.alpha.action is DecisionAction.ABSTAIN
+                    else StrategyAction.HOLD
+                ),
                 strategy_id=self.strategy_id,
                 strategy_version=self.strategy_version,
-                reason="ALPHA_ABSTAIN",
+                reason=f"ALPHA_{inputs.alpha.action.value}",
             )
         if (
             not inputs.market.market_active
@@ -154,6 +158,18 @@ class LiquidityShockMeanReversion:
         self.target_notional = target_notional
 
     def evaluate(self, inputs: StrategyInput) -> StrategyDecision:
+        if inputs.alpha.action is not DecisionAction.TRADE:
+            return _non_trade(
+                inputs,
+                action=(
+                    StrategyAction.ABSTAIN
+                    if inputs.alpha.action is DecisionAction.ABSTAIN
+                    else StrategyAction.HOLD
+                ),
+                strategy_id=self.strategy_id,
+                strategy_version=self.strategy_version,
+                reason=f"ALPHA_{inputs.alpha.action.value}",
+            )
         values = inputs.features.values
         shock = values.get("return_1")
         resilience = values.get("book_resilience_proxy")

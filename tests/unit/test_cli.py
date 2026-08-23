@@ -107,6 +107,46 @@ def test_realtime_benchmark_rejects_empty_input(tmp_path: Path) -> None:
     assert "no verified raw events" in result.output
 
 
+def test_paper_decision_benchmark_is_verified_neutral_and_orderless(tmp_path: Path) -> None:
+    writer = ParquetRawEventWriter(tmp_path, max_rows=1)
+    events = (
+        make_orderbook_event(sequence=1, received_offset_ms=100),
+        make_trade_event(sequence=2, exchange_offset_ms=105, received_offset_ms=110),
+        make_trade_event(sequence=3, exchange_offset_ms=115, received_offset_ms=120),
+    )
+    for event in reversed(events):
+        writer.append(event)
+
+    result = runner.invoke(
+        app,
+        ["benchmark-paper-decision", "--input-root", str(tmp_path), "--max-events", "3"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["processed_events"] == 3
+    assert payload["inference_frames"] == 1
+    assert payload["end_to_end_latency_p99_ms"] >= 0
+    assert payload["replay_events_per_second"] > 0
+    assert payload["model_release_status"] == "EXPERIMENTAL"
+    assert payload["model_approval_valid"] is False
+    assert payload["paper_order_simulation_enabled"] is False
+    assert payload["decision_state"] == "HOLD"
+    assert payload["strategy_trade_proposals"] == 0
+    assert payload["risk_approvals"] == 0
+    assert payload["paper_orders"] == 0
+    assert payload["paper_fills"] == 0
+    assert payload["real_order_submission_available"] is False
+    assert payload["live_submission_allowed"] is False
+
+
+def test_paper_decision_benchmark_rejects_empty_input(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["benchmark-paper-decision", "--input-root", str(tmp_path)])
+
+    assert result.exit_code != 0
+    assert "no verified raw events" in result.output
+
+
 def test_paper_status_requires_a_connected_fresh_market_event(tmp_path: Path) -> None:
     now_utc = datetime.now(UTC)
     snapshot = PaperRuntimeSnapshot(

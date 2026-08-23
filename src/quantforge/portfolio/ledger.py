@@ -357,6 +357,22 @@ class PortfolioLedger:
         return tuple(records)
 
     def snapshot(self, *, mark_price: Decimal, as_of: datetime) -> PortfolioSnapshot:
+        snapshot = self.view(mark_price=mark_price, as_of=as_of)
+        valuation = self._append(
+            LedgerRecordType.VALUATION,
+            as_of,
+            amount=snapshot.equity,
+            quantity=snapshot.position_quantity,
+            details=(
+                ("mark_price", str(mark_price)),
+                ("net_pnl", str(snapshot.net_pnl)),
+            ),
+        )
+        return snapshot.model_copy(update={"ledger_hash": valuation.record_hash})
+
+    def view(self, *, mark_price: Decimal, as_of: datetime) -> PortfolioSnapshot:
+        """Return an exact read-only valuation without growing the hot-path ledger."""
+
         if mark_price <= 0:
             raise AccountingInvariantError("mark price must be positive")
         position = self.position_quantity
@@ -367,9 +383,16 @@ class PortfolioLedger:
         market_value = position * mark_price
         unrealized = market_value - cost_basis
         gross = self.realized_gross_pnl + unrealized
+        net = gross - self.cumulative_fees
         equity = self.cash_balance + market_value
+        if net != equity - self.initial_cash:
+            # Decimal division can leave a sub-quantum associativity remainder. Account-derived
+            # equity is authoritative, so reconcile the analytical PnL view to exact balances.
+            net = equity - self.initial_cash
+            gross = net + self.cumulative_fees
+            unrealized = gross - self.realized_gross_pnl
         average = cost_basis / position if position else None
-        snapshot = PortfolioSnapshot(
+        return PortfolioSnapshot(
             market=self.market,
             as_of=as_of,
             initial_cash=self.initial_cash,
@@ -388,21 +411,10 @@ class PortfolioLedger:
             spread_cost=self.spread_cost,
             slippage_cost=self.slippage_cost,
             adverse_selection_cost=self.adverse_selection_cost,
-            net_pnl=gross - self.cumulative_fees,
+            net_pnl=net,
             equity=equity,
             ledger_hash=self._records[-1].record_hash if self._records else ZERO_HASH,
         )
-        valuation = self._append(
-            LedgerRecordType.VALUATION,
-            as_of,
-            amount=snapshot.equity,
-            quantity=position,
-            details=(
-                ("mark_price", str(mark_price)),
-                ("net_pnl", str(snapshot.net_pnl)),
-            ),
-        )
-        return snapshot.model_copy(update={"ledger_hash": valuation.record_hash})
 
     def verify(self) -> None:
         previous = ZERO_HASH

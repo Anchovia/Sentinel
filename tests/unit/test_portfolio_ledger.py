@@ -145,3 +145,14 @@ def test_hash_chain_detects_tampering() -> None:
 
     with pytest.raises(AccountingInvariantError, match="hash"):
         ledger.verify()
+
+
+def test_read_only_portfolio_view_does_not_grow_ledger() -> None:
+    ledger = PortfolioLedger(market="KRW-BTC", initial_cash="100000")
+
+    first = ledger.view(mark_price=Decimal("100"), as_of=BASE_TIME)
+    second = ledger.view(mark_price=Decimal("101"), as_of=BASE_TIME)
+
+    assert first.ledger_hash == "0" * 64
+    assert second.mark_price == Decimal("101")
+    assert ledger.records == ()

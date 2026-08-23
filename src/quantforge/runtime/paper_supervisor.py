@@ -35,6 +35,10 @@ from quantforge.operations.models import (
 )
 from quantforge.runtime.live_guard import LiveSubmissionGuard
 from quantforge.runtime.paper_monitor import write_paper_monitor
+from quantforge.runtime.realtime_decision import (
+    RealtimePaperOrchestrator,
+    write_realtime_paper_decision_snapshot,
+)
 from quantforge.runtime.realtime_pipeline import (
     RealtimePaperPipeline,
     write_realtime_pipeline_snapshot,
@@ -408,6 +412,7 @@ class PaperRuntimeSupervisor:
         self._last_error_type: str | None = None
         self._market = _MarketAccumulator(self.markets)
         self._realtime = RealtimePaperPipeline(self.markets)
+        self._decision = RealtimePaperOrchestrator(self.markets)
         self._writer = ParquetRawEventWriter(
             self.raw_output, max_rows=self.policy.max_rows_per_file
         )
@@ -489,6 +494,12 @@ class PaperRuntimeSupervisor:
                     if failure is None:
                         failure = exc
                         shutdown_reason = "storage_failed"
+            try:
+                self._decision.close(closed_at_utc=datetime.now(UTC))
+            except Exception as exc:
+                if failure is None:
+                    failure = exc
+                    shutdown_reason = "paper_decision_close_failed"
 
         terminal_state = (
             PaperRuntimeState.FAILED
@@ -517,7 +528,8 @@ class PaperRuntimeSupervisor:
             raise PaperRuntimeBlocked(
                 "bounded raw-storage queue overflowed; public processing stopped"
             ) from exc
-        self._realtime.process(event)
+        frame = self._realtime.process(event)
+        self._decision.process(event, frame)
         self._event_counts[event.event_type] += 1
         if event.is_duplicate:
             self._duplicate_messages += 1
@@ -667,5 +679,13 @@ class PaperRuntimeSupervisor:
         write_dashboard_snapshot(dashboard, self.output_root)
         realtime_snapshot = self._realtime.snapshot(generated_at_utc=now_utc)
         write_realtime_pipeline_snapshot(realtime_snapshot, self.output_root)
-        write_paper_monitor(dashboard, snapshot, self.output_root, realtime=realtime_snapshot)
+        decision_snapshot = self._decision.snapshot(generated_at_utc=now_utc)
+        write_realtime_paper_decision_snapshot(decision_snapshot, self.output_root)
+        write_paper_monitor(
+            dashboard,
+            snapshot,
+            self.output_root,
+            realtime=realtime_snapshot,
+            decision=decision_snapshot,
+        )
         return snapshot

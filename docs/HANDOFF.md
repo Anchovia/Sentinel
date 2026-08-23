@@ -8,9 +8,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 ## Current state
 
 - Date: 2026-08-24 KST
-- Completed phases: 0–10; Phase 11.1 checkpoint complete
-- Current checkpoint: measured incremental real-time feature path and asynchronous raw persistence;
-  reviewed inference and paper strategy/risk/execution composition next
+- Completed phases: 0–10; Phase 11.1–11.2 checkpoints complete
+- Current checkpoint: neutral real-time inference/strategy/risk/paper-broker/ledger composition;
+  preregistered alpha and exit research plus separate paper approval next
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
@@ -31,8 +31,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 8: `84b751c feat: 격리된 자동 감사 기반 구축`
 - Phase 9: `a2c0542 feat: 읽기 전용 실거래 준비도 검증 구축`
 - Phase 10: `34ac186 feat: 공개 페이퍼 감독 런타임 구축`
+- Phase 11.1: `eb8a4da feat: 저지연 실시간 처리 기반 구축`
 
-## Implemented through Phase 11.1
+## Implemented through Phase 11.2
 
 - Safety-first Python modular monolith, six closed live gates, Decimal domain/accounting boundary,
   keyless Upbit public transport, versioned immutable raw lineage, deterministic replay/bars/features,
@@ -62,26 +63,36 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   microstructure features while measuring validation/feature latency. Raw persistence runs in a
   bounded asynchronous queue and any overflow fails the supervisor instead of dropping data.
 - The decision remains `HOLD` with no approved real-time model, strategy order, private network,
-  account, or live capability. ADR-001 through ADR-016 record consequential design choices. README
-  remains intentionally minimal.
+  account, or live capability.
+- An always-neutral alpha now exercises regime/execution inputs and the proposal/risk/paper/ledger
+  composition on each ready frame. A separate time-bounded human approval must exactly match model
+  version, artifact hash, and market before any actionable paper alpha can reach risk. A second,
+  disabled-by-default paper-order gate must also be explicitly enabled before simulation.
+- Both baseline strategies require an explicit alpha `TRADE`; `HOLD` and `ABSTAIN` are hard proposal
+  blocks regardless of other feature or edge values.
+- A test-only approved fixture proves the complete simulated order/fill/accounting plumbing. It is
+  not shipped or promoted. Atomic decision exports and the Korean monitor show review status,
+  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-017 record consequential
+  choices. README remains intentionally minimal.
 
 ## Latest validation
 
 ```text
-Python 3.13.15; no Phase 11.1 dependency added
-ruff + format: PASS (210 files)
-mypy: PASS (108 source files)
-pytest: PASS (322 tests, 86.83% branch coverage)
-Secret scan: PASS (311 text files)
+Python 3.13.15; no Phase 11.2 dependency added
+ruff + format: PASS (213 files)
+mypy: PASS (109 source files)
+pytest: PASS (332 tests, 86.94% branch coverage)
+Secret scan: PASS (315 text files)
 pip-audit: PASS (no known vulnerabilities)
 Compose config: PASS; paper-runtime healthy
-Final image: PASS (quantforge-paper-runtime, sha256:326bfe81...bae663a)
-Verified 10,000-event feature replay: 5,912.84 events/s; p50 0.169ms; p95 0.285ms;
-p99 0.332ms; max 0.750ms; zero 5ms budget breaches
-Sustained runtime: 437 accepted, 436 periodic committed, retained rows 27,493;
+Final image: PASS (quantforge-paper-runtime, sha256:efd0b824...e2907)
+Verified 10,000-event neutral decision replay: 2,179.38 events/s; feature p99 0.362ms;
+decision p99 0.896ms; combined p99 1.185ms; max 2.892ms; 3,328 inference frames
+Sustained runtime: 1,439 accepted, 1,436 periodic committed, retained rows 52,330;
 queue 0/65,536, overflows/parser errors/reconnects zero
-Live feature snapshot: p50 0.331ms; p95 0.509ms; p99 0.582ms; max 0.711ms;
-decision HOLD and every private/order/live capability false
+Live decision snapshot: p99 1.221ms; max 1.827ms; zero 5ms breaches; model approval,
+paper-order gate, proposals, risk approvals, paper orders/fills, authentication/private/real/live
+capability all false or zero
 Actual/private/test orders: none
 Scheduled tasks: not registered
 ```
@@ -99,12 +110,14 @@ Scheduled tasks: not registered
   manual-trial and first-three-run review process before registering any task.
 - No authenticated exchange client, credential provider, cancellation/order endpoint, order-capable
   live adapter, production database/recovery, or canary activation path exists.
-- Public L2 fill/queue behavior is approximate. The collector is now supervised, but sustained
-  coverage is not yet evidence and real-time paper strategy/execution is not composed. Models and
-  strategies remain fixture-scale baselines with no profitability or promotion claim.
-- The Korean monitor currently covers only public feed/storage visibility. The authenticated
+- Public L2 fill/queue behavior is approximate. The collector and neutral composition are supervised,
+  but sustained coverage is not evidence. No alpha/exit artifact is approved; the only simulated
+  fill is a fixture with no profitability or promotion claim.
+- Paper broker, reservation, and portfolio state are process-local and are not restored after a
+  supervisor restart. Keep the paper-order gate closed until deterministic recovery is implemented.
+- The Korean monitor covers public feed/storage and neutral paper counters. The authenticated
   server-rendered dashboard/Grafana views remain internal operations skeletons, and there are no
-  paper strategy, order, position, or performance results to display yet.
+  representative paper strategy, round-trip, or performance results yet.
 - Dashboard/recovery/authorization/network/storage hardening remains incomplete. Consult
   `docs/KNOWN_LIMITATIONS.md` and `docs/readiness/LIVE_READINESS.md`.
 - The Windows host lacks `uv` and `make` on PATH; exact Make targets were unavailable. Equivalent
@@ -116,11 +129,11 @@ Scheduled tasks: not registered
 
 1. Keep paper mode. Run and observe the supervised public burn-in; measure coverage, gaps, parser
    failures, reconnects, restarts, disk growth, and retention without treating uptime as readiness.
-2. Compose versioned baseline inference, proposal-only routing, independent paper risk,
-   conservative broker, exact ledger, and representative performance/model/data exports on the
-   measured causal feature path.
-3. Extend the Korean monitor with strategy, risk, simulated order/fill, portfolio, and performance
-   views only after those runtime export contracts are stable.
+2. Preregister falsifiable alpha and exit hypotheses, run cost-inclusive chronological challengers,
+   preserve negative results, and present any candidate artifact for separate human paper review.
+3. Implement deterministic paper order, reservation, fill, and portfolio restart recovery. Only
+   after that, model approval, and separate gate approval, exercise complete simulated entry/exit
+   lifecycles and produce representative exports before expanding the GUI further.
 4. Design production PostgreSQL persistence, encrypted off-host backup/restore with measured RPO/RTO,
    TLS/RBAC/rate limits, Secret delivery, network isolation, and monitoring retention.
 5. Under separate human authorization only, implement and review credential/order-test transport,
