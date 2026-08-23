@@ -2,9 +2,9 @@
 
 ## Current checkpoint
 
-- Phase: 11.4 — Tiered All-KRW Paper Universe
+- Phase: 11.5 — Bounded D-Drive Paper Storage
 - Status: checkpoint `COMPLETE`; Phase 11 `IN_PROGRESS`
-- Planned implementation phases: 0–10 complete; Phase 11.1–11.4 checkpoints complete
+- Planned implementation phases: 0–10 complete; Phase 11.1–11.5 checkpoints complete
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; the live adapter has no network capability
@@ -14,6 +14,28 @@
 - Production Secrets accessed: no
 - Scheduled task registration: none
 - Automatic merge/deploy/model promotion/live activation: unavailable
+
+## Completed in Phase 11.5
+
+- Moved the local paper-data bind to the owner-provided `D:/Sentinel-Data` through an ignored,
+  non-secret Compose override. The committed Compose fallback remains portable and the original
+  `quantforge_paper-data` volume remains intact as a rollback copy.
+- Added `RawStoragePolicy`: 30-day retention, 50GiB active raw-data cap, 20GiB free-space safety
+  floor, 15-minute maintenance, four-file minimum compaction, and 250,000-row compact targets.
+- Existing raw files already use ZSTD. Completed creation-hour partitions now receive checked,
+  lineage-preserving compaction into version-2 manifests. Supersession is resolved before replay;
+  interrupted source retirement resumes from durable tombstones.
+- Age and size pruning rename manifests before payload deletion and retain the deletion reason.
+  Active manifest totals are rebuilt after every pass. Capacity checks run on every heartbeat and
+  after maintenance; crossing the free-space floor fails the collector closed.
+- Compose now grants 60 seconds for signal-driven queue flush and clean checkpoint persistence;
+  the final restart recovered `VERIFIED_CLEAN` with the new grace period applied.
+- Added `paper-runtime-5` storage location, policy, compaction, deletion, reclaimed-space, and actual
+  free-space evidence. The compact Korean monitor now shows the D-drive location and storage bounds.
+- The clean migration copied exactly 314,560 rows, 781 Parquet files, and 46,643,200 Parquet bytes.
+  First startup preserved all rows while compacting 659 source files into 134 active files and
+  reclaiming 6,749,864 bytes. Recovery remained `VERIFIED_CLEAN` and the service returned healthy.
+- Added ADR-020 and kept the public README unchanged.
 
 ## Completed in Phase 11.4
 
@@ -181,24 +203,26 @@
 ## Validation evidence
 
 ```text
-Python: PASS — 3.13.15; no Phase 11.4 dependency added
+Python: PASS — 3.13.15; no Phase 11.5 dependency added
 ruff: PASS — all checks passed
-format check: PASS — 220 files formatted
+format check: PASS — 221 files formatted
 mypy: PASS — 112 source files, no issues
-pytest: PASS — 350 tests, 86.14% branch coverage
-secret scan: PASS — 323 text files checked
+pytest: PASS — 354 tests, 85.85% branch coverage
+secret scan: PASS — 325 text files checked
 dependency audit: PASS — no known vulnerabilities
 Compose config: PASS — base + paper overlays including healthy paper-runtime
-container build: PASS — quantforge-paper-runtime sha256:3c96b213...956656
-verified 10,000-event neutral decision replay: PASS — 2,184.73 events/s; feature p99 0.371ms;
-  decision p99 0.822ms; combined p99 1.124ms; max 3.678ms; 3,328 inference frames
-all-KRW public runtime: PASS — 285/285 ticker coverage, 279 eligible, rotating 20-market focus,
-  27,208 accepted at 64.32 events/s over 423 seconds, seven focus rotations
-live latency snapshot: PASS — feature p99 0.378ms; decision p99 1.390ms; a small number of
-  scheduler/validation-contention outliers exceeded 5ms; parser errors/reconnects/queue overflows 0;
-  HOLD
+container build: PASS — quantforge-paper-runtime sha256:d250811d...8d55142
+D-drive verified 10,000-event neutral replay: PASS — 2,132.31 events/s; feature p99 0.377ms;
+  decision p99 0.812ms; combined p99 1.137ms; max 2.520ms; 3,328 inference frames
+D-drive all-KRW runtime: PASS — healthy after 517 seconds; 285/285 ticker coverage, rotating
+  20-market focus, 23,993 accepted at 46.41 events/s
+live latency snapshot: PASS — feature p99 0.408ms; decision p99 1.459ms; parser errors/reconnects/
+  queue overflows 0; HOLD
 storage sample: 1.04MB added over 136 seconds; observed throughput projects roughly 20–70GB per
-  30 days before compaction/retention, depending on market activity and Parquet batching
+  30 days before bounded compaction/retention, depending on market activity and Parquet batching
+D-drive migration: PASS — 314,560 rows preserved; 781 -> 134 active files; 6,749,864 bytes reclaimed;
+  30 days / 50GiB / 20GiB floor visible in paper-runtime-5; 563.37GiB free; original named volume
+  retained
 model approval/paper-order gate/proposals/risk approvals/paper orders/fills/authentication/private/
   real/live capability all false or 0
 actual/private/test orders: NONE
@@ -230,15 +254,17 @@ schedule registration: NONE
   counters. The authenticated dashboard and Grafana remain developer/operations skeletons.
 - Dashboard, local journals, backup proof, public-L2 fill approximation, missing authenticated
   transport, and synthetic research limitations remain documented.
+- `D:/Sentinel-Data` is bounded local paper storage, not an encrypted off-host backup. The 50GiB cap
+  may shorten the effective 30-day window, and pruned raw payloads require a separate backup to
+  recover.
 
 ## Next milestone
 
-Do not enable live trading. First add measured Parquet compaction, age/size retention, disk-watermark
-alerts, and a fail-closed low-space stop before leaving all-KRW burn-in unattended. Keep measuring
-coverage, restarts, parser failures, gaps, and real disk growth. Then preregister falsifiable alpha
-and exit hypotheses, evaluate challengers on cost-inclusive chronological data, add a reviewed
-operator acknowledgement for unclean paper recovery, and submit an artifact for separate human
-paper review.
+Do not enable live trading. Keep the bounded D-drive burn-in running and verify maintenance across
+hour/day boundaries, actual retention pressure, restart recovery, parser failures, gaps, and disk
+growth. Next preregister falsifiable alpha and exit hypotheses, evaluate challengers on cost-
+inclusive chronological data, add a reviewed operator acknowledgement for unclean paper recovery,
+and submit an artifact for separate human paper review.
 Only clean recovery, a reviewed artifact, and a separately enabled paper-order gate may turn the
 already composed path from neutral to simulated entry/exit lifecycle and representative performance
 exports.

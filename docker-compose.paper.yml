@@ -25,6 +25,20 @@ services:
       - "15"
       - --flush-seconds
       - "60"
+      - --storage-label
+      - ${QF_PAPER_DATA_LABEL:-local-paper-data}
+      - --storage-retention-days
+      - "30"
+      - --storage-max-gib
+      - "50"
+      - --storage-min-free-gib
+      - "20"
+      - --storage-maintenance-seconds
+      - "900"
+      - --storage-compaction-min-files
+      - "4"
+      - --storage-compaction-target-rows
+      - "250000"
     environment:
       QF_ENVIRONMENT: paper
       QF_TRADING_MODE: paper
@@ -39,7 +53,9 @@ services:
     tmpfs:
       - /tmp
     volumes:
-      - paper-data:/app/data/paper
+      - type: bind
+        source: ${QF_PAPER_DATA_HOST_PATH:-./data/paper}
+        target: /app/data/paper
       - ./runtime_exports:/app/runtime_exports
     healthcheck:
       test:
@@ -54,7 +70,5 @@ services:
       start_period: 30s
     security_opt:
       - no-new-privileges:true
+    stop_grace_period: 60s
     restart: unless-stopped
-
-volumes:
-  paper-data:

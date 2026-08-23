@@ -54,8 +54,12 @@ writes a paper-only marker after restore.
 
 This local artifact is deliberately marked `encrypted_by_external_storage=false` and
 `objectives_measured=false`. It is development evidence, not a production backup or RPO/RTO claim.
-PostgreSQL-native backup/restore, off-host encrypted retention, key management, full raw-data policy,
-private-stream replay, credential restoration, and measured recovery objectives remain
+Phase 11.5 moves bounded public paper data to `D:/Sentinel-Data` and preserves the prior Docker named
+volume after migration. Both remain on the same computer and therefore count as primary/rollback
+storage only, never as the separately stored encrypted backup required by this contract. Automatic
+30-day/50GiB pruning makes deleted raw payloads unrecoverable without such a backup.
+PostgreSQL-native backup/restore, off-host encrypted raw retention, key management, private-stream
+replay, credential restoration, and measured recovery objectives remain
 unimplemented. No restore drill may receive an exchange credential or order-capable network path.
 
 The Phase 8 monthly recovery prompt remains unregistered until a manual isolated run has a valid

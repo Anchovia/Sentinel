@@ -3,14 +3,19 @@ from pathlib import Path
 from uuid import uuid4
 
 import pyarrow.parquet as pq
+import pytest
 
 from quantforge.exchange.upbit.mapper import map_public_message
 from quantforge.storage import (
     ParquetRawEventWriter,
     RawDataIntegrityError,
     RawFileManifest,
+    RawStorageCapacityError,
+    RawStoragePolicy,
     cleanup_orphan_temp_files,
+    maintain_raw_storage,
     read_raw_events,
+    require_raw_storage_capacity,
     summarize_raw_storage,
     verify_manifest_checksum,
 )
@@ -155,3 +160,81 @@ def test_storage_summary_rejects_file_size_damage(tmp_path: Path) -> None:
         assert "size mismatch" in str(exc)
     else:
         raise AssertionError("expected damaged raw storage summary to fail")
+
+
+def test_completed_hour_files_are_compacted_without_changing_replay(tmp_path: Path) -> None:
+    root = tmp_path / "raw"
+    writer = ParquetRawEventWriter(root, max_rows=1)
+    for sequence in range(1, 5):
+        writer.append(_event("trade.default.json", sequence))
+    before = read_raw_events(root)
+
+    result = maintain_raw_storage(
+        root,
+        policy=RawStoragePolicy(
+            retention_days=30,
+            max_bytes=1024**3,
+            min_free_bytes=1,
+            maintenance_interval_seconds=60,
+            compaction_min_files=4,
+            compaction_target_rows=100,
+        ),
+        now_utc=datetime.now(UTC) + timedelta(hours=1),
+    )
+
+    after = read_raw_events(root)
+    assert [event.event_id for event in after] == [event.event_id for event in before]
+    assert result.compacted_source_files == 4
+    assert result.compacted_output_files == 1
+    assert result.summary.file_count == 1
+    assert result.summary.row_count == 4
+    assert len(tuple((tmp_path / "maintenance/retired/compacted").glob("*.json"))) == 4
+
+
+def test_retention_and_capacity_remove_oldest_manifest_backed_files(tmp_path: Path) -> None:
+    root = tmp_path / "raw"
+    writer = ParquetRawEventWriter(root, max_rows=1)
+    first = writer.append(_event("trade.default.json", 1))[0]
+    second = writer.append(_event("trade.default.json", 2))[0]
+    max_bytes = max(first.byte_size, second.byte_size)
+
+    capacity_result = maintain_raw_storage(
+        root,
+        policy=RawStoragePolicy(
+            retention_days=30,
+            max_bytes=max_bytes,
+            min_free_bytes=1,
+            maintenance_interval_seconds=60,
+            compaction_min_files=4,
+            compaction_target_rows=100,
+        ),
+        compact=False,
+    )
+    assert capacity_result.capacity_deleted_files == 1
+    assert capacity_result.summary.file_count == 1
+    assert capacity_result.summary.byte_size <= max_bytes
+
+    retention_result = maintain_raw_storage(
+        root,
+        policy=RawStoragePolicy(
+            retention_days=1,
+            max_bytes=1024**3,
+            min_free_bytes=1,
+            maintenance_interval_seconds=60,
+            compaction_min_files=4,
+            compaction_target_rows=100,
+        ),
+        now_utc=datetime.now(UTC) + timedelta(days=2),
+        compact=False,
+    )
+    assert retention_result.retention_deleted_files == 1
+    assert retention_result.summary.file_count == 0
+    assert retention_result.summary.row_count == 0
+
+
+def test_low_disk_floor_fails_closed(tmp_path: Path) -> None:
+    tmp_path.mkdir(exist_ok=True)
+    policy = RawStoragePolicy(min_free_bytes=10**18)
+
+    with pytest.raises(RawStorageCapacityError, match="safety floor"):
+        require_raw_storage_capacity(tmp_path, policy)

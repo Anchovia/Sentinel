@@ -66,10 +66,16 @@
 - Recovery checkpoints rewrite the complete local ledger on consequential state changes. This is
   bounded by paper trade count rather than public event count but has not been load-tested for long
   simulated histories or compacted into production storage.
-- Raw paper data has no automatic compaction, retention, archive, or disk-watermark stop yet.
-  A short all-KRW sample added 1.04MB in 136 seconds. Variable event activity and file batching make
-  the current honest planning range roughly 20–70GB per 30 days, so burn-in capacity cannot be
-  extrapolated indefinitely and the collector should not be left unattended before storage guards.
+- Raw paper data now has ZSTD compaction, 30-day retention, a 50GiB active-data cap, and a 20GiB
+  free-space stop. The cap may shorten the effective time window during high activity, retirement
+  tombstones add small uncapped metadata, and the first migration compaction is not long-duration
+  capacity evidence.
+- `D:/Sentinel-Data` and the preserved Docker named volume are on the same computer. Neither is an
+  encrypted off-host backup; drive failure, local deletion, ransomware, or host loss can remove both.
+  Pruned payloads are intentionally unrecoverable without a separate backup.
+- Compaction runs outside the event hot path but can temporarily use material CPU and memory. Replay
+  or other storage readers are not coordinated by a cross-process lock and should not run during a
+  maintenance window.
 
 ## Automation and delivery
 

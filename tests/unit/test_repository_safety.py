@@ -78,7 +78,23 @@ def test_paper_runtime_container_has_no_credentials_or_order_gates() -> None:
     assert service["environment"]["QF_UPBIT_ACCESS_KEY"] == ""
     assert service["environment"]["QF_UPBIT_SECRET_KEY"] == ""
     assert "no-new-privileges:true" in service["security_opt"]
-    assert "paper-data:/app/data/paper" in service["volumes"]
+    assert service["stop_grace_period"] == "60s"
+    paper_mounts = [
+        volume
+        for volume in service["volumes"]
+        if isinstance(volume, dict) and volume.get("target") == "/app/data/paper"
+    ]
+    assert paper_mounts == [
+        {
+            "type": "bind",
+            "source": "${QF_PAPER_DATA_HOST_PATH:-./data/paper}",
+            "target": "/app/data/paper",
+        }
+    ]
+    command = service["command"]
+    assert command[command.index("--storage-retention-days") + 1] == "30"
+    assert command[command.index("--storage-max-gib") + 1] == "50"
+    assert command[command.index("--storage-min-free-gib") + 1] == "20"
 
 
 def test_env_example_has_no_nonempty_exchange_credentials() -> None:

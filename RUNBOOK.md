@@ -148,11 +148,44 @@ every restart. `SIGTERM` and `SIGINT` request a clean supervisor stop and close 
 socket before storage/checkpoint cleanup. Checkpoint I/O on consequential order/accounting changes is
 part of decision latency.
 
+### Bounded paper-data storage
+
+The current Windows host stores bulk paper data at `D:/Sentinel-Data`. The machine-specific path is
+kept only in ignored `compose.paper.local.env`:
+
+```text
+QF_PAPER_DATA_HOST_PATH=D:/Sentinel-Data
+QF_PAPER_DATA_LABEL=D:/Sentinel-Data
+```
+
+Never commit that local file and do not use it for credentials. The committed example falls back to
+`./data/paper`. Start or recreate the paper service with the explicit local environment file:
+
+```text
+docker compose --env-file compose.paper.local.env -f docker-compose.yml -f docker-compose.paper.yml up -d paper-runtime
+```
+
+The active policy is ZSTD Parquet, completed-hour compaction every 15 minutes, 30-day retention,
+50GiB maximum active raw data, and a 20GiB minimum free-space floor. `paper-runtime-5` and the Korean
+monitor show the effective path, bounds, reclaimed bytes, and actual free space. The 50GiB cap may
+delete data before 30 days during high activity. A file is retired by renaming its manifest to a
+reason-specific marker before its payload is removed.
+
+If free space crosses the floor, the service must enter `FAILED` and close the public socket. Do not
+lower the floor merely to restart. Free space on the configured data drive, preserve the runtime and
+retirement evidence, then recreate the service and verify `VERIFIED_CLEAN`, full ticker coverage,
+zero queue overflows, and a healthy container.
+
+For a host-path migration, stop the service and require a clean recovery checkpoint before copying
+`/app/data/paper`. Compare manifest count, Parquet count, Parquet byte total, and retained rows before
+recreating the container. Keep the prior volume until the new path passes checksum replay and restart
+verification. A same-host copy is rollback convenience, not an encrypted off-host backup.
+
 Infrastructure, when Docker Compose is available:
 
 ```text
-docker compose -f docker-compose.yml -f docker-compose.paper.yml up -d
-docker compose ps
+docker compose --env-file compose.paper.local.env -f docker-compose.yml -f docker-compose.paper.yml up -d
+docker compose --env-file compose.paper.local.env -f docker-compose.yml -f docker-compose.paper.yml ps
 ```
 
 Default endpoints bind to localhost: API 8000, Grafana 3000, Prometheus 9090, PostgreSQL 5432. The committed Grafana/PostgreSQL passwords are development-only and must not be used in production.

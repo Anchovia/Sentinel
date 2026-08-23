@@ -136,6 +136,14 @@ All notable changes are recorded here. The project follows semantic versioning o
   rotations. All model, paper-order, private, and real-order controls remain closed.
 - Incremental exact portfolio aggregates that keep focused risk decisions from rescanning every
   monitored market on each event.
+- Configurable host bind storage for bulk paper data, with the current local runtime isolated on
+  `D:/Sentinel-Data` and the machine-specific override excluded from Git.
+- Checked ZSTD compaction with version-2 supersession manifests and interruption-resumable retirement
+  markers that preserve replay rows while reducing completed-hour small files.
+- A 30-day raw retention ceiling, 50GiB active-data cap, 20GiB free-space fail-closed stop, and
+  `paper-runtime-5`/Korean-monitor lifecycle evidence for compaction, pruning, reclaimed space, and
+  actual filesystem capacity.
+- A 60-second Compose stop grace period for bounded queue flush and clean paper checkpoint closure.
 
 ### Security
 

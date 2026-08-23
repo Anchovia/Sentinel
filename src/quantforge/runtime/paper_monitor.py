@@ -111,10 +111,10 @@ def render_paper_monitor(
     generated = runtime.updated_at_utc.isoformat()
     started = runtime.started_at_utc.isoformat()
     disk_free = (
-        _bytes(dashboard.system.disk_free_bytes)
-        if dashboard.system.disk_free_bytes is not None
-        else "확인 중"
+        _bytes(runtime.disk_free_bytes) if runtime.disk_free_bytes is not None else "확인 중"
     )
+    storage_limit = _bytes(runtime.storage_max_bytes) if runtime.storage_max_bytes else "미설정"
+    deleted_files = runtime.storage_retention_deleted_files + runtime.storage_capacity_deleted_files
     processing_panel = (
         f"""<section class="panel"><h2>밀리초 처리</h2><div class="rows">
 <div class="row"><span class="label">처리 지연 p50</span><strong>{realtime.processing_latency_p50_ms:.3f}ms</strong></div>
@@ -210,8 +210,12 @@ border:1px dashed var(--line);border-radius:18px;color:var(--muted);margin-botto
 <div class="row"><span class="label">재연결</span><strong>{runtime.reconnects:,}회</strong></div>
 <div class="row"><span class="label">중복 메시지</span><strong>{runtime.duplicate_messages:,}건</strong></div>
 </div></section><section class="panel"><h2>보관 상태</h2><div class="rows">
+<div class="row"><span class="label">저장 위치</span><strong>{escape(runtime.storage_label)}</strong></div>
+<div class="row"><span class="label">보관 한도</span><strong>{runtime.storage_retention_days}일 / {storage_limit}</strong></div>
 <div class="row"><span class="label">이번 실행 저장 행</span><strong>{runtime.committed_rows:,}</strong></div>
 <div class="row"><span class="label">이번 실행 저장 파일</span><strong>{runtime.committed_files:,}</strong></div>
+<div class="row"><span class="label">자동 압축 / 정리</span><strong>{runtime.storage_compacted_source_files:,} / {deleted_files:,}개</strong></div>
+<div class="row"><span class="label">회수한 공간</span><strong>{_bytes(runtime.storage_reclaimed_bytes)}</strong></div>
 <div class="row"><span class="label">남은 디스크</span><strong>{disk_free}</strong></div>
 <div class="row"><span class="label">수집 시작</span><strong><time data-full="true" data-utc="{escape(started)}">{escape(started)}</time></strong></div>
 <div class="row"><span class="label">화면 자동 갱신</span><strong>5초</strong></div>

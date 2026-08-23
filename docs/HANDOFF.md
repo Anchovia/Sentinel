@@ -8,9 +8,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 ## Current state
 
 - Date: 2026-08-24 KST
-- Completed phases: 0–10; Phase 11.1–11.4 checkpoints complete
-- Current checkpoint: all-KRW broad monitoring with rotating 20-market dense paper analysis;
-  storage retention and preregistered alpha/exit research next
+- Completed phases: 0–10; Phase 11.1–11.5 checkpoints complete
+- Current checkpoint: all-KRW broad monitoring with rotating 20-market dense paper analysis and
+  bounded D-drive storage; preregistered alpha/exit research next
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
@@ -35,7 +35,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 11.2: `af50599 feat: 중립 실시간 모의 판단 경로 구축`
 - Phase 11.3: `f067442 feat: 모의 거래 재시작 복구 구축`
 
-## Implemented through Phase 11.4
+## Implemented through Phase 11.5
 
 - Safety-first Python modular monolith, six closed live gates, Decimal domain/accounting boundary,
   keyless Upbit public transport, versioned immutable raw lineage, deterministic replay/bars/features,
@@ -93,28 +93,42 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Exact incremental portfolio aggregates keep focused risk decisions from rescanning all monitored
   ledgers on every event; live decision p99 remained below the 5ms budget during validation.
 - Full-list recovery checkpoints are namespaced by the discovered market-set hash. BTC/USDT quote
-  markets remain outside the KRW accounting and risk contracts. ADR-001 through ADR-019 record
-  consequential choices; README remains intentionally minimal.
+  markets remain outside the KRW accounting and risk contracts. README remains intentionally
+  minimal.
+- The local paper-data mount is now supplied by ignored `compose.paper.local.env`; this host uses
+  `D:/Sentinel-Data`, while committed configuration remains portable. The prior
+  `quantforge_paper-data` named volume is intentionally preserved as a migration rollback copy.
+- ZSTD raw files from completed creation hours are compacted through checksummed version-2
+  supersession manifests. Age/capacity retirement uses durable reason markers and resumes safely
+  after interruption. Active totals are always rebuilt from verified manifests.
+- `paper-runtime-5` enforces and reports 30-day retention, 50GiB maximum active raw data, a 20GiB
+  free-space fail-closed stop, 15-minute maintenance, compacted/deleted files, reclaimed bytes, and
+  actual filesystem free space. ADR-001 through ADR-020 record consequential choices.
+- Compose grants the paper runtime a 60-second stop grace period. The final signal stop persisted a
+  clean checkpoint and the next run reported `VERIFIED_CLEAN` before resuming full coverage.
 
 ## Latest validation
 
 ```text
-Python 3.13.15; no Phase 11.4 dependency added
-ruff + format: PASS (220 files)
+Python 3.13.15; no Phase 11.5 dependency added
+ruff + format: PASS (221 files)
 mypy: PASS (112 source files)
-pytest: PASS (350 tests, 86.14% branch coverage)
-Secret scan: PASS (323 text files)
+pytest: PASS (354 tests, 85.85% branch coverage)
+Secret scan: PASS (325 text files)
 pip-audit: PASS (no known vulnerabilities)
 Compose config: PASS; paper-runtime healthy
-Final image: PASS (quantforge-paper-runtime, sha256:3c96b213...956656)
-Verified 10,000-event neutral decision replay: 2,184.73 events/s; feature p99 0.371ms;
-decision p99 0.822ms; combined p99 1.124ms; max 3.678ms; 3,328 inference frames
-All-KRW runtime: 285/285 ticker coverage, 279 eligible, rotating 20-market dense focus;
-27,208 accepted at 64.32 events/s over 423 seconds; seven rotations
-Live snapshot: feature p99 0.378ms; decision p99 1.390ms; parser errors/reconnects/queue
-overflows zero; a small number of scheduler/validation-contention outliers exceeded 5ms
+Final image: PASS (quantforge-paper-runtime, sha256:d250811d...8d55142)
+D-drive verified 10,000-event neutral replay: 2,132.31 events/s; feature p99 0.377ms;
+decision p99 0.812ms; combined p99 1.137ms; max 2.520ms; 3,328 inference frames
+D-drive All-KRW runtime: healthy after 517 seconds; 285/285 ticker coverage, rotating 20-market
+dense focus; 23,993 accepted at 46.41 events/s
+Live snapshot: feature p99 0.408ms; decision p99 1.459ms; parser errors/reconnects/queue
+overflows zero
 Observed storage sample: 1.04MB/136 seconds, projecting roughly 20–70GB per 30 days before
-compaction/retention depending on activity and batching
+bounded compaction/retention depending on activity and batching
+D-drive migration: exact 314,560 rows and 46,643,200 Parquet bytes copied; 781 active files reduced
+to 134 with all rows preserved and 6,749,864 bytes reclaimed; 563.37GiB free; recovery
+VERIFIED_CLEAN; healthy
 Model approval, paper-order gate, proposals, risk approvals, paper orders/fills,
 authentication/private/real/live capability all false or zero
 Actual/private/test orders: none
@@ -145,6 +159,8 @@ Scheduled tasks: not registered
   representative paper strategy, round-trip, or performance results yet.
 - Dashboard/recovery/authorization/network/storage hardening remains incomplete. Consult
   `docs/KNOWN_LIMITATIONS.md` and `docs/readiness/LIVE_READINESS.md`.
+- D-drive retention is single-host local storage, not an encrypted backup. High activity can reach
+  the 50GiB cap before 30 days, and pruned payloads need independent backup to recover.
 - The Windows host lacks `uv` and `make` on PATH; exact Make targets were unavailable. Equivalent
   isolated-venv checks and the pinned-uv container build passed.
 - The owner requires concise Korean Conventional Commits, committed and pushed on `main`, and a
@@ -152,9 +168,9 @@ Scheduled tasks: not registered
 
 ## Next actions
 
-1. Keep paper mode. Add bounded Parquet compaction, age/size retention, disk-watermark alerts, and a
-   fail-closed low-space stop before leaving the all-KRW collector unattended. Continue measuring
-   coverage, gaps, parser failures, reconnects, restarts, and actual disk growth.
+1. Keep paper mode. Observe bounded D-drive maintenance across hour/day boundaries and under real
+   disk growth; verify compaction, retention pressure, restarts, coverage, gaps, parser failures, and
+   reconnects without treating uptime as readiness.
 2. Preregister falsifiable alpha and exit hypotheses, run cost-inclusive chronological challengers,
    preserve negative results, and present any candidate artifact for separate human paper review.
 3. Add a reviewed operator acknowledgement workflow for unclean paper recovery. Only after clean

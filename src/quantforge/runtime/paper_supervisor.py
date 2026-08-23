@@ -3,10 +3,10 @@
 import asyncio
 import math
 import os
-import shutil
 from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from datetime import UTC, datetime
 from decimal import Decimal
 from enum import StrEnum
@@ -51,8 +51,12 @@ from quantforge.runtime.universe_scanner import (
 from quantforge.storage import (
     ParquetRawEventWriter,
     RawFileManifest,
+    RawStorageCapacityError,
+    RawStorageMaintenance,
+    RawStoragePolicy,
     cleanup_orphan_temp_files,
-    summarize_raw_storage,
+    maintain_raw_storage,
+    require_raw_storage_capacity,
 )
 
 
@@ -73,8 +77,12 @@ class PaperRuntimeSnapshot(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     schema_version: Literal[
-        "paper-runtime-1", "paper-runtime-2", "paper-runtime-3", "paper-runtime-4"
-    ] = "paper-runtime-4"
+        "paper-runtime-1",
+        "paper-runtime-2",
+        "paper-runtime-3",
+        "paper-runtime-4",
+        "paper-runtime-5",
+    ] = "paper-runtime-5"
     run_id: UUID
     state: PaperRuntimeState
     started_at_utc: datetime
@@ -99,6 +107,16 @@ class PaperRuntimeSnapshot(BaseModel):
     storage_queue_depth: int = Field(default=0, ge=0)
     storage_queue_capacity: int = Field(default=0, ge=0)
     storage_queue_overflows: int = Field(default=0, ge=0)
+    storage_label: str = Field(default="local-paper-data", min_length=1, max_length=200)
+    storage_retention_days: int = Field(default=0, ge=0)
+    storage_max_bytes: int = Field(default=0, ge=0)
+    storage_min_free_bytes: int = Field(default=0, ge=0)
+    storage_compaction_runs: int = Field(default=0, ge=0)
+    storage_compacted_source_files: int = Field(default=0, ge=0)
+    storage_retention_deleted_files: int = Field(default=0, ge=0)
+    storage_capacity_deleted_files: int = Field(default=0, ge=0)
+    storage_reclaimed_bytes: int = Field(default=0, ge=0)
+    disk_free_bytes: int | None = Field(default=None, ge=0)
     heartbeat_sequence: int = Field(ge=0)
     websocket_connected: bool
     last_event_at_utc: datetime | None = None
@@ -174,6 +192,8 @@ class PaperRuntimePolicy:
     max_rows_per_file: int = 10_000
     storage_queue_capacity: int = 65_536
     storage_batch_size: int = 512
+    storage_label: str = "local-paper-data"
+    storage_policy: RawStoragePolicy = dataclass_field(default_factory=RawStoragePolicy)
     duration_seconds: float | None = None
     max_messages: int | None = None
 
@@ -192,6 +212,12 @@ class PaperRuntimePolicy:
             raise ValueError("paper runtime duration must be positive when supplied")
         if self.max_messages is not None and self.max_messages < 1:
             raise ValueError("paper runtime max_messages must be positive when supplied")
+        if (
+            not self.storage_label.strip()
+            or len(self.storage_label) > 200
+            or any(ord(character) < 32 for character in self.storage_label)
+        ):
+            raise ValueError("paper runtime storage label is invalid")
 
     @property
     def digest(self) -> str:
@@ -204,6 +230,17 @@ class PaperRuntimePolicy:
                 "max_rows_per_file": self.max_rows_per_file,
                 "storage_batch_size": self.storage_batch_size,
                 "storage_queue_capacity": self.storage_queue_capacity,
+                "storage_label": self.storage_label,
+                "storage_policy": {
+                    "compaction_min_files": self.storage_policy.compaction_min_files,
+                    "compaction_target_rows": self.storage_policy.compaction_target_rows,
+                    "maintenance_interval_seconds": (
+                        self.storage_policy.maintenance_interval_seconds
+                    ),
+                    "max_bytes": self.storage_policy.max_bytes,
+                    "min_free_bytes": self.storage_policy.min_free_bytes,
+                    "retention_days": self.storage_policy.retention_days,
+                },
                 "stale_after_seconds": self.stale_after_seconds,
             },
             option=orjson.OPT_SORT_KEYS,
@@ -424,10 +461,27 @@ class PaperRuntimeSupervisor:
         self._parser_errors = 0
         self._committed_files = 0
         self._committed_rows = 0
-        retained = summarize_raw_storage(self.raw_output)
-        self._retained_files = retained.file_count
-        self._retained_rows = retained.row_count
-        self._retained_bytes = retained.byte_size
+        self.raw_output.mkdir(parents=True, exist_ok=True)
+        initial_maintenance = maintain_raw_storage(
+            self.raw_output,
+            policy=self.policy.storage_policy,
+            compact=False,
+        )
+        self._retained_files = initial_maintenance.summary.file_count
+        self._retained_rows = initial_maintenance.summary.row_count
+        self._retained_bytes = initial_maintenance.summary.byte_size
+        self._storage_compaction_runs = int(initial_maintenance.compacted_source_files > 0)
+        self._storage_compacted_source_files = initial_maintenance.compacted_source_files
+        self._storage_retention_deleted_files = initial_maintenance.retention_deleted_files
+        self._storage_capacity_deleted_files = initial_maintenance.capacity_deleted_files
+        self._storage_reclaimed_bytes = initial_maintenance.reclaimed_bytes
+        self._disk_free_bytes = initial_maintenance.disk_free_bytes
+        try:
+            self._disk_free_bytes = require_raw_storage_capacity(
+                self.raw_output, self.policy.storage_policy
+            )
+        except RawStorageCapacityError as exc:
+            raise PaperRuntimeBlocked(str(exc)) from exc
         self._storage_queue: asyncio.Queue[EventEnvelope | None] = asyncio.Queue(
             maxsize=self.policy.storage_queue_capacity
         )
@@ -463,7 +517,6 @@ class PaperRuntimeSupervisor:
         await self._client.stop()
 
     async def run(self) -> PaperRuntimeSnapshot:
-        self.raw_output.mkdir(parents=True, exist_ok=True)
         cleanup_orphan_temp_files(self.raw_output)
         self._decision.begin_recovery_session(started_at_utc=self.started_at_utc)
         await self._write_heartbeat(PaperRuntimeState.STARTING)
@@ -598,6 +651,7 @@ class PaperRuntimeSupervisor:
     async def _storage_worker(self) -> None:
         batch: list[EventEnvelope] = []
         next_flush = monotonic() + self.policy.flush_seconds
+        next_maintenance = monotonic() + self.policy.storage_policy.maintenance_interval_seconds
         while True:
             try:
                 event = await asyncio.wait_for(
@@ -608,10 +662,16 @@ class PaperRuntimeSupervisor:
                 await self._commit_storage_batch(batch, flush=True)
                 batch.clear()
                 next_flush = monotonic() + self.policy.flush_seconds
+                if monotonic() >= next_maintenance:
+                    await self._run_storage_maintenance(compact=True)
+                    next_maintenance = (
+                        monotonic() + self.policy.storage_policy.maintenance_interval_seconds
+                    )
                 continue
             if event is None:
                 self._storage_queue.task_done()
                 await self._commit_storage_batch(batch, flush=True, close=True)
+                await self._run_storage_maintenance(compact=False)
                 return
             batch.append(event)
             if len(batch) >= self.policy.storage_batch_size:
@@ -621,6 +681,13 @@ class PaperRuntimeSupervisor:
                 await self._commit_storage_batch(batch, flush=True)
                 batch.clear()
                 next_flush = monotonic() + self.policy.flush_seconds
+            if self._retained_bytes > self.policy.storage_policy.max_bytes:
+                await self._run_storage_maintenance(compact=False)
+            if monotonic() >= next_maintenance:
+                await self._run_storage_maintenance(compact=True)
+                next_maintenance = (
+                    monotonic() + self.policy.storage_policy.maintenance_interval_seconds
+                )
 
     async def _commit_storage_batch(
         self,
@@ -657,6 +724,38 @@ class PaperRuntimeSupervisor:
         self._retained_rows += sum(manifest.row_count for manifest in manifests)
         self._retained_bytes += sum(manifest.byte_size for manifest in manifests)
 
+    async def _run_storage_maintenance(self, *, compact: bool) -> None:
+        result = await asyncio.to_thread(
+            maintain_raw_storage,
+            self.raw_output,
+            policy=self.policy.storage_policy,
+            compact=compact,
+        )
+        self._record_storage_maintenance(result, compact=compact)
+        try:
+            self._disk_free_bytes = require_raw_storage_capacity(
+                self.raw_output, self.policy.storage_policy
+            )
+        except RawStorageCapacityError as exc:
+            raise PaperRuntimeBlocked(str(exc)) from exc
+
+    def _record_storage_maintenance(
+        self,
+        result: RawStorageMaintenance,
+        *,
+        compact: bool,
+    ) -> None:
+        self._retained_files = result.summary.file_count
+        self._retained_rows = result.summary.row_count
+        self._retained_bytes = result.summary.byte_size
+        if compact and result.compacted_source_files:
+            self._storage_compaction_runs += 1
+        self._storage_compacted_source_files += result.compacted_source_files
+        self._storage_retention_deleted_files += result.retention_deleted_files
+        self._storage_capacity_deleted_files += result.capacity_deleted_files
+        self._storage_reclaimed_bytes += result.reclaimed_bytes
+        self._disk_free_bytes = result.disk_free_bytes
+
     async def _write_heartbeat(
         self,
         state: PaperRuntimeState,
@@ -668,6 +767,12 @@ class PaperRuntimeSupervisor:
         self._heartbeat_sequence += 1
         now_utc = datetime.now(UTC)
         if state in {PaperRuntimeState.STARTING, PaperRuntimeState.RUNNING}:
+            try:
+                self._disk_free_bytes = require_raw_storage_capacity(
+                    self.raw_output, self.policy.storage_policy
+                )
+            except RawStorageCapacityError as exc:
+                raise PaperRuntimeBlocked(str(exc)) from exc
             await self._refresh_dynamic_focus(now_utc)
         connected = self._client.connected if stopped_at_utc is None else False
         snapshot = PaperRuntimeSnapshot(
@@ -707,6 +812,16 @@ class PaperRuntimeSupervisor:
             storage_queue_depth=self._storage_queue.qsize(),
             storage_queue_capacity=self.policy.storage_queue_capacity,
             storage_queue_overflows=self._storage_queue_overflows,
+            storage_label=self.policy.storage_label,
+            storage_retention_days=self.policy.storage_policy.retention_days,
+            storage_max_bytes=self.policy.storage_policy.max_bytes,
+            storage_min_free_bytes=self.policy.storage_policy.min_free_bytes,
+            storage_compaction_runs=self._storage_compaction_runs,
+            storage_compacted_source_files=self._storage_compacted_source_files,
+            storage_retention_deleted_files=self._storage_retention_deleted_files,
+            storage_capacity_deleted_files=self._storage_capacity_deleted_files,
+            storage_reclaimed_bytes=self._storage_reclaimed_bytes,
+            disk_free_bytes=self._disk_free_bytes,
             heartbeat_sequence=self._heartbeat_sequence,
             websocket_connected=connected,
             last_event_at_utc=self._last_event_at_utc,
@@ -752,7 +867,7 @@ class PaperRuntimeSupervisor:
                 queue_depth=self._storage_queue.qsize(),
                 parser_errors=self._parser_errors,
                 clock_skew_ms=self._max_ingress_latency_ms,
-                disk_free_bytes=shutil.disk_usage(self.raw_output.parent.resolve()).free,
+                disk_free_bytes=self._disk_free_bytes,
             ),
         )
         write_dashboard_snapshot(dashboard, self.output_root)

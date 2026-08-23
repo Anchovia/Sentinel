@@ -26,7 +26,7 @@ from quantforge.runtime.paper_supervisor import (
 )
 from quantforge.runtime.realtime_decision import read_realtime_paper_decision_snapshot
 from quantforge.runtime.realtime_pipeline import read_realtime_pipeline_snapshot
-from quantforge.storage import read_raw_events
+from quantforge.storage import RawStoragePolicy, read_raw_events
 
 
 class FakePublicClient:
@@ -152,6 +152,10 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     assert snapshot.retained_rows == 2
     assert snapshot.retained_files > 0
     assert snapshot.retained_bytes > 0
+    assert snapshot.schema_version == "paper-runtime-5"
+    assert snapshot.storage_retention_days == 30
+    assert snapshot.storage_max_bytes == 50 * 1024**3
+    assert snapshot.disk_free_bytes is not None
     assert snapshot.parser_errors == 1
     assert snapshot.last_error_type == "MalformedUpbitPayload"
     assert snapshot.authentication_used is False
@@ -168,6 +172,9 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     monitor = (tmp_path / "runtime/ops/paper-monitor.html").read_text(encoding="utf-8")
     assert "공개 데이터 모니터" in monitor
     assert "누적 저장 행" in monitor
+    assert "저장 위치" in monitor
+    assert "보관 한도" in monitor
+    assert "자동 압축 / 정리" in monitor
     assert "2" in monitor
     assert "실제 주문" in monitor
     assert "완전 차단" in monitor
@@ -341,6 +348,15 @@ def test_policy_rejects_unbounded_values() -> None:
         PaperRuntimePolicy(storage_queue_capacity=0)
     with pytest.raises(ValueError):
         PaperRuntimePolicy(storage_batch_size=0)
+
+
+def test_supervisor_refuses_low_space_storage_root(tmp_path: Path) -> None:
+    with pytest.raises(PaperRuntimeBlocked, match="safety floor"):
+        _supervisor(
+            tmp_path,
+            _factory(),
+            policy=PaperRuntimePolicy(storage_policy=RawStoragePolicy(min_free_bytes=10**18)),
+        )
 
 
 def test_version_one_runtime_snapshot_remains_read_compatible() -> None:

@@ -53,6 +53,8 @@ class QuantForgeSettings(BaseSettings):
     display_timezone: str = "Asia/Seoul"
     runtime_export_root: Path = Path("runtime_exports")
     operations_state_root: Path = Path("data/operations")
+    paper_data_host_path: Path = Path("data/paper")
+    paper_data_label: str = "local-paper-data"
 
     upbit_access_key: SecretStr | None = Field(default=None, repr=False)
     upbit_secret_key: SecretStr | None = Field(default=None, repr=False)
@@ -88,6 +90,13 @@ class QuantForgeSettings(BaseSettings):
         if normalized not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
             raise ValueError(f"unsupported log level: {value}")
         return normalized
+
+    @field_validator("paper_data_label")
+    @classmethod
+    def validate_paper_data_label(cls, value: str) -> str:
+        if not value.strip() or len(value) > 200 or any(ord(character) < 32 for character in value):
+            raise ValueError("paper data label is invalid")
+        return value
 
     @model_validator(mode="after")
     def require_complete_credential_pair(self) -> "QuantForgeSettings":

@@ -64,6 +64,7 @@ from quantforge.runtime.paper_supervisor import (
 )
 from quantforge.storage import (
     ParquetRawEventWriter,
+    RawStoragePolicy,
     cleanup_orphan_temp_files,
     read_raw_events,
 )
@@ -211,6 +212,15 @@ def run_paper(
     ),
     heartbeat_seconds: int = typer.Option(15, min=1, max=300),
     flush_seconds: int = typer.Option(60, min=1, max=3600),
+    storage_label: str = typer.Option(
+        "local-paper-data", help="Non-secret display label for the paper-data filesystem"
+    ),
+    storage_retention_days: int = typer.Option(30, min=1, max=3650),
+    storage_max_gib: int = typer.Option(50, min=1, max=10_000),
+    storage_min_free_gib: int = typer.Option(20, min=1, max=10_000),
+    storage_maintenance_seconds: int = typer.Option(900, min=60, max=86_400),
+    storage_compaction_min_files: int = typer.Option(4, min=2, max=1000),
+    storage_compaction_target_rows: int = typer.Option(250_000, min=1000),
     raw_output: Annotated[
         Path, typer.Option(help="Append-only public raw Parquet root")
     ] = DEFAULT_PAPER_RAW_OUTPUT,
@@ -286,6 +296,15 @@ def run_paper(
     policy = PaperRuntimePolicy(
         heartbeat_seconds=float(heartbeat_seconds),
         flush_seconds=float(flush_seconds),
+        storage_label=storage_label,
+        storage_policy=RawStoragePolicy(
+            retention_days=storage_retention_days,
+            max_bytes=storage_max_gib * 1024**3,
+            min_free_bytes=storage_min_free_gib * 1024**3,
+            maintenance_interval_seconds=float(storage_maintenance_seconds),
+            compaction_min_files=storage_compaction_min_files,
+            compaction_target_rows=storage_compaction_target_rows,
+        ),
         duration_seconds=float(duration_seconds) if duration_seconds else None,
         max_messages=max_messages or None,
     )
@@ -312,6 +331,11 @@ def run_paper(
                 "retained_rows": snapshot.retained_rows,
                 "retained_files": snapshot.retained_files,
                 "retained_bytes": snapshot.retained_bytes,
+                "storage_label": snapshot.storage_label,
+                "storage_retention_days": snapshot.storage_retention_days,
+                "storage_max_bytes": snapshot.storage_max_bytes,
+                "storage_reclaimed_bytes": snapshot.storage_reclaimed_bytes,
+                "disk_free_bytes": snapshot.disk_free_bytes,
                 "market_scope": snapshot.market_scope,
                 "monitored_market_count": len(snapshot.markets),
                 "focused_market_count": len(snapshot.focused_markets),
@@ -357,6 +381,11 @@ def paper_status(
         parsed.state is PaperRuntimeState.RUNNING
         and parsed.websocket_connected
         and event_age_seconds is not None
+        and (
+            parsed.disk_free_bytes is None
+            or parsed.storage_min_free_bytes == 0
+            or parsed.disk_free_bytes >= parsed.storage_min_free_bytes
+        )
     )
     if require_fresh_seconds is not None:
         healthy = (
@@ -379,6 +408,11 @@ def paper_status(
                 "retained_rows": parsed.retained_rows,
                 "retained_files": parsed.retained_files,
                 "retained_bytes": parsed.retained_bytes,
+                "storage_label": parsed.storage_label,
+                "storage_retention_days": parsed.storage_retention_days,
+                "storage_max_bytes": parsed.storage_max_bytes,
+                "storage_reclaimed_bytes": parsed.storage_reclaimed_bytes,
+                "disk_free_bytes": parsed.disk_free_bytes,
                 "parser_errors": parsed.parser_errors,
                 "reconnects": parsed.reconnects,
                 "websocket_connected": parsed.websocket_connected,

@@ -16,7 +16,17 @@ raw_payload, raw_payload_hash, normalization_version
 is_snapshot, is_realtime, is_duplicate, quality_flags
 ```
 
-Raw payloads are append-only. Partitioned files use atomic temporary writes, ZSTD compression, row/time statistics, checksums, and manifests. Raw and derived storage are separate.
+Raw payloads enter immutable partition files. Files use atomic temporary writes, ZSTD compression,
+row/time statistics, checksums, and manifests. Raw and derived storage are separate. Bounded paper
+retention may later retire a complete manifest-backed file; it never edits individual retained rows.
+
+`raw-file-manifest-1` describes one writer output. A compacted output uses manifest schema version 2
+and adds `supersedes`, the exact prior data-file paths replaced by its verified row-preserving
+payload. The replacement manifest becomes active before source manifests are renamed to
+`.compacted.json` retirement markers and source payloads are deleted. Age and capacity pruning use
+`.expired.json` and `.capacity.json` markers. Replay reads only active manifests and resolves
+supersession before checksum and row validation. Completed markers are stored under the sibling
+`maintenance/retired` tree so a growing audit history does not slow active raw-manifest discovery.
 
 ## Derived dataset manifest
 
@@ -210,6 +220,11 @@ orderbook events are retained only for the rotating focus. Files remain partitio
 event type, UTC date, and hour rather than by market, so expanding the universe increases bytes and
 rows without multiplying the scheduled small-file count by every pair. Market-set and focus
 evidence must accompany any later dataset or paper-performance claim.
+
+Phase 11.5 versions the lifecycle view as `paper-runtime-5` and adds a non-secret storage label,
+retention days, active raw byte cap, minimum free bytes, active manifest-backed totals, compaction
+runs/source-file counts, age/capacity deletion counts, reclaimed bytes, and actual filesystem free
+bytes. These counters are local operations evidence, not backup or durability proof.
 
 Phase 7 defines `operations-dashboard-1`, containing UTC generation time and fixed Overview,
 Markets, Positions, Orders, Strategies, Models, System, and Incidents views. Decimal is retained for

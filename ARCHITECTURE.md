@@ -224,6 +224,27 @@ feature boundaries, while neutral inference/risk/paper accounting runs only for 
 The market-set hash namespaces recovery evidence so a listing change cannot restore state from a
 different universe. BTC/USDT quote accounting remains outside this KRW-only boundary.
 
+Phase 11.5 bounds local raw persistence without entering the real-time decision path:
+
+```text
+validated events -> bounded queue -> atomic ZSTD Parquet + v1 manifest
+                                           |
+                              completed creation hour
+                                           v
+                         verified compact Parquet + v2 supersession manifest
+                                           |
+                         30-day age / 50GiB oldest-first retention
+                                           |
+                   heartbeat free-space check (<20GiB -> fail-closed stop)
+```
+
+The host path is injected through an ignored local Compose environment file and is mounted only at
+`/app/data/paper`; the current owner path is `D:/Sentinel-Data`. Compaction commits replacement data
+and lineage before retiring sources, and startup resumes interrupted retirement markers. Active
+manifest totals, not directory guesses, drive the monitor. Maintenance runs in the storage worker,
+outside the event/feature/decision hot path. The original Docker named volume is retained only as a
+migration rollback copy; neither it nor the D drive is an off-host backup.
+
 ## Deployment target
 
 Initial deployment is one Linux host with Docker Compose: API, supervised public paper burn-in,
