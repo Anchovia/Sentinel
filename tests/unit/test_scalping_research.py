@@ -169,6 +169,7 @@ def test_blocked_result_and_ledger_retain_no_trial_outcome(tmp_path: Path) -> No
     assert report.final_holdout_used is False
     assert len(ledger.records) == 2
     assert all(path.is_file() for path in paths)
+    assert paths[0].relative_to(tmp_path).parts[:3] == ("2026", "08", "24")
     payload = orjson.loads(paths[1].read_bytes())
     assert payload["safety"]["real_orders_executed"] is False
 

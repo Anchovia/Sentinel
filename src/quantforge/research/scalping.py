@@ -10,6 +10,7 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
+from zoneinfo import ZoneInfo
 
 import orjson
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -878,7 +879,7 @@ def write_scalping_research_bundle(
     ledger: ExperimentLedgerSnapshot,
     output_root: Path,
 ) -> tuple[Path, Path, Path]:
-    date_path = report.generated_at_utc.strftime("%Y/%m/%d")
+    date_path = report.generated_at_utc.astimezone(ZoneInfo("Asia/Seoul")).strftime("%Y/%m/%d")
     destination = output_root / date_path
     destination.mkdir(parents=True, exist_ok=True)
     stem = report.experiment_id

@@ -34,6 +34,10 @@
 - The registered gate requires 24 hours and at least 20,000 trade plus 20,000 orderbook events in
   each of three markets. Short data writes `BLOCKED` with zero trials and no final-holdout access;
   it is never searched for a favorable interval.
+- The first fixed-cutoff assessment verified 430,655 detailed events across 123 observed markets.
+  No market qualified: the longest was `KRW-BTC` at 4.70 hours with 18,637 trades and 108,102
+  orderbooks, still below both the 24-hour and 20,000-trade minimums. The retained result is
+  `BLOCKED`, with zero trials, zero holdout accesses, and no profitability claim.
 - Added ADR-021. The runtime model approval and independent paper-order gate remain closed, and the
   public README remains unchanged.
 
@@ -230,12 +234,16 @@ ruff: PASS — all checks passed
 format check: PASS — 164 Python files formatted
 mypy: PASS — 113 source files, no issues
 pytest: PASS — 361 tests, 85.81% branch coverage
-secret scan: PASS — 330 text files checked
+secret scan: PASS — 333 text files checked
 dependency audit: PASS — no known vulnerabilities
 Compose config: PASS — base + paper overlays
 container build: PASS — quantforge:phase11-6 sha256:80d6854c...4cd555c1
 synthetic registered entry/exit: PASS — deterministic conservative fills, positive net round trip,
   non-zero fees/slippage/adverse selection; neutral baseline orders/fills 0
+D-drive fixed-cutoff research inventory: PASS — 430,655 detailed events, 123 observed markets,
+  0 eligible; BLOCKED, 0 trials, final holdout unused
+post-assessment paper runtime: PASS — RUNNING/healthy; public events fresh; parser errors/reconnects
+  0; authentication/order/live capability false
 D-drive verified 10,000-event neutral replay: PASS — 2,132.31 events/s; feature p99 0.377ms;
   decision p99 0.812ms; combined p99 1.137ms; max 2.520ms; 3,328 inference frames
 D-drive all-KRW runtime: PASS — healthy after 517 seconds; 285/285 ticker coverage, rotating

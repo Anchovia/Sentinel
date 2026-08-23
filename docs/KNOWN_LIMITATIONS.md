@@ -44,6 +44,9 @@
 - The first short-horizon plan requires 24 hours and sufficient detailed data in three markets.
   Shorter collection is retained as `BLOCKED` with zero trials. This gate is only a minimum for
   running the experiment, not proof of statistical power, stability, capacity, or profitability.
+- The first 430,655-row detailed inventory took roughly 11 minutes in the local Python path. It is
+  correct but too slow for frequent auditing; batch fingerprinting or a maintained research index
+  should be implemented before registering a high-frequency assessment schedule.
 - Final-holdout controls and experiment retention exist, but they do not remove selection bias,
   multiple testing, regime change, or limited sample risk.
 - Readiness policy thresholds are configurable governance defaults, not guarantees. The validator

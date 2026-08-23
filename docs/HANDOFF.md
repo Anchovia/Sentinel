@@ -9,8 +9,8 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 
 - Date: 2026-08-24 KST
 - Completed phases: 0–10; Phase 11.1–11.6 checkpoints complete
-- Current checkpoint: preregistered short-horizon research engine and data-sufficiency assessment;
-  initial committed-data result pending after the implementation revision is fixed
+- Current checkpoint: preregistered short-horizon research engine plus a retained insufficient-data
+  result; continue collection and optimize inventory scan before the next registered experiment
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
@@ -34,6 +34,8 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 11.1: `eb8a4da feat: 저지연 실시간 처리 기반 구축`
 - Phase 11.2: `af50599 feat: 중립 실시간 모의 판단 경로 구축`
 - Phase 11.3: `f067442 feat: 모의 거래 재시작 복구 구축`
+- Phase 11.6 preregistration: `4cb419c chore: 단타 전략 실험 사전등록`
+- Phase 11.6 implementation: `0e3040b feat: 단타 전략 연구 기반 구축`
 
 ## Implemented through Phase 11.6
 
@@ -71,6 +73,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - A row-identity inventory and `assess-scalping-research` command retain insufficient data as a
   blocked Markdown/JSON/experiment-ledger bundle with zero trials. The registered minimum is 24
   hours and 20,000 trade plus 20,000 orderbook events in each of three markets.
+- The first committed-cutoff result verified 430,655 detailed events across 123 markets but found
+  zero eligible markets. `KRW-BTC` was longest at 4.70 hours with 18,637 trades and 108,102
+  orderbooks. The result is `BLOCKED`; no trial or final-holdout access occurred.
 - The decision remains `HOLD` with no approved real-time model, strategy order, private network,
   account, or live capability.
 - An always-neutral alpha now exercises regime/execution inputs and the proposal/risk/paper/ledger
@@ -120,12 +125,16 @@ Python 3.13.15; no Phase 11.6 dependency added
 ruff + format: PASS (164 Python files)
 mypy: PASS (113 source files)
 pytest: PASS (361 tests, 85.81% branch coverage)
-Secret scan: PASS (330 text files)
+Secret scan: PASS (333 text files)
 pip-audit: PASS (no known vulnerabilities)
 Compose config: PASS
 Phase 11.6 image: PASS (quantforge:phase11-6, sha256:80d6854c...4cd555c1)
 Synthetic registered entry/exit: deterministic conservative fills, positive net round trip,
 non-zero fees/slippage/adverse selection; neutral baseline orders/fills zero
+D-drive fixed-cutoff inventory: 430,655 detailed events across 123 markets; 0 eligible; BLOCKED,
+0 trials, final holdout unused
+Post-assessment runtime: healthy RUNNING, public events fresh, parser errors/reconnects zero,
+authentication/order/live capability false
 D-drive verified 10,000-event neutral replay: 2,132.31 events/s; feature p99 0.377ms;
 decision p99 0.812ms; combined p99 1.137ms; max 2.520ms; 3,328 inference frames
 D-drive All-KRW runtime: healthy after 517 seconds; 285/285 ticker coverage, rotating 20-market
