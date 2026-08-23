@@ -20,8 +20,13 @@
   latency, promotion, canary eligibility, or live readiness is claimed.
 - Continuous coverage records, longer/event/volume/imbalance bars, full production feature/model
   families, sustained paper history, and representative performance/model exports are incomplete.
-- The supervised public burn-in writes raw events and operations health only. Real-time feature,
-  model, strategy, risk, paper-broker, ledger, and performance orchestration remains incomplete.
+- The supervised public burn-in now calculates causal incremental features and publishes processing
+  latency, but model, strategy, risk, paper-broker, ledger, and performance orchestration remains
+  incomplete. Every real-time decision therefore remains `HOLD`.
+- Phase 11.1 latency measures event validation and feature calculation only. It excludes future
+  inference, strategy, risk, simulated execution, ledger, network, and exchange latency and is not a
+  profitability, fill-speed, capacity, or high-frequency-trading claim. Python on a retail Upbit
+  connection is not a colocated HFT system.
 - Final-holdout controls and experiment retention exist, but they do not remove selection bias,
   multiple testing, regime change, or limited sample risk.
 - Readiness policy thresholds are configurable governance defaults, not guarantees. The validator
@@ -33,8 +38,8 @@
   rate limiter. Runtime producers do not yet populate every read view.
 - The Korean local monitor covers public feed/storage visibility only. The authenticated
   server-rendered dashboard and Grafana views are still developer/operations skeletons; no strategy,
-  simulated-order, position, or paper-performance view can be populated before Phase 11 composes
-  those runtime contracts.
+  simulated-order, position, or paper-performance view can be populated before the remaining Phase
+  11 runtime contracts are composed.
 - Incident, control, order, experiment, risk, and attribution journals are local single-writer proofs,
   not transactional replicated production storage.
 - Backups are unencrypted, local development restore proofs with no PostgreSQL/off-host/raw-tick/

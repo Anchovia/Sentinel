@@ -14,6 +14,7 @@ from quantforge.operations.models import DashboardSnapshot, HealthState, MarketV
 
 if TYPE_CHECKING:
     from quantforge.runtime.paper_supervisor import PaperRuntimeSnapshot
+    from quantforge.runtime.realtime_pipeline import RealtimePipelineSnapshot
 
 
 def _number(value: int | float | Decimal, *, decimals: int = 0) -> str:
@@ -66,12 +67,14 @@ def _market_card(market: MarketView) -> str:
 def render_paper_monitor(
     dashboard: DashboardSnapshot,
     runtime: "PaperRuntimeSnapshot",
+    realtime: "RealtimePipelineSnapshot | None" = None,
 ) -> str:
     """Render only public-market and fail-closed collection information."""
 
     safe_payload = {
         "dashboard": dashboard.model_dump(mode="json"),
         "runtime": runtime.model_dump(mode="json", exclude={"raw_output", "policy_hash"}),
+        "realtime": realtime.model_dump(mode="json") if realtime is not None else None,
     }
     assert_runtime_export_safe(safe_payload)
     state = {
@@ -91,6 +94,18 @@ def render_paper_monitor(
         _bytes(dashboard.system.disk_free_bytes)
         if dashboard.system.disk_free_bytes is not None
         else "확인 중"
+    )
+    processing_panel = (
+        f"""<section class="panel"><h2>밀리초 처리</h2><div class="rows">
+<div class="row"><span class="label">처리 지연 p50</span><strong>{realtime.processing_latency_p50_ms:.3f}ms</strong></div>
+<div class="row"><span class="label">처리 지연 p95</span><strong>{realtime.processing_latency_p95_ms:.3f}ms</strong></div>
+<div class="row"><span class="label">처리 지연 p99</span><strong>{realtime.processing_latency_p99_ms:.3f}ms</strong></div>
+<div class="row"><span class="label">처리 예산 초과</span><strong>{realtime.processing_budget_breaches:,}건</strong></div>
+<div class="row"><span class="label">현재 판단</span><strong class="warn">{realtime.decision_state.value}</strong></div>
+</div></section>"""
+        if realtime is not None
+        else """<section class="panel"><h2>밀리초 처리</h2>
+<p class="label">실시간 처리 코어를 기다리고 있습니다.</p></section>"""
     )
     return f"""<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
@@ -120,7 +135,7 @@ align-items:flex-start}}.eyebrow{{font-size:12px;font-weight:750;letter-spacing:
 .price{{font-size:clamp(30px,5vw,48px);font-weight:800;letter-spacing:-.04em;margin:17px 0}}
 .market-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}}.market-grid div{{border-top:1px solid
 var(--line);padding-top:11px}}.market-grid strong{{display:block;margin-top:3px}}
-.columns{{display:grid;grid-template-columns:1fr 1fr;gap:16px}}.panel,.safe{{padding:20px}}
+.columns{{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}}.panel,.safe{{padding:20px}}
 .panel h2,.safe h2{{margin-bottom:14px}}.rows{{display:grid;gap:0}}.row{{display:flex;justify-content:
 space-between;gap:20px;padding:10px 0;border-bottom:1px solid #1a3149}}.row:last-child{{border:0}}
 .safe{{margin-top:16px;border-color:#1b684f;background:linear-gradient(145deg,#0b3029,#0a1c27)}}
@@ -154,7 +169,7 @@ border:1px dashed var(--line);border-radius:18px;color:var(--muted);margin-botto
 <div class="row"><span class="label">남은 디스크</span><strong>{disk_free}</strong></div>
 <div class="row"><span class="label">수집 시작</span><strong><time data-full="true" data-utc="{escape(started)}">{escape(started)}</time></strong></div>
 <div class="row"><span class="label">화면 자동 갱신</span><strong>5초</strong></div>
-</div></section></div>
+</div></section>{processing_panel}</div>
 <section class="safe"><h2>안전 상태</h2><div class="safe-grid">
 <div><span class="label">실제 주문</span><strong>완전 차단</strong></div>
 <div><span class="label">API 인증</span><strong>사용 안 함</strong></div>
@@ -171,6 +186,8 @@ def write_paper_monitor(
     dashboard: DashboardSnapshot,
     runtime: "PaperRuntimeSnapshot",
     output_root: Path,
+    *,
+    realtime: "RealtimePipelineSnapshot | None" = None,
 ) -> Path:
     """Atomically replace the local monitor so browser refreshes never see a partial file."""
 
@@ -179,7 +196,7 @@ def write_paper_monitor(
     destination = destination_dir / "paper-monitor.html"
     temporary = destination_dir / f".paper-monitor.{uuid4().hex}.tmp"
     try:
-        temporary.write_text(render_paper_monitor(dashboard, runtime), encoding="utf-8")
+        temporary.write_text(render_paper_monitor(dashboard, runtime, realtime), encoding="utf-8")
         os.replace(temporary, destination)
     finally:
         temporary.unlink(missing_ok=True)

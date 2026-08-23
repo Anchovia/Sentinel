@@ -81,6 +81,17 @@ Exit criteria:
 - Validate with a short real `KRW-BTC` public smoke and deterministic checksum replay. Do not create
   strategy signals, simulated fills, performance claims, or readiness claims in this phase.
 
+## Phase 11 — Low-Latency Real-Time Paper Orchestration (`IN_PROGRESS`)
+
+- Phase 11.1 (`COMPLETE`): validate each public event once, update causal incremental orderbook/trade
+  features in memory, measure per-event processing latency, and move immutable persistence behind a
+  bounded asynchronous queue that fails the runtime on overflow rather than dropping data.
+- Keep the decision state at `HOLD` until a reviewed real-time model artifact is explicitly composed;
+  the feature checkpoint has no strategy order, private-network, account, or live capability.
+- Phase 11.2 onward: compose versioned baseline inference, proposal-only strategy routing,
+  independent risk approval, conservative paper execution, exact ledger accounting, and redacted
+  performance exports. Measure each additional stage before expanding the monitor.
+
 ## Milestone discipline
 
 For every milestone:

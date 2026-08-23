@@ -35,6 +35,10 @@ from quantforge.operations.models import (
 )
 from quantforge.runtime.live_guard import LiveSubmissionGuard
 from quantforge.runtime.paper_monitor import write_paper_monitor
+from quantforge.runtime.realtime_pipeline import (
+    RealtimePaperPipeline,
+    write_realtime_pipeline_snapshot,
+)
 from quantforge.storage import (
     ParquetRawEventWriter,
     RawFileManifest,
@@ -59,7 +63,9 @@ class PaperRuntimeSnapshot(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal["paper-runtime-1", "paper-runtime-2"] = "paper-runtime-2"
+    schema_version: Literal["paper-runtime-1", "paper-runtime-2", "paper-runtime-3"] = (
+        "paper-runtime-3"
+    )
     run_id: UUID
     state: PaperRuntimeState
     started_at_utc: datetime
@@ -77,6 +83,9 @@ class PaperRuntimeSnapshot(BaseModel):
     retained_files: int = Field(default=0, ge=0)
     retained_rows: int = Field(default=0, ge=0)
     retained_bytes: int = Field(default=0, ge=0)
+    storage_queue_depth: int = Field(default=0, ge=0)
+    storage_queue_capacity: int = Field(default=0, ge=0)
+    storage_queue_overflows: int = Field(default=0, ge=0)
     heartbeat_sequence: int = Field(ge=0)
     websocket_connected: bool
     last_event_at_utc: datetime | None = None
@@ -148,12 +157,21 @@ class PaperRuntimePolicy:
     flush_seconds: float = 60.0
     stale_after_seconds: float = 90.0
     max_rows_per_file: int = 10_000
+    storage_queue_capacity: int = 65_536
+    storage_batch_size: int = 512
     duration_seconds: float | None = None
     max_messages: int | None = None
 
     def __post_init__(self) -> None:
         numeric = (self.heartbeat_seconds, self.flush_seconds, self.stale_after_seconds)
-        if any(value <= 0 for value in numeric) or self.max_rows_per_file < 1:
+        if any(value <= 0 for value in numeric) or any(
+            value < 1
+            for value in (
+                self.max_rows_per_file,
+                self.storage_queue_capacity,
+                self.storage_batch_size,
+            )
+        ):
             raise ValueError("paper runtime timings and row bound must be positive")
         if self.duration_seconds is not None and self.duration_seconds <= 0:
             raise ValueError("paper runtime duration must be positive when supplied")
@@ -169,6 +187,8 @@ class PaperRuntimePolicy:
                 "heartbeat_seconds": self.heartbeat_seconds,
                 "max_messages": self.max_messages,
                 "max_rows_per_file": self.max_rows_per_file,
+                "storage_batch_size": self.storage_batch_size,
+                "storage_queue_capacity": self.storage_queue_capacity,
                 "stale_after_seconds": self.stale_after_seconds,
             },
             option=orjson.OPT_SORT_KEYS,
@@ -377,12 +397,17 @@ class PaperRuntimeSupervisor:
         self._retained_files = retained.file_count
         self._retained_rows = retained.row_count
         self._retained_bytes = retained.byte_size
+        self._storage_queue: asyncio.Queue[EventEnvelope | None] = asyncio.Queue(
+            maxsize=self.policy.storage_queue_capacity
+        )
+        self._storage_queue_overflows = 0
         self._heartbeat_sequence = 0
         self._last_event_at_utc: datetime | None = None
         self._last_exchange_at_utc: datetime | None = None
         self._max_ingress_latency_ms: float | None = None
         self._last_error_type: str | None = None
         self._market = _MarketAccumulator(self.markets)
+        self._realtime = RealtimePaperPipeline(self.markets)
         self._writer = ParquetRawEventWriter(
             self.raw_output, max_rows=self.policy.max_rows_per_file
         )
@@ -392,6 +417,9 @@ class PaperRuntimeSupervisor:
         self.raw_output.mkdir(parents=True, exist_ok=True)
         cleanup_orphan_temp_files(self.raw_output)
         await self._write_heartbeat(PaperRuntimeState.STARTING)
+        storage_task = asyncio.create_task(
+            self._storage_worker(), name=f"paper-storage-{self.run_id}"
+        )
         task = asyncio.create_task(
             self._client.run(max_messages=self.policy.max_messages),
             name=f"paper-public-stream-{self.run_id}",
@@ -401,11 +429,12 @@ class PaperRuntimeSupervisor:
             if self.policy.duration_seconds is not None
             else None
         )
-        next_flush = monotonic() + self.policy.flush_seconds
         shutdown_reason = "client_completed"
         failure: BaseException | None = None
         try:
             while not task.done():
+                if storage_task.done():
+                    storage_task.result()
                 now = monotonic()
                 if deadline is not None and now >= deadline:
                     shutdown_reason = "duration_elapsed"
@@ -413,15 +442,11 @@ class PaperRuntimeSupervisor:
                     task.cancel()
                     break
                 timeout = self.policy.heartbeat_seconds
-                timeout = min(timeout, max(0.001, next_flush - now))
                 if deadline is not None:
                     timeout = min(timeout, max(0.001, deadline - now))
                 done, _ = await asyncio.wait({task}, timeout=timeout)
                 if done:
                     break
-                if monotonic() >= next_flush:
-                    self._record_manifests(self._writer.flush())
-                    next_flush = monotonic() + self.policy.flush_seconds
                 await self._write_heartbeat(PaperRuntimeState.RUNNING)
             if task.cancelled():
                 pass
@@ -449,7 +474,21 @@ class PaperRuntimeSupervisor:
                     if failure is None:
                         failure = exc
                         shutdown_reason = "runtime_failed"
-            self._record_manifests(self._writer.close())
+            if storage_task.done():
+                try:
+                    storage_task.result()
+                except Exception as exc:
+                    if failure is None:
+                        failure = exc
+                        shutdown_reason = "storage_failed"
+            else:
+                await self._storage_queue.put(None)
+                try:
+                    await storage_task
+                except Exception as exc:
+                    if failure is None:
+                        failure = exc
+                        shutdown_reason = "storage_failed"
 
         terminal_state = (
             PaperRuntimeState.FAILED
@@ -471,8 +510,14 @@ class PaperRuntimeSupervisor:
         return terminal
 
     async def _on_event(self, event: EventEnvelope) -> None:
-        manifests = self._writer.append(event)
-        self._record_manifests(manifests)
+        try:
+            self._storage_queue.put_nowait(event)
+        except asyncio.QueueFull as exc:
+            self._storage_queue_overflows += 1
+            raise PaperRuntimeBlocked(
+                "bounded raw-storage queue overflowed; public processing stopped"
+            ) from exc
+        self._realtime.process(event)
         self._event_counts[event.event_type] += 1
         if event.is_duplicate:
             self._duplicate_messages += 1
@@ -482,6 +527,57 @@ class PaperRuntimeSupervisor:
         if self._max_ingress_latency_ms is None or latency_ms > self._max_ingress_latency_ms:
             self._max_ingress_latency_ms = latency_ms
         self._market.ingest(event)
+
+    async def _storage_worker(self) -> None:
+        batch: list[EventEnvelope] = []
+        next_flush = monotonic() + self.policy.flush_seconds
+        while True:
+            try:
+                event = await asyncio.wait_for(
+                    self._storage_queue.get(),
+                    timeout=max(0.001, next_flush - monotonic()),
+                )
+            except TimeoutError:
+                await self._commit_storage_batch(batch, flush=True)
+                batch.clear()
+                next_flush = monotonic() + self.policy.flush_seconds
+                continue
+            if event is None:
+                self._storage_queue.task_done()
+                await self._commit_storage_batch(batch, flush=True, close=True)
+                return
+            batch.append(event)
+            if len(batch) >= self.policy.storage_batch_size:
+                await self._commit_storage_batch(batch)
+                batch.clear()
+            if monotonic() >= next_flush:
+                await self._commit_storage_batch(batch, flush=True)
+                batch.clear()
+                next_flush = monotonic() + self.policy.flush_seconds
+
+    async def _commit_storage_batch(
+        self,
+        batch: Sequence[EventEnvelope],
+        *,
+        flush: bool = False,
+        close: bool = False,
+    ) -> None:
+        selected = tuple(batch)
+
+        def commit() -> tuple[RawFileManifest, ...]:
+            manifests: list[RawFileManifest] = []
+            for event in selected:
+                manifests.extend(self._writer.append(event))
+            if flush:
+                manifests.extend(self._writer.flush())
+            if close:
+                manifests.extend(self._writer.close())
+            return tuple(manifests)
+
+        manifests = await asyncio.to_thread(commit)
+        self._record_manifests(manifests)
+        for _ in selected:
+            self._storage_queue.task_done()
 
     async def _on_error(self, error: UpbitAdapterError) -> None:
         self._parser_errors += 1
@@ -523,6 +619,9 @@ class PaperRuntimeSupervisor:
             retained_files=self._retained_files,
             retained_rows=self._retained_rows,
             retained_bytes=self._retained_bytes,
+            storage_queue_depth=self._storage_queue.qsize(),
+            storage_queue_capacity=self.policy.storage_queue_capacity,
+            storage_queue_overflows=self._storage_queue_overflows,
             heartbeat_sequence=self._heartbeat_sequence,
             websocket_connected=connected,
             last_event_at_utc=self._last_event_at_utc,
@@ -559,11 +658,14 @@ class PaperRuntimeSupervisor:
             system=SystemView(
                 websocket_state=system_state,
                 market_event_age_seconds=event_age,
+                queue_depth=self._storage_queue.qsize(),
                 parser_errors=self._parser_errors,
                 clock_skew_ms=self._max_ingress_latency_ms,
                 disk_free_bytes=shutil.disk_usage(self.raw_output.parent.resolve()).free,
             ),
         )
         write_dashboard_snapshot(dashboard, self.output_root)
-        write_paper_monitor(dashboard, snapshot, self.output_root)
+        realtime_snapshot = self._realtime.snapshot(generated_at_utc=now_utc)
+        write_realtime_pipeline_snapshot(realtime_snapshot, self.output_root)
+        write_paper_monitor(dashboard, snapshot, self.output_root, realtime=realtime_snapshot)
         return snapshot

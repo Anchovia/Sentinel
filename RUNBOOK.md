@@ -91,6 +91,21 @@ It needs no server or token and exposes no raw payload, account, credential, str
 order action. Retained totals are reconstructed from immutable manifests after each restart; a
 storage integrity error blocks startup instead of showing an untrusted total.
 
+The same page includes the Phase 11.1 feature-processing latency. To reproduce the measurement from
+verified retained data without network or order access:
+
+```text
+uv run quantforge benchmark-realtime \
+  --input-root data/paper/raw \
+  --max-events 10000 \
+  --processing-budget-ms 5
+```
+
+This is a feature-core benchmark, not end-to-end decision or order latency. It must report `HOLD`,
+no approved model, and every private/order/live capability false. Review
+`runtime_exports/ops/realtime-pipeline.json` together with `paper-runtime.json`; any storage queue
+overflow is a runtime failure, not a permissible loss counter.
+
 Infrastructure, when Docker Compose is available:
 
 ```text

@@ -2,9 +2,9 @@
 
 ## Current checkpoint
 
-- Phase: 10.1 — Korean Public Data Monitor
-- Status: `COMPLETE`
-- Planned implementation phases: 0–10 complete; 10.1 visibility checkpoint complete
+- Phase: 11.1 — Low-Latency Real-Time Feature Path
+- Status: checkpoint `COMPLETE`; Phase 11 `IN_PROGRESS`
+- Planned implementation phases: 0–10 complete; Phase 11.1 feature-path checkpoint complete
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; the live adapter has no network capability
@@ -14,6 +14,25 @@
 - Production Secrets accessed: no
 - Scheduled task registration: none
 - Automatic merge/deploy/model promotion/live activation: unavailable
+
+## Completed in Phase 11.1
+
+- Added a strict causal incremental pipeline for microprice, spread, top/total orderbook imbalance,
+  depth, book flow, rolling 1s/5s/15s trade flow/returns, realized volatility, and optional ticker
+  enrichment without recomputing retained history on each event.
+- Added required-state freshness/warmup gates, p50/p95/p99/max feature-processing evidence, a 5ms
+  budget counter, deterministic verified replay, and an atomic Secret-free real-time snapshot.
+- Moved raw Parquet writes behind a bounded 65,536-event queue and 512-event batch worker. Periodic
+  commits continue under uninterrupted traffic; overflow or worker failure stops the runtime instead
+  of dropping events.
+- Extended the local monitor with only the processing latency and current decision. The decision is
+  fixed at `HOLD` because no reviewed real-time model is composed, and every private/order/live
+  capability remains false.
+- Replayed 10,000 retained events inside the final container: 5,912.84 events/s, 0.169ms p50,
+  0.285ms p95, 0.332ms p99, 0.750ms max, and zero 5ms budget breaches. These are feature-core
+  measurements, not end-to-end strategy, order, network, or exchange latency.
+- Confirmed the final restarted live public collector periodically committed 436 new rows while
+  receiving continuous traffic, with storage queue depth 0 and overflow count 0.
 
 ## Completed in Phase 10.1
 
@@ -75,24 +94,22 @@
 ## Validation evidence
 
 ```text
-Python: PASS — 3.13.15; no Phase 10 dependency added
+Python: PASS — 3.13.15; no Phase 11.1 dependency added
 ruff: PASS — all checks passed
-format check: PASS — 207 files formatted
-mypy: PASS — 107 source files, no issues
-pytest: PASS — 307 tests, 86.60% branch coverage
-host public smoke: PASS — 30 accepted/committed, 0 parser errors, 0 reconnects, no auth/private/order
-host verified replay: PASS — 30 inputs, dataset ed2124cb...f4ea, output e3cf7e53...4c29
-secret scan: PASS — 307 text files checked
+format check: PASS — 210 files formatted
+mypy: PASS — 108 source files, no issues
+pytest: PASS — 322 tests, 86.83% branch coverage
+secret scan: PASS — 311 text files checked
 dependency audit: PASS — no known vulnerabilities
-Compose config: PASS — base + paper overlays including paper-runtime
-container build: PASS — quantforge:phase10 sha256:9fade54b...0522
-monitor container rebuild: PASS — quantforge-paper-runtime sha256:37e8961e...1e087
-container safety: PASS — paper, live=false, all six gates failed closed, credentials=false
-container public smoke: PASS — 10 accepted/committed, 0 parser errors/reconnects, all safety flags false
-Korean monitor image: PASS — self-contained HTML emitted and refreshed from `paper-runtime-2`
-retained storage restore: PASS — 7,671 rows, 48 files, 1,568,641 bytes recovered before reconnect
-restarted sustained runtime: PASS — healthy public WebSocket; retained totals increased to 8,109 rows,
-  51 files, 1,656,597 bytes; 0 parser errors/reconnects; no auth/private/order/live capability
+Compose config: PASS — base + paper overlays including healthy paper-runtime
+container build: PASS — quantforge-paper-runtime sha256:326bfe81...bae663a
+verified 10,000-event feature replay: PASS — 5,912.84 events/s; p50 0.169ms;
+  p95 0.285ms; p99 0.332ms; max 0.750ms; 0/10,000 over 5ms
+sustained public runtime: PASS — 437 accepted, 436 periodic committed, retained rows 27,493;
+  queue depth 0/65,536; overflows/parser errors/reconnects 0; HOLD; order capability false
+live feature snapshot: PASS — p50 0.331ms; p95 0.509ms; p99 0.582ms; max 0.711ms;
+  0 budget breaches; no approved model/private/order/live capability
+actual/private/test orders: NONE
 schedule registration: NONE
 ```
 
@@ -112,8 +129,9 @@ schedule registration: NONE
   populated. Local schedules require the computer and desktop app.
 - The Windows host lacks `uv` and `make` on PATH, so exact Make targets were not run in this phase;
   their equivalent locked project-venv commands passed. Container builds use the pinned uv image.
-- The public collector is supervised, but sustained coverage has not accumulated and real-time
-  strategy/risk/paper-broker/ledger/performance orchestration is not yet composed.
+- The public collector and incremental feature path are supervised, but sustained coverage has not
+  accumulated and real-time inference/strategy/risk/paper-broker/ledger/performance orchestration is
+  not yet composed.
 - The Korean public-data monitor shows the supervised feed and retained storage only. The
   authenticated dashboard and Grafana remain developer/operations skeletons, and strategy/risk/
   broker/ledger results do not exist yet.
@@ -123,9 +141,10 @@ schedule registration: NONE
 ## Next milestone
 
 Do not enable live trading. Keep the public burn-in and Korean monitor running; measure coverage,
-restarts, parser failures, gaps, disk growth, and retention. The next implementation composes causal
-real-time bars/features with versioned baseline inference, proposal-only strategies, independent paper risk,
-the conservative paper broker, exact ledger, and representative performance/model/data exports.
+restarts, parser failures, gaps, disk growth, and retention. The next implementation composes
+versioned baseline inference with proposal-only strategies, independent paper risk, the conservative
+paper broker, exact ledger, and representative performance/model/data exports on the measured
+causal feature path.
 Extend the monitor into a polished paper-performance GUI only after those contracts produce stable
 data. Production storage/backup/TLS/RBAC/network design and any authenticated dry-run work remain
 separately reviewed.

@@ -148,6 +148,24 @@ The process has no private transport, strategy decision, risk approval, paper or
 state. This separation allows public feed/storage reliability to be measured before real-time
 simulated execution is composed.
 
+Phase 11.1 adds a measured causal feature branch without adding an order branch:
+
+```text
+keyless public WebSocket -> validated immutable event -> bounded storage queue -> async Parquet
+                                      |
+                                      v
+                           incremental feature state
+                                      |
+                                      v
+                     HOLD (no approved real-time model)
+```
+
+Orderbook and trade state are required and freshness-gated; ticker data is optional enrichment.
+The hot path calculates only rolling state and a feature frame. Manifest-backed storage runs outside
+that path in bounded batches, and queue overflow stops the supervisor instead of silently losing raw
+events. The processing histogram covers event validation and feature calculation only, not future
+model, strategy, risk, broker, ledger, network, or exchange latency.
+
 ## Deployment target
 
 Initial deployment is one Linux host with Docker Compose: API, supervised public paper burn-in,

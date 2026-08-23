@@ -8,9 +8,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 ## Current state
 
 - Date: 2026-08-24 KST
-- Completed phases: 0–10
-- Current checkpoint: Korean public-data monitor added to supervised public paper burn-in;
-  sustained evidence and real-time paper orchestration next
+- Completed phases: 0–10; Phase 11.1 checkpoint complete
+- Current checkpoint: measured incremental real-time feature path and asynchronous raw persistence;
+  reviewed inference and paper strategy/risk/execution composition next
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
@@ -32,7 +32,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 9: `a2c0542 feat: 읽기 전용 실거래 준비도 검증 구축`
 - Phase 10: `34ac186 feat: 공개 페이퍼 감독 런타임 구축`
 
-## Implemented through Phase 10.1
+## Implemented through Phase 11.1
 
 - Safety-first Python modular monolith, six closed live gates, Decimal domain/accounting boundary,
   keyless Upbit public transport, versioned immutable raw lineage, deterministic replay/bars/features,
@@ -58,27 +58,30 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - A self-contained Korean local monitor refreshes from atomic exports every five seconds and shows
   public market/collector health plus manifest-backed retained rows, files, and bytes. It needs no
   server, token, account, or control path and excludes raw payloads and internal identifiers.
-- ADR-001 through ADR-015 record consequential design choices. README remains intentionally minimal.
+- A causal incremental real-time feature path calculates book/trade/ticker state and rolling
+  microstructure features while measuring validation/feature latency. Raw persistence runs in a
+  bounded asynchronous queue and any overflow fails the supervisor instead of dropping data.
+- The decision remains `HOLD` with no approved real-time model, strategy order, private network,
+  account, or live capability. ADR-001 through ADR-016 record consequential design choices. README
+  remains intentionally minimal.
 
 ## Latest validation
 
 ```text
-Python 3.13.15; no Phase 10 dependency added
-ruff + format: PASS (207 files)
-mypy: PASS (107 source files)
-pytest: PASS (307 tests, 86.60% branch coverage)
-Secret scan: PASS (307 text files)
+Python 3.13.15; no Phase 11.1 dependency added
+ruff + format: PASS (210 files)
+mypy: PASS (108 source files)
+pytest: PASS (322 tests, 86.83% branch coverage)
+Secret scan: PASS (311 text files)
 pip-audit: PASS (no known vulnerabilities)
-Compose config: PASS, including isolated paper-runtime
-Host public smoke: 30 accepted/committed, no parser error/reconnect/auth/private/order path
-Host offline replay: 30 verified inputs, stable dataset/output hashes
-Phase 10 image: PASS (quantforge:phase10, sha256:9fade54b...0522)
-Monitor image: PASS (quantforge-paper-runtime, sha256:37e8961e...1e087)
-Container safety: paper, live=false, credentials=false, all six gates closed
-Container public smoke: 10 accepted/committed; every auth/private/order/live flag false
-Korean monitor: PASS; atomic self-contained HTML, five-second reload, no server/token/control path
-Retained restart: 7,671 rows/48 files/1,568,641 bytes recovered; then increased to 8,109 rows/
-51 files/1,656,597 bytes with healthy public WebSocket and no parser error/reconnect
+Compose config: PASS; paper-runtime healthy
+Final image: PASS (quantforge-paper-runtime, sha256:326bfe81...bae663a)
+Verified 10,000-event feature replay: 5,912.84 events/s; p50 0.169ms; p95 0.285ms;
+p99 0.332ms; max 0.750ms; zero 5ms budget breaches
+Sustained runtime: 437 accepted, 436 periodic committed, retained rows 27,493;
+queue 0/65,536, overflows/parser errors/reconnects zero
+Live feature snapshot: p50 0.331ms; p95 0.509ms; p99 0.582ms; max 0.711ms;
+decision HOLD and every private/order/live capability false
 Actual/private/test orders: none
 Scheduled tasks: not registered
 ```
@@ -113,8 +116,9 @@ Scheduled tasks: not registered
 
 1. Keep paper mode. Run and observe the supervised public burn-in; measure coverage, gaps, parser
    failures, reconnects, restarts, disk growth, and retention without treating uptime as readiness.
-2. Compose causal real-time bars/features, baseline inference, proposal-only routing, independent
-   paper risk, conservative broker, exact ledger, and representative performance/model/data exports.
+2. Compose versioned baseline inference, proposal-only routing, independent paper risk,
+   conservative broker, exact ledger, and representative performance/model/data exports on the
+   measured causal feature path.
 3. Extend the Korean monitor with strategy, risk, simulated order/fill, portfolio, and performance
    views only after those runtime export contracts are stable.
 4. Design production PostgreSQL persistence, encrypted off-host backup/restore with measured RPO/RTO,

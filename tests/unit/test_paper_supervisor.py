@@ -20,6 +20,7 @@ from quantforge.runtime.paper_supervisor import (
     read_paper_runtime_snapshot,
     validate_paper_runtime_settings,
 )
+from quantforge.runtime.realtime_pipeline import read_realtime_pipeline_snapshot
 from quantforge.storage import read_raw_events
 
 
@@ -168,6 +169,13 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     assert 'http-equiv="refresh" content="5"' in monitor
     assert "raw_output" not in monitor
     assert "policy_hash" not in monitor
+    assert "밀리초 처리" in monitor
+    assert "처리 지연 p99" in monitor
+    assert "현재 판단" in monitor
+    realtime = read_realtime_pipeline_snapshot(tmp_path / "runtime/ops/realtime-pipeline.json")
+    assert realtime.processed_events == 2
+    assert realtime.decision_state == "HOLD"
+    assert realtime.order_submission_available is False
 
     serialized = json.loads((tmp_path / "runtime/ops/paper-runtime.json").read_text())
     forbidden = {"authorization", "access_key", "secret_key", "token", "password"}
@@ -223,6 +231,36 @@ async def test_failure_is_persisted_and_propagated(tmp_path: Path) -> None:
     assert snapshot.order_submission_available is False
 
 
+@pytest.mark.asyncio
+async def test_bounded_storage_queue_overflow_fails_without_silent_loss(tmp_path: Path) -> None:
+    events = tuple(
+        make_trade_event(
+            sequence=sequence,
+            exchange_offset_ms=sequence * 10,
+            received_offset_ms=sequence * 10 + 1,
+        )
+        for sequence in range(1, 5)
+    )
+    supervisor = _supervisor(
+        tmp_path,
+        _factory(events=events),
+        policy=PaperRuntimePolicy(
+            max_messages=4,
+            storage_queue_capacity=1,
+            storage_batch_size=512,
+        ),
+    )
+
+    with pytest.raises(PaperRuntimeBlocked, match="queue overflowed"):
+        await supervisor.run()
+
+    snapshot = read_paper_runtime_snapshot(tmp_path / "runtime/ops/paper-runtime.json")
+    assert snapshot.state is PaperRuntimeState.FAILED
+    assert snapshot.storage_queue_overflows == 1
+    assert snapshot.accepted_messages < len(events)
+    assert snapshot.retained_rows == snapshot.accepted_messages
+
+
 @pytest.mark.parametrize(
     "settings",
     [
@@ -246,6 +284,10 @@ def test_policy_rejects_unbounded_values() -> None:
         PaperRuntimePolicy(duration_seconds=0)
     with pytest.raises(ValueError):
         PaperRuntimePolicy(max_messages=0)
+    with pytest.raises(ValueError):
+        PaperRuntimePolicy(storage_queue_capacity=0)
+    with pytest.raises(ValueError):
+        PaperRuntimePolicy(storage_batch_size=0)
 
 
 def test_version_one_runtime_snapshot_remains_read_compatible() -> None:
@@ -276,3 +318,6 @@ def test_version_one_runtime_snapshot_remains_read_compatible() -> None:
     assert parsed.retained_files == 0
     assert parsed.retained_rows == 0
     assert parsed.retained_bytes == 0
+    assert parsed.storage_queue_depth == 0
+    assert parsed.storage_queue_capacity == 0
+    assert parsed.storage_queue_overflows == 0

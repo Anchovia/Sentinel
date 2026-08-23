@@ -6,6 +6,7 @@ import shutil
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from time import perf_counter
 from typing import Annotated, cast
 
 import typer
@@ -35,7 +36,12 @@ from quantforge.readiness import (
     write_readiness_report,
 )
 from quantforge.replay import ReplayEngine, VirtualClock
-from quantforge.runtime import DataQualitySnapshot, LiveSubmissionGuard, write_data_quality_snapshot
+from quantforge.runtime import (
+    DataQualitySnapshot,
+    LiveSubmissionGuard,
+    RealtimePaperPipeline,
+    write_data_quality_snapshot,
+)
 from quantforge.runtime.paper_supervisor import (
     PaperRuntimePolicy,
     PaperRuntimeState,
@@ -287,6 +293,64 @@ def paper_status(
     )
     if require_fresh_seconds is not None and not healthy:
         raise typer.Exit(code=1)
+
+
+@app.command("benchmark-realtime")
+def benchmark_realtime(
+    input_root: Annotated[
+        Path, typer.Option(help="Checksummed raw Parquet root to replay without network access")
+    ] = DEFAULT_PAPER_RAW_OUTPUT,
+    max_events: Annotated[int, typer.Option(min=1)] = 10_000,
+    processing_budget_ms: Annotated[float, typer.Option(min=0.001)] = 5.0,
+) -> None:
+    """Benchmark the HOLD-only incremental path over verified retained public events."""
+
+    events = sorted(
+        read_raw_events(input_root),
+        key=lambda event: (
+            event.received_at_utc,
+            str(event.connection_id),
+            event.local_sequence,
+            str(event.event_id),
+        ),
+    )
+    if not events:
+        raise typer.BadParameter("no verified raw events were found", param_hint="--input-root")
+    selected = events[:max_events]
+    markets = tuple(sorted({event.market for event in selected}))
+    pipeline = RealtimePaperPipeline(
+        markets,
+        processing_budget_ms=processing_budget_ms,
+    )
+    started = perf_counter()
+    for event in selected:
+        pipeline.process(event)
+    elapsed_seconds = max(perf_counter() - started, 1e-12)
+    snapshot = pipeline.snapshot(generated_at_utc=datetime.now(UTC))
+    typer.echo(
+        json.dumps(
+            {
+                "processed_events": snapshot.processed_events,
+                "feature_frames": snapshot.feature_frames,
+                "inference_ready_frames": snapshot.inference_ready_frames,
+                "processing_latency_p50_ms": snapshot.processing_latency_p50_ms,
+                "processing_latency_p95_ms": snapshot.processing_latency_p95_ms,
+                "processing_latency_p99_ms": snapshot.processing_latency_p99_ms,
+                "processing_latency_max_ms": snapshot.processing_latency_max_ms,
+                "processing_budget_ms": snapshot.processing_budget_ms,
+                "processing_budget_breaches": snapshot.processing_budget_breaches,
+                "replay_events_per_second": len(selected) / elapsed_seconds,
+                "decision_state": snapshot.decision_state,
+                "decision_reason": snapshot.decision_reason,
+                "approved_model_available": snapshot.approved_model_available,
+                "strategy_order_capability": snapshot.strategy_order_capability,
+                "private_network_used": snapshot.private_network_used,
+                "order_submission_available": snapshot.order_submission_available,
+                "live_submission_allowed": snapshot.live_submission_allowed,
+            },
+            sort_keys=True,
+        )
+    )
 
 
 @app.command("replay-raw")

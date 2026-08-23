@@ -94,6 +94,16 @@ All notable changes are recorded here. The project follows semantic versioning o
 - A self-contained Korean public-data monitor that refreshes every five seconds without a web
   server, token, account access, or order control, plus manifest-backed retained row/file/byte
   totals that survive supervised collector restarts.
+- A causal incremental real-time feature pipeline for orderbook microprice/imbalance/depth/flow,
+  rolling 1s/5s/15s trade flow/returns/volatility, optional ticker enrichment, freshness gates, and
+  per-event p50/p95/p99 processing evidence.
+- A bounded asynchronous storage queue and batched worker that keep Parquet persistence off the
+  feature hot path, periodically commit under continuous traffic, and fail the supervisor on queue
+  overflow rather than silently dropping an event.
+- A verified `benchmark-realtime` command, `paper-runtime-3` queue-health fields, an atomic
+  `realtime-pipeline-1` HOLD-only snapshot, and a minimal millisecond-processing panel in the local
+  Korean monitor. No approved model, strategy order, private network, account, or live capability
+  was added.
 
 ### Security
 

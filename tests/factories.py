@@ -103,6 +103,61 @@ def make_orderbook_event(
     return event.model_copy(update={"event_id": UUID(int=sequence)})
 
 
+def make_ticker_event(
+    *,
+    sequence: int,
+    received_offset_ms: int,
+    price: int = 100,
+    connection: int = 1,
+    market: str = "KRW-BTC",
+) -> EventEnvelope:
+    event_time = BASE_TIME + timedelta(milliseconds=received_offset_ms)
+    payload = {
+        "type": "ticker",
+        "code": market,
+        "opening_price": price - 5,
+        "high_price": price + 5,
+        "low_price": price - 10,
+        "trade_price": price,
+        "prev_closing_price": price - 1,
+        "change": "RISE",
+        "change_price": 1,
+        "signed_change_price": 1,
+        "change_rate": "0.01",
+        "signed_change_rate": "0.01",
+        "trade_volume": "0.1",
+        "acc_trade_volume": "100",
+        "acc_trade_volume_24h": "200",
+        "acc_trade_price": "1000000",
+        "acc_trade_price_24h": "2000000",
+        "trade_date": "20260101",
+        "trade_time": "000000",
+        "trade_timestamp": utc_ms(event_time),
+        "ask_bid": "BID",
+        "acc_ask_volume": "40",
+        "acc_bid_volume": "60",
+        "highest_52_week_price": price + 50,
+        "highest_52_week_date": "2025-12-01",
+        "lowest_52_week_price": max(1, price - 50),
+        "lowest_52_week_date": "2025-01-01",
+        "market_state": "ACTIVE",
+        "delisting_date": None,
+        "market_warning": "NONE",
+        "timestamp": utc_ms(event_time),
+        "stream_type": "REALTIME",
+    }
+    raw = orjson.dumps(payload)
+    event = map_public_message(
+        raw,
+        received_at_utc=event_time,
+        received_monotonic_ns=sequence,
+        connection_id=UUID(int=connection),
+        subscription_id="test-subscription",
+        local_sequence=sequence,
+    )
+    return event.model_copy(update={"event_id": UUID(int=sequence)})
+
+
 def make_trade_bar(
     *,
     index: int,

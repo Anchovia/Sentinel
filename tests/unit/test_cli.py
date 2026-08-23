@@ -5,7 +5,7 @@ from uuid import UUID
 
 from typer.testing import CliRunner
 
-from factories import make_trade_event
+from factories import make_orderbook_event, make_ticker_event, make_trade_event
 from quantforge.cli import app
 from quantforge.config import get_settings
 from quantforge.operations import read_dashboard_snapshot
@@ -66,6 +66,43 @@ def test_replay_raw_verifies_storage_and_writes_runtime_snapshot(tmp_path: Path)
 
 def test_replay_raw_rejects_empty_input(tmp_path: Path) -> None:
     result = runner.invoke(app, ["replay-raw", "--input-root", str(tmp_path)])
+    assert result.exit_code != 0
+    assert "no verified raw events" in result.output
+
+
+def test_realtime_benchmark_is_verified_hold_only(tmp_path: Path) -> None:
+    writer = ParquetRawEventWriter(tmp_path, max_rows=1)
+    events = (
+        make_ticker_event(sequence=1, received_offset_ms=100),
+        make_orderbook_event(sequence=2, received_offset_ms=110),
+        make_trade_event(sequence=3, exchange_offset_ms=115, received_offset_ms=120),
+        make_trade_event(sequence=4, exchange_offset_ms=125, received_offset_ms=130),
+    )
+    for event in reversed(events):
+        writer.append(event)
+
+    result = runner.invoke(
+        app,
+        ["benchmark-realtime", "--input-root", str(tmp_path), "--max-events", "4"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["processed_events"] == 4
+    assert payload["inference_ready_frames"] == 1
+    assert payload["processing_latency_p99_ms"] >= 0
+    assert payload["replay_events_per_second"] > 0
+    assert payload["decision_state"] == "HOLD"
+    assert payload["approved_model_available"] is False
+    assert payload["strategy_order_capability"] is False
+    assert payload["private_network_used"] is False
+    assert payload["order_submission_available"] is False
+    assert payload["live_submission_allowed"] is False
+
+
+def test_realtime_benchmark_rejects_empty_input(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["benchmark-realtime", "--input-root", str(tmp_path)])
+
     assert result.exit_code != 0
     assert "no verified raw events" in result.output
 
