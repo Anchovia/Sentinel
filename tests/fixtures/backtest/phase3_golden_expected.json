@@ -1,0 +1,16 @@
+{
+  "conservative_filled_quantity": "0.5",
+  "conservative_ledger_hash": "9f4571473d44167fd6e9fc1a6928692a574447a6fda9fad8b5a76c61fa854712",
+  "conservative_net_pnl": "-0.540407575",
+  "conservative_output_hash": "1777433c79ce7e258db826e0846724af9b66a2b72d5dd4a639f60f4e9a78dda6",
+  "conservative_replay_output_hash": "17fd4c278ba7b3c91f7ce7adcf06057db0422819ba4c71b67875d5cf1fe47d01",
+  "conservative_run_id": "39007ff8953718a0246bed3b6f8f576e3749d33a05ac1954670c66eb5956f011",
+  "dataset_hash": "fcb8406262e154fb5f3ab3ccfd8c43391fd2b1074c097df457c192580861c6fd",
+  "naive_filled_quantity": "5",
+  "naive_ledger_hash": "1568500dae1cfcb58f039bf36ec55cc1a09ad511fc0286f566eca3cdb09619d5",
+  "naive_net_pnl": "-0.2500",
+  "naive_output_hash": "f91b1326c1e25e3444cb4d4d98b21e26440131b3a00134e293e18c25ad0ac125",
+  "naive_replay_output_hash": "7f608e32198cbc4a1311d44028b94e0b7337804764279ffff2b3ac40ce23c25e",
+  "naive_run_id": "12245b5adc2351709acb38bddee692342ca719f78400ee3160ad239eeff6b55f",
+  "replay_config_hash": "51dae65564b3baa443b17a4c2dec6ebf20eb1ac165ed95a516f0992e83542a9f"
+}

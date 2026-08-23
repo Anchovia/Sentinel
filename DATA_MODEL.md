@@ -62,6 +62,43 @@ Feature values may use binary floating point as analytical model inputs; money, 
 accounting, and risk limits remain Decimal. Every feature calculator filters by availability and
 fails on future inputs.
 
+## Paper execution
+
+```text
+PaperOrder:
+order_id, intent_id, decision_id, market, side, order_type, time_in_force
+limit_price, original_quantity, remaining_quantity, reference_mid
+submitted_at, arrival_at, status, policy_hash, cancel timestamps, reject_reason
+
+PaperFill:
+fill_id, order_id, sequence, market, side, quantity, price, notional, fee, fee_rate
+liquidity_role, filled_at, source_event_id, reference_mid
+spread_cost, slippage_cost, adverse_selection_cost, model
+```
+
+Paper order and fill IDs are derived from replay lineage. `conservative_l2` is the default;
+`naive` is comparison-only and `calibrated_l2` requires a calibration identifier.
+
+## Portfolio ledger
+
+Each immutable ledger record carries a sequence, deterministic record ID, event kind, time,
+order/fill references, amount/quantity, post-event balances and locks, realized gross PnL,
+cumulative fees, sorted details, previous hash, and record hash. FIFO lots retain source fill,
+opening time/price, and original/remaining quantity.
+
+Valuation snapshots reconcile all of the following exactly:
+
+```text
+available_cash = cash_balance - locked_cash
+market_value = position_quantity * mark_price
+gross_pnl = realized_pnl + unrealized_pnl
+net_pnl = gross_pnl - fees = equity - initial_cash
+equity = cash_balance + market_value
+```
+
+Spread, slippage, and adverse-selection fields are execution-cost attribution. Costs embedded in the
+fill price are not subtracted a second time.
+
 ## Transactional entities
 
 Minimum PostgreSQL entities:

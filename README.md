@@ -12,10 +12,11 @@ The project is safety-first:
 
 ## Current status
 
-Phase 2 (replay, bars, and causal baseline features) is complete. QuantForge can collect keyless
-Upbit ticker, trade, and orderbook streams into checksummed ZSTD Parquet partitions, verify and
-deterministically replay them, build explicit-coverage 1s/5s/15s/1m bars, and compute versioned L2,
-trade-flow, and volatility features. No private API or real orders are implemented or executed.
+Phase 3 (event-driven backtesting and conservative paper execution) is complete. QuantForge can
+collect and deterministically replay keyless public data, build causal bars/features, model naive or
+conservative L2 fills, and reconcile every simulated fill through a Decimal FIFO hash-chain ledger.
+Backtest reports retain dataset/configuration/code/seed lineage and expose how midpoint full-fill
+assumptions overstate fill quantity or PnL. No private API or real orders are implemented or executed.
 
 See [SPEC.md](SPEC.md), [PLAN.md](PLAN.md), [PROGRESS.md](PROGRESS.md), and [RISK_POLICY.md](RISK_POLICY.md) before changing behavior.
 

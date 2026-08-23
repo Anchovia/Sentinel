@@ -59,6 +59,49 @@ def make_trade_event(
     return event.model_copy(update={"event_id": UUID(int=sequence)})
 
 
+def make_orderbook_event(
+    *,
+    sequence: int,
+    received_offset_ms: int,
+    asks: tuple[tuple[int | str, int | str], ...] = ((101, 1), (102, 2)),
+    bids: tuple[tuple[int | str, int | str], ...] = ((99, 1), (98, 2)),
+    connection: int = 1,
+    market: str = "KRW-BTC",
+) -> EventEnvelope:
+    if len(asks) != len(bids):
+        raise ValueError("synthetic Upbit orderbook sides must have equal lengths")
+    event_time = BASE_TIME + timedelta(milliseconds=received_offset_ms)
+    units = [
+        {
+            "ask_price": ask_price,
+            "bid_price": bid_price,
+            "ask_size": ask_size,
+            "bid_size": bid_size,
+        }
+        for (ask_price, ask_size), (bid_price, bid_size) in zip(asks, bids, strict=True)
+    ]
+    payload = {
+        "type": "orderbook",
+        "code": market,
+        "timestamp": utc_ms(event_time),
+        "total_ask_size": str(sum(Decimal(str(size)) for _, size in asks)),
+        "total_bid_size": str(sum(Decimal(str(size)) for _, size in bids)),
+        "orderbook_units": units,
+        "level": 0,
+        "stream_type": "REALTIME",
+    }
+    raw = orjson.dumps(payload)
+    event = map_public_message(
+        raw,
+        received_at_utc=event_time,
+        received_monotonic_ns=sequence,
+        connection_id=UUID(int=connection),
+        subscription_id="test-subscription",
+        local_sequence=sequence,
+    )
+    return event.model_copy(update={"event_id": UUID(int=sequence)})
+
+
 def make_trade_bar(
     *,
     index: int,

@@ -63,6 +63,11 @@ Control-plane consumers receive redacted, read-oriented snapshots. They cannot r
 - Fail closed on stale data, clock skew, schema errors, unknown orders, balance mismatch, overdue reconciliation, or risk-health failure.
 - Same replay input hash, configuration, code commit, artifacts, and random seed produce identical decisions and accounting.
 
+The Phase 3 paper path is event-driven: replay advances the virtual clock, public market data updates
+the paper broker, matured orders generate simulated fills, and the independent portfolio ledger
+recomputes balances and PnL. Strategies emit intents only; a separate risk evaluator must approve an
+amount before paper submission. Data gaps and stale books fail closed.
+
 ## Deployment target
 
 Initial deployment is one Linux host with Docker Compose: API/runtime, PostgreSQL, Prometheus, and Grafana. Market data and trading processes will gain separate service entry points in later phases. Redis/NATS, MLflow, MinIO, or Rust require measured justification and an ADR.

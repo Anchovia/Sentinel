@@ -7,3 +7,16 @@ execution:
   broker: paper
   fill_model: conservative_l2
   real_order_network_access: false
+  # Simulation assumptions only; refresh actual capabilities before private execution work.
+  maker_fee_rate: "0.0005"
+  taker_fee_rate: "0.0005"
+  research_allow_zero_fees: false
+  order_latency_ms: 100
+  cancel_latency_ms: 100
+  max_book_age_ms: 2000
+  queue_factor: "0.75"
+  depth_haircut: "0.80"
+  snapshot_decrease_fill_fraction: "0.25"
+  slippage_buffer_bps: "1"
+  adverse_selection_bps: "2"
+  market_reserve_buffer_bps: "100"

@@ -8,4 +8,16 @@ clock:
 determinism:
   require_dataset_hash: true
   require_configuration_hash: true
+  require_code_version: true
   require_random_seed: true
+execution:
+  fill_model: conservative_l2
+  require_nonzero_fees: true
+  fail_on_stale_book: true
+  fail_on_data_gap: true
+accounting:
+  monetary_type: decimal
+  lot_method: fifo
+  forbid_negative_cash: true
+  forbid_short_position: true
+  verify_ledger_hash_chain: true

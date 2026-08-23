@@ -32,13 +32,13 @@ Exit criteria:
 - 1s/5s/15s/1m bars, data-gap semantics, L2/trade/volatility features, feature registry, quality checks, and runtime snapshots.
 - Golden replay and look-ahead/leakage tests.
 
-## Phase 3 — Backtest and Paper Broker (`IN_PROGRESS`)
+## Phase 3 — Backtest and Paper Broker (`COMPLETE`)
 
 - Event-driven backtest and conservative L2 paper execution.
 - Fees, spread, latency, slippage, partial/non-fill, cancellation, adverse selection, ledger, accounting invariants, and reports.
 - Explain and test differences between naive and conservative fills.
 
-## Phase 4 — Baseline Models (`PENDING`)
+## Phase 4 — Baseline Models (`IN_PROGRESS`)
 
 - Dataset and label versioning, trial preregistration, simple regime/alpha/execution baselines, calibration, uncertainty, abstention, and model registry.
 - Time-based OOS validation, cost-adjusted metrics, reproducible artifacts, and untouched final holdout.

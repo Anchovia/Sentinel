@@ -1,5 +1,16 @@
 from quantforge.domain.bars import SupportedInterval, TradeBar, deterministic_bar_id
 from quantforge.domain.events import EventEnvelope, EventType, JSONScalar, JSONValue
+from quantforge.domain.execution import (
+    LiquidityRole,
+    PaperExecutionPolicy,
+    PaperExecutionUpdate,
+    PaperFill,
+    PaperFillModel,
+    PaperOrder,
+    PaperOrderType,
+    TimeInForce,
+    deterministic_execution_id,
+)
 from quantforge.domain.market_data import CoverageWindow, DataGap, DataGapReason
 from quantforge.domain.money import MonetaryDecimal, as_decimal, quantize_down
 from quantforge.domain.orders import OrderIntent, OrderStateMachine, OrderStatus
@@ -13,15 +24,24 @@ __all__ = [
     "EventType",
     "JSONScalar",
     "JSONValue",
+    "LiquidityRole",
     "MonetaryDecimal",
     "OrderIntent",
     "OrderStateMachine",
     "OrderStatus",
+    "PaperExecutionPolicy",
+    "PaperExecutionUpdate",
+    "PaperFill",
+    "PaperFillModel",
+    "PaperOrder",
+    "PaperOrderType",
     "RiskDecision",
     "RiskDecisionType",
     "SupportedInterval",
+    "TimeInForce",
     "TradeBar",
     "as_decimal",
     "deterministic_bar_id",
+    "deterministic_execution_id",
     "quantize_down",
 ]

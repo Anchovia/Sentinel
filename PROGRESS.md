@@ -2,51 +2,52 @@
 
 ## Current checkpoint
 
-- Phase: 2 — Replay, Bars, and Features
+- Phase: 3 — Backtest and Paper Broker
 - Status: `COMPLETE`
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; no live adapter or real order endpoint implemented
 - Actual orders executed: no
 - Secrets accessed: no
-- Data schema version: raw-event-envelope-1 / trade-bar-1 / feature-snapshot-1
+- Data schema version: raw-event-envelope-1 / trade-bar-1 / feature-snapshot-1 / paper-ledger-1
 - Model schema version: not created
 
-## Completed in Phase 2
+## Completed in Phase 3
 
-- Added a verifying Parquet reader that checks manifest path, SHA-256, schema, row count, raw-payload
-  digest, event contract, and stored latency before replay.
-- Implemented an availability-ordered virtual clock and replay engine with deterministic tie-breaks,
-  duplicate suppression, out-of-order annotation, reconnect counters, dataset/config hashes, and a
-  resumable output hash chain.
-- Added checksummed atomic replay checkpoints and a frozen golden sequence covering a duplicate,
-  out-of-order event, connection change, and explicit data gap.
-- Implemented positive collection coverage and explicit data-gap contracts plus deterministic
-  Decimal 1s/5s/15s/1m bars. Healthy no-trade bars use zero volume with null prices; gaps use null
-  volume/count and cannot masquerade as no-trade.
-- Implemented causal L2, trade-flow, and volatility baselines, a stable versioned feature registry,
-  future-availability guards, and atomic Secret-free data-quality snapshots.
-- Replayed the real Phase 1 twelve-event sample twice from Parquet with identical hashes and no
-  network, authentication, or order capability.
+- Added immutable paper execution policy, order, fill, update, fee, latency, time-in-force, and
+  deterministic identifier contracts. Zero fees require an explicit research-only override;
+  calibrated L2 requires calibration lineage.
+- Implemented a public-data-only paper broker for market, best, limit, post-only, IOC, and FOK
+  behavior. The default conservative model applies order/cancel latency, L2 depth haircuts, spread,
+  slippage, adverse selection, partial/non-fill, passive queue uncertainty, and price priority.
+- Added fail-closed stale-book and data-gap behavior. A gap cancels resting paper orders and no new
+  order is accepted until a fresh book arrives. Trades during cancel latency may still fill.
+- Added an independent append-only Decimal ledger with cash/position locks, duplicate-fill guards,
+  FIFO lots, exact balance/PnL invariants, execution-cost attribution, and a verified hash chain.
+- Added event-driven backtest orchestration over the Phase 2 virtual clock. Strategies only emit
+  intents, risk separately approves amounts, and every run retains dataset/configuration/code/seed
+  lineage.
+- Added atomic JSON reports, naive-versus-conservative comparison, and frozen golden run, replay,
+  ledger, PnL, and fill hashes.
 
 ## Validation evidence
 
 ```text
 uv sync: PASS — Python 3.13.15, 78 locked packages
 ruff: PASS — all checks passed
-format check: PASS — 100 files formatted
-mypy: PASS — 49 source files, no issues
-pytest: PASS — 159 tests, 94.61% branch coverage
-secret scan: PASS — 166 text files checked
+format check: PASS — 110 files formatted
+mypy: PASS — 56 source files, no issues
+pytest: PASS — 182 tests, 91.08% branch coverage
+secret scan: PASS — 178 text files checked
 dependency audit: PASS — no known vulnerabilities
 compose validation: PASS — paper override renders successfully
-public WebSocket smoke: PASS — keyless, 12 accepted, 3 event types, 3 Parquet files
-Parquet verification: PASS — 12 rows, all 3 SHA-256 manifests valid
-golden replay: PASS — fixed dataset/config/output hashes; checkpoint resume equals full replay
-real raw replay: PASS — dataset 431b85c9...ecaa, output 6dfc929c...1603 on both runs
-runtime snapshot: PASS — runtime_exports/data_quality/latest.json, network/auth/order false
-container build: PASS — quantforge:phase2 image sha256:26752a965be7e2c97c77bb97a0c1f6b0e6cb8fd6ab44b71aeb5c126902e5c5e1
-container safety smoke: PASS — paper, live=false, 6 failed gates
+golden paper comparison: PASS — naive filled 5, conservative filled 0.5
+golden conservative PnL: PASS — net -0.540407575 with non-zero cost attribution
+determinism: PASS — repeated run/replay/ledger/output hashes match exactly
+accounting invariants: PASS — cash, position, FIFO, fees, PnL, equity, locks, hash chain
+network/auth/order safety: PASS — paper broker imports no private transport and sends no request
+container build: PASS — quantforge:phase3 image sha256:a645f0a1...85c0b
+container safety smoke: PASS — paper, live=false, all 6 live gates failed closed
 ```
 
 The keyless smoke artifacts remain under ignored local `data/phase1-smoke/raw`; no exchange Secret
@@ -63,9 +64,15 @@ was read, no private endpoint was called, and no order capability exists.
 - The bounded collector does not persist positive coverage windows automatically. Bar consumers
   must provide reviewed collector-health coverage; absent coverage safely becomes a data gap.
 - Snapshot-derived order-flow imbalance is not individual order flow or queue position.
+- Conservative queue position is an explicit approximation; public L2 depth decreases cannot
+  identify cancellations versus fills. `calibrated_l2` remains unavailable without lineage.
+- The Phase 3 ledger is single-market, long-only KRW spot. Multi-asset accounting and private
+  balance reconciliation are intentionally deferred.
+- Phase 3 fee values are simulation assumptions, not a claim about Upbit's current fee schedule.
 - Remote `origin/main` has not been pushed; external publication requires explicit owner approval.
 
 ## Next milestone
 
-Begin Phase 3 with event-driven backtest lifecycle contracts, a conservative L2 paper broker,
-explicit fees/spread/latency/slippage, partial/non-fill behavior, and an immutable Decimal ledger.
+Begin Phase 4 with versioned dataset/label/trial contracts, preregistered simple baselines,
+time-based out-of-sample evaluation, calibration/uncertainty/abstention, and a model registry. Keep
+the final holdout untouched and require conservative cost-adjusted reporting.

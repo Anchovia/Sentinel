@@ -24,6 +24,16 @@ All notable changes are recorded here. The project follows semantic versioning o
   that never encode missing data as zero volume.
 - Versioned causal orderbook, trade-flow, and volatility feature calculators, stable feature
   registry, leakage guards, and atomic Secret-free data-quality runtime snapshots.
+- Deterministic paper order/fill contracts covering market, best, limit, post-only, IOC, and FOK
+  behavior with explicit non-zero fees and latency assumptions.
+- Conservative L2 execution with depth haircuts, partial/non-fill behavior, passive queue
+  approximation, cancellation latency, stale/gap fail-closed handling, spread, slippage, and
+  adverse-selection attribution; retained a naive midpoint model only for comparison.
+- Event-driven backtest orchestration over the availability-ordered replay clock with strategy/risk
+  separation, stable input/configuration/code/seed lineage, frozen golden hashes, and atomic JSON
+  comparison reports.
+- Append-only Decimal portfolio ledger with reservations, duplicate-fill prevention, FIFO lots,
+  realized/unrealized PnL, exact balance invariants, cost attribution, and a verified hash chain.
 
 ### Security
 
