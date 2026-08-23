@@ -1,0 +1,19 @@
+{
+  "schema_version": "readiness-evidence-1",
+  "evidence_id": "phase9-missing-evidence",
+  "generated_at_utc": "2026-08-23T00:00:00Z",
+  "source_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "paper_history": null,
+  "reconciliation": null,
+  "data_availability": null,
+  "incidents": null,
+  "model_stability": null,
+  "performance": null,
+  "cost_model": null,
+  "order_test": null,
+  "backup_restore": null,
+  "security": null,
+  "operator_runbook": null,
+  "live_locks": null,
+  "release_approval": null
+}

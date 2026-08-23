@@ -134,6 +134,12 @@ def test_paths_reject_traversal_and_protected_risk_files() -> None:
             ("configs/risk.default.yaml",),
             load_write_allowlist(ALLOWLIST),
         )
+    with pytest.raises(AutomationBoundaryError, match="denied"):
+        assert_paths_allowed(
+            AutomationActor.CODEX,
+            ("configs/readiness.default.yaml",),
+            load_write_allowlist(ALLOWLIST),
+        )
 
 
 def test_report_loader_rejects_credential_shaped_text(tmp_path: Path) -> None:

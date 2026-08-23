@@ -69,6 +69,18 @@ and are not executed again automatically.
 
 Initial sizing is conservative and combines hard notional caps with volatility, liquidity, confidence, uncertainty, correlation, and drawdown scaling. Full Kelly is forbidden. Risk limits are governance values, not model hyperparameters.
 
+## Live-readiness review
+
+Phase 9 does not enable live trading. The readiness policy checks paper duration/trades/regimes,
+zero UNKNOWN orders/mismatches, data and model stability, cost-inclusive drawdown/expectancy,
+calibrated costs, order-test, production recovery, security, runbooks, closed live locks, and four
+distinct approval records bound to exact code/model hashes.
+
+`READY_FOR_MANUAL_CANARY_REVIEW` means only that a human may review a separately controlled canary.
+The runtime remains paper, order submission remains false, operator unlock remains absent, and the
+validator changes no setting. Hard/preferred readiness thresholds are governance values that require
+human review and do not guarantee profit or safety.
+
 ## Prohibited behavior
 
 Martingale, loss-multiplier sizing, unlimited averaging down/grid/re-entry, manipulation, self-trading, rate-limit evasion, trading through data/health failures, ignoring uncertainty/costs, or automated risk relaxation are prohibited.

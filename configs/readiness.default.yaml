@@ -1,0 +1,49 @@
+schema_version: readiness-policy-1
+policy_version: conservative-manual-canary-review-1
+
+hard_minimum_paper_days: 30
+preferred_minimum_paper_days: 90
+hard_minimum_paper_trades: 500
+preferred_minimum_paper_trades: 2000
+hard_minimum_regime_count: 3
+preferred_minimum_regime_count: 4
+
+hard_minimum_reconciliation_days: 14
+preferred_minimum_reconciliation_days: 30
+hard_minimum_data_availability_ratio: "0.995"
+preferred_minimum_data_availability_ratio: "0.999"
+maximum_unresolved_high_incidents: 2
+preferred_unresolved_high_incidents: 0
+hard_maximum_high_incidents_per_30_days: "5"
+preferred_maximum_high_incidents_per_30_days: "1"
+maximum_critical_incidents_in_window: 1
+preferred_critical_incidents_in_window: 0
+
+hard_minimum_model_stability_days: 14
+preferred_minimum_model_stability_days: 30
+hard_maximum_calibration_error: "0.10"
+preferred_maximum_calibration_error: "0.05"
+hard_maximum_model_drift_score: "0.25"
+preferred_maximum_model_drift_score: "0.15"
+hard_maximum_drawdown_ratio: "0.15"
+preferred_maximum_drawdown_ratio: "0.10"
+hard_minimum_expectancy_lower_bps: "0"
+preferred_minimum_expectancy_lower_bps: "0.5"
+hard_minimum_cost_observations: 250
+preferred_minimum_cost_observations: 1000
+hard_maximum_cost_error_bps: "10"
+preferred_maximum_cost_error_bps: "5"
+
+maximum_evidence_age_hours: 24
+maximum_order_test_age_days: 7
+maximum_restore_age_days: 30
+maximum_security_audit_age_days: 7
+maximum_runbook_review_age_days: 30
+maximum_data_event_age_seconds: 300
+minimum_reviewed_operators: 2
+
+maximum_canary_markets: 2
+maximum_canary_order_notional_krw: "10000"
+maximum_canary_total_exposure_krw: "50000"
+maximum_canary_duration_minutes: 60
+maximum_future_skew_seconds: 5

@@ -121,6 +121,18 @@ reviewed main revision -> dedicated Codex worktree -> test + draft PR candidate
 contracts. Reports, logs, issues, papers, and trigger evidence remain untrusted data and never become
 commands.
 
+Phase 9 adds a terminal read-only assessment outside both control and execution paths:
+
+```text
+reviewed hashed evidence + versioned readiness policy
+        -> deterministic 13-gate evaluator
+        -> NOT_READY | CONDITIONALLY_READY | READY_FOR_MANUAL_CANARY_REVIEW
+        -> atomic report only; no settings, network, order, approval, or deployment mutation
+```
+
+The evaluator does not instantiate runtime settings or import an exchange/HTTP adapter. Approval
+references and canary limits are analyzed as data; they cannot unlock the six execution gates.
+
 ## Deployment target
 
 Initial deployment is one Linux host with Docker Compose: API/runtime, PostgreSQL, Prometheus, and Grafana. Market data and trading processes will gain separate service entry points in later phases. Redis/NATS, MLflow, MinIO, or Rust require measured justification and an ADR.

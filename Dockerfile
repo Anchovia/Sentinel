@@ -10,6 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 COPY --from=uv /uv /uvx /bin/
 COPY pyproject.toml uv.lock README.md LICENSE ./
+COPY configs ./configs
 COPY src ./src
 RUN uv sync --frozen --no-dev --no-install-project && uv sync --frozen --no-dev
 

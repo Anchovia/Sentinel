@@ -7,6 +7,7 @@ from factories import make_trade_event
 from quantforge.cli import app
 from quantforge.config import get_settings
 from quantforge.operations import read_dashboard_snapshot
+from quantforge.readiness import ReadinessStatus, read_readiness_report
 from quantforge.runtime import DataQualitySnapshot
 from quantforge.storage import ParquetRawEventWriter
 
@@ -121,3 +122,36 @@ def test_validate_automation_trigger_is_operator_reviewed() -> None:
     assert payload["operator_approval_required"] is True
     assert payload["requested_writes_allowed"] is True
     assert payload["order_submission_available"] is False
+
+
+def test_validate_live_readiness_fails_closed_without_evidence(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    root = Path(__file__).resolve().parents[2]
+    monkeypatch.setattr(
+        "quantforge.cli.get_settings",
+        lambda: (_ for _ in ()).throw(AssertionError("readiness must not load runtime settings")),
+    )
+    result = runner.invoke(
+        app,
+        [
+            "validate-live-readiness",
+            "--evidence",
+            str(root / "tests/fixtures/readiness/not-ready.json"),
+            "--policy",
+            str(root / "configs/readiness.default.yaml"),
+            "--output-root",
+            str(tmp_path),
+            "--evaluated-at-utc",
+            "2026-08-23T00:00:00Z",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "NOT_READY"
+    assert payload["human_approval_required"] is True
+    assert payload["activation_performed"] is False
+    assert payload["network_used"] is False
+    assert payload["order_submission_available"] is False
+    assert payload["runtime_settings_changed"] is False
+    report = read_readiness_report(tmp_path / "readiness/latest.json")
+    assert report.status is ReadinessStatus.NOT_READY

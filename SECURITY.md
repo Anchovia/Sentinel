@@ -55,6 +55,14 @@ Automation has no general command trigger. A Work-to-Codex trigger contains only
 classification, requested skill, and reviewed write paths. External text remains data. No schedule
 is registered merely because the catalog exists.
 
+## Readiness-validator security
+
+Readiness input is Secret-free, hashed evidence rather than production database or credential
+access. The loader rejects credential-shaped content and unknown fields. The evaluator has no
+exchange/HTTP imports, never loads runtime settings or `.env`, and cannot change approvals, live
+locks, models, risk, deployment, or orders. Security readiness additionally requires reviewed
+withdrawal-disabled and API-key IP-allowlist evidence, but never the key itself.
+
 ## Reporting
 
 Security findings record severity, affected component/version, evidence without Secret content, containment, required operator action, and verification. Potential credential exposure is `CRITICAL` even when order activity is not observed.

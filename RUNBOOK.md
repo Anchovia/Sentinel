@@ -202,3 +202,20 @@ its report. Reproduce before editing; add regression evidence; run all checks; s
 failure. A passing result may create a draft non-main candidate, but never merge, deploy, promote,
 change risk/live state, or call an order path. Review or archive the task before deliberately
 cleaning its worktree.
+
+## Live-readiness validation
+
+Use only a reviewed, Secret-free evidence bundle. This command reads evidence/policy and writes an
+atomic report; it does not load runtime settings, connect to Upbit, or change live state:
+
+```text
+uv run quantforge validate-live-readiness \
+  --evidence <reviewed-evidence.json> \
+  --policy configs/readiness.default.yaml \
+  --output-root runtime_exports
+```
+
+Review every failed/conditional gate and both input hashes. `READY_FOR_MANUAL_CANARY_REVIEW` is not an
+activation instruction. Keep paper mode, order submission false, and operator unlock absent until a
+separate human-governed implementation and approval process exists. See
+`docs/readiness/LIVE_READINESS.md`.

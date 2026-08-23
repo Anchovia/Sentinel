@@ -219,3 +219,17 @@ reports require a linked-worktree proof.
 origin report, severity/class, requested Codex skill, reproducibility level, evidence hashes, and
 reviewed requested write paths. Both contracts reject unknown fields, non-UTC timestamps, path
 traversal, and credential-shaped content before use.
+
+## Live-readiness contracts
+
+`readiness-evidence-1` binds the reviewed code revision to 13 optional evidence components. Every
+component has an observation time and source SHA-256. Missing components remain explicit `null` and
+fail rather than inheriting a default. Paper/performance trade counts and release code/model hashes
+must agree; independent approval IDs must be distinct.
+
+`readiness-policy-1` versions hard and preferred evidence thresholds plus maximum small-canary
+notional/exposure/duration. Monetary limits and cost/expectancy values use Decimal.
+
+`readiness-report-1` stores the exact evidence/policy hashes, UTC evaluation time, one result per
+gate, and the derived overall status. Its safety fields can only be false, and
+`human_approval_required=true` / `activation_performed=false` are immutable.

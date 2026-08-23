@@ -14,12 +14,15 @@
 
 ## Research and readiness
 
-- Baselines use synthetic/fixture-scale evidence. No strategy/model profitability, capacity,
-  production latency, promotion, canary eligibility, or live readiness is claimed.
+- Baselines and positive readiness fixtures use synthetic/fixture-scale evidence. The implemented
+  validator truthfully returns `NOT_READY`; no strategy/model profitability, capacity, production
+  latency, promotion, canary eligibility, or live readiness is claimed.
 - Continuous coverage records, longer/event/volume/imbalance bars, full production feature/model
   families, sustained paper history, and representative performance/model exports are incomplete.
 - Final-holdout controls and experiment retention exist, but they do not remove selection bias,
   multiple testing, regime change, or limited sample risk.
+- Readiness policy thresholds are configurable governance defaults, not guarantees. The validator
+  does not collect evidence or provide any activation/order mechanism.
 
 ## Operations and recovery
 

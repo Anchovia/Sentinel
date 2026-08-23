@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
         "configs/backtest.yaml",
         "configs/live.example.yaml",
         "configs/risk.default.yaml",
+        "configs/readiness.default.yaml",
         "configs/markets.default.yaml",
         "configs/logging.yaml",
         "docker-compose.yml",
@@ -51,6 +52,20 @@ def test_foundation_risk_limits_block_live_trading() -> None:
     numeric_limits = [value for value in risk["limits"].values() if isinstance(value, int | float)]
     assert numeric_limits
     assert all(value == 0 for value in numeric_limits)
+
+
+def test_readiness_policy_has_no_activation_setting() -> None:
+    policy = yaml.safe_load((ROOT / "configs/readiness.default.yaml").read_text(encoding="utf-8"))
+
+    assert policy["schema_version"] == "readiness-policy-1"
+    forbidden = {"trading_mode", "allow_order_submission", "operator_unlock_present"}
+    assert forbidden.isdisjoint(policy)
+
+
+def test_container_includes_reviewed_readiness_policy() -> None:
+    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+
+    assert "COPY configs ./configs" in dockerfile
 
 
 def test_env_example_has_no_nonempty_exchange_credentials() -> None:

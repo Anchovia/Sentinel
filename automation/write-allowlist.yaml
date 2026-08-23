@@ -61,6 +61,7 @@ codex:
     - RISK_POLICY.md
     - configs/risk*.yaml
     - configs/live*.yaml
+    - configs/readiness*.yaml
     - runtime_exports/releases/**
     - artifacts/**
     - data/**

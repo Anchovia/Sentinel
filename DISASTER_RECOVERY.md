@@ -62,3 +62,7 @@ The Phase 8 monthly recovery prompt remains unregistered until a manual isolated
 `automation-report-1` manifest. A scheduled run must use a dedicated background worktree and a new
 or empty temporary target. Missing production-grade backup evidence is `BLOCKED`, not permission to
 reuse the local development proof or touch production storage.
+
+The readiness backup gate requires a recent, checksummed, isolated, encrypted, off-host,
+production-grade restore with measured objectives. Therefore the current local unencrypted proof is
+deliberately `NOT_READY` evidence even when its checksum drill passes.

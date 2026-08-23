@@ -26,6 +26,12 @@ from quantforge.operations import (
     create_operations_context,
     write_dashboard_snapshot,
 )
+from quantforge.readiness import (
+    ReadinessEvaluator,
+    load_readiness_evidence,
+    load_readiness_policy,
+    write_readiness_report,
+)
 from quantforge.replay import ReplayEngine, VirtualClock
 from quantforge.runtime import DataQualitySnapshot, LiveSubmissionGuard, write_data_quality_snapshot
 from quantforge.storage import (
@@ -41,6 +47,7 @@ DEFAULT_DATA_QUALITY_OUTPUT = Path("runtime_exports/data_quality")
 DEFAULT_OPERATIONS_OUTPUT = Path("runtime_exports")
 DEFAULT_BACKUP_ROOT = Path("data/backups")
 DEFAULT_AUTOMATION_ALLOWLIST = Path("automation/write-allowlist.yaml")
+DEFAULT_READINESS_POLICY = Path("configs/readiness.default.yaml")
 
 
 @app.callback()
@@ -332,6 +339,54 @@ def validate_automation_trigger(
                 "operator_approval_required": parsed.operator_approval_required,
                 "network_used": False,
                 "order_submission_available": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("validate-live-readiness")
+def validate_live_readiness(
+    evidence: Annotated[Path, typer.Option(help="Secret-free readiness evidence JSON")],
+    policy: Annotated[
+        Path, typer.Option(help="Reviewed readiness threshold policy")
+    ] = DEFAULT_READINESS_POLICY,
+    output_root: Annotated[
+        Path, typer.Option(help="Read-only readiness report export root")
+    ] = DEFAULT_OPERATIONS_OUTPUT,
+    evaluated_at_utc: Annotated[
+        str | None,
+        typer.Option(help="Optional reproducible UTC ISO-8601 evaluation time"),
+    ] = None,
+) -> None:
+    """Classify manual-canary review readiness without activating or ordering anything."""
+
+    evaluation_time = None
+    if evaluated_at_utc is not None:
+        try:
+            evaluation_time = datetime.fromisoformat(evaluated_at_utc.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise typer.BadParameter(
+                "evaluated-at-utc must be an ISO-8601 timestamp", param_hint="--evaluated-at-utc"
+            ) from exc
+    parsed_evidence = load_readiness_evidence(evidence)
+    parsed_policy = load_readiness_policy(policy)
+    report = ReadinessEvaluator().evaluate(
+        parsed_evidence,
+        parsed_policy,
+        evaluated_at_utc=evaluation_time,
+    )
+    destination = write_readiness_report(report, output_root)
+    typer.echo(
+        json.dumps(
+            {
+                "status": report.status,
+                "report": str(destination.resolve()),
+                "human_approval_required": report.human_approval_required,
+                "activation_performed": report.activation_performed,
+                "network_used": report.safety.order_network_used,
+                "order_submission_available": False,
+                "runtime_settings_changed": report.safety.runtime_settings_changed,
             },
             sort_keys=True,
         )

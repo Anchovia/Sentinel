@@ -77,6 +77,15 @@ All notable changes are recorded here. The project follows semantic versioning o
 - Official scheduled-task setup and worktree cleanup guidance with report-only Work, draft-PR-only
   Codex, valid no-op/blocked outcomes, and no automatic merge, deployment, model promotion, risk
   change, live activation, Secret access, or order path.
+- Versioned `readiness-evidence-1`, two-tier `readiness-policy-1`, and immutable
+  `readiness-report-1` contracts covering 13 evidence gates and exact input/policy hashes.
+- A deterministic live-readiness evaluator whose highest output is manual-canary review eligibility;
+  every order/network/Secret/settings/live/risk/model/deployment effect is false-only.
+- Conservative policy defaults for paper duration/trades/regimes, reconciliation, data/incidents,
+  model/drawdown/net expectancy, cost calibration, dry-run order-test, production recovery,
+  security/runbooks, closed live locks, independent approvals, and a small canary plan.
+- Secret-rejecting atomic readiness exports and a non-ordering `validate-live-readiness` CLI that
+  does not load runtime settings or import exchange/HTTP transport.
 
 ### Security
 
