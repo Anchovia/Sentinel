@@ -259,6 +259,21 @@ markets stops before any trial. The final 20 percent remains sealed. Synthetic t
 complete paper round trip but cannot create a runtime approval, enable the paper-order gate, access
 an exchange credential, or become a performance claim.
 
+Phase 11.8 adds an incremental evidence branch in the storage worker, still outside the feature and
+decision hot path:
+
+```text
+active immutable manifests -> verify new/changed/expired Parquet files
+  -> cache file fingerprint + integrity/anomaly/market summary
+  -> reconcile bounded active-manifest aggregate -> atomic quality index
+  -> version-3 Work quality export + compact local monitor totals
+```
+
+The aggregate may report that current data is sufficient to preregister a new experiment, but that
+state has no edge to the experiment runner, model approval, paper-order gate, private transport, or
+live submission. A failed verification aborts the refresh and leaves the prior valid index intact.
+Cross-file duplicate identities and exact exchange completeness remain replay concerns.
+
 ## Deployment target
 
 Initial deployment is one Linux host with Docker Compose: API, supervised public paper burn-in,

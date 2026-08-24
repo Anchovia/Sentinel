@@ -8,9 +8,8 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 ## Current state
 
 - Date: 2026-08-24 KST
-- Completed phases: 0–10; Phase 11.1–11.7 checkpoints complete
-- Current checkpoint: fixed-path bounded Work audit exports and baselines; manually re-run the Work
-  prompts before considering any schedule
+- Completed phases: 0–10; Phase 11.1–11.8 checkpoints complete
+- Current checkpoint: incremental verified raw-data quality and future-research availability index
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
@@ -18,7 +17,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Live network capability: false
 - Actual/private/test orders: none
 - Production Secrets: not requested or accessed
-- Scheduled tasks registered: none
+- Active recurring scheduled tasks: none; one-time unattended Work filesystem test completed
 - Phase 0: `cfc1617 feat: QuantForge 안전 기반 구축`
 - Phase 1: `136295c feat: 업비트 공개 데이터 파이프라인 구축`
 - Phase 2: `41b64d1 feat: 결정적 재생과 인과 특징 구축`
@@ -37,7 +36,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 11.6 preregistration: `4cb419c chore: 단타 전략 실험 사전등록`
 - Phase 11.6 implementation: `0e3040b feat: 단타 전략 연구 기반 구축`
 
-## Implemented through Phase 11.7
+## Implemented through Phase 11.8
 
 - Safety-first Python modular monolith, six closed live gates, Decimal domain/accounting boundary,
   keyless Upbit public transport, versioned immutable raw lineage, deterministic replay/bars/features,
@@ -82,6 +81,13 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Fifteen-minute combined audit baselines retain at most 30 days and 100MiB. Unsupported private,
   incident, performance, and drift evidence remains explicitly unavailable or insufficient rather
   than being converted into a healthy result. The versioned paper registry is present but empty.
+- `raw-data-quality-index-1` verifies active checksums and Parquet contracts, caches immutable
+  manifest evidence, drops retired entries, aggregates market availability, and fails closed while
+  preserving the prior valid index. The runtime and Work export now distinguish verified storage
+  from unsupported public-exchange gap completeness.
+- The research-availability gate reports only whether enough current data exists to preregister a
+  new experiment. It cannot alter the registered fixed cutoff, run a trial, approve a model, or
+  enable paper orders. The current result remains insufficient.
 - The decision remains `HOLD` with no approved real-time model, strategy order, private network,
   account, or live capability.
 - An always-neutral alpha now exercises regime/execution inputs and the proposal/risk/paper/ledger
@@ -92,7 +98,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   blocks regardless of other feature or edge values.
 - A test-only approved fixture proves the complete simulated order/fill/accounting plumbing. It is
   not shipped or promoted. Atomic decision exports and the Korean monitor show review status,
-  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-022 record consequential
+  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-023 record consequential
   choices. README remains intentionally minimal.
 - `realtime-paper-recovery-1` now preserves policy-bound orders, fills, reservations, FIFO lots,
   exact balances, ledger chains, counters, and the event cursor in the durable paper volume. Clean
@@ -120,23 +126,28 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   after interruption. Active totals are always rebuilt from verified manifests.
 - `paper-runtime-5` enforces and reports 30-day retention, 50GiB maximum active raw data, a 20GiB
   free-space fail-closed stop, 15-minute maintenance, compacted/deleted files, reclaimed bytes, and
-  actual filesystem free space. ADR-001 through ADR-022 record consequential choices.
+  actual filesystem free space. ADR-001 through ADR-023 record consequential choices.
 - Compose grants the paper runtime a 60-second stop grace period. The final signal stop persisted a
   clean checkpoint and the next run reported `VERIFIED_CLEAN` before resuming full coverage.
 
 ## Latest validation
 
 ```text
-Python 3.13.15; no Phase 11.7 dependency added
-ruff + format: PASS (227 Python files)
-mypy: PASS (114 source files)
-pytest: PASS (363 tests, 85.94% branch coverage)
-Secret scan: PASS (344 text files)
+Python 3.13.15; no Phase 11.8 dependency added
+ruff + format: PASS (230 Python files)
+mypy: PASS (115 source files)
+pytest: PASS (369 tests, 85.87% branch coverage)
+Secret scan: PASS (364 text files)
 pip-audit: PASS (no known vulnerabilities)
 Compose config: PASS
-Phase 11.7 image: PASS (quantforge-paper-runtime:latest, a087495dc683)
-Work audit exports: work-ops-1 RUNNING; data quality PARTIAL; incidents NOT_CONFIGURED;
-performance/models INSUFFICIENT_SAMPLE; baseline created; authentication/order capability false
+Phase 11.8 image: PASS (quantforge-paper-runtime:latest, 63fe67695ec7)
+Work audit exports: work-ops-1 RUNNING; data quality VERIFIED_STORAGE with 2,000,404 indexed
+rows/140 manifests; incidents NOT_CONFIGURED; performance/models INSUFFICIENT_SAMPLE;
+authentication/order capability false
+Incremental D-drive index: initial 222 files/1,938,743 rows in 31.27 seconds; next refresh reused
+222 and scanned 5 new files in 2.16 seconds; 286 markets observed; 0 currently eligible
+Phase 11.8 restart: paper-runtime-6 healthy RUNNING, public WebSocket connected, recovery
+VERIFIED_CLEAN, parser errors/reconnects zero, model/paper/real-order gates closed
 Synthetic registered entry/exit: deterministic conservative fills, positive net round trip,
 non-zero fees/slippage/adverse selection; neutral baseline orders/fills zero
 D-drive fixed-cutoff inventory: 430,655 detailed events across 123 markets; 0 eligible; BLOCKED,
@@ -157,7 +168,7 @@ VERIFIED_CLEAN; healthy
 Model approval, paper-order gate, proposals, risk approvals, paper orders/fills,
 authentication/private/real/live capability all false or zero
 Actual/private/test orders: none
-Scheduled tasks: not registered
+Scheduled filesystem access: one-time Work read/write PASS; recurring tasks not registered
 ```
 
 ## Important constraints
@@ -169,9 +180,9 @@ Scheduled tasks: not registered
   evidence. Numeric thresholds do not guarantee profitability, safety, capacity, or recovery.
 - The validator reads a prepared bundle; it does not query production systems. Evidence production
   must remain Secret-free, reproducible, and independently reviewed.
-- Work/Codex schedules are not active. Standard files are populated, but representative strategy
-  performance, incident-store integration, and model drift are still unavailable. Repeat the manual
-  trials and prove unattended local-file access before registering any task.
+- Work/Codex recurring schedules are not active. Manual and one-time scheduled local-file access
+  passed, but representative strategy performance, incident-store integration, and model drift are
+  still unavailable. Scheduled execution remains dependent on the computer and desktop app.
 - No authenticated exchange client, credential provider, cancellation/order endpoint, order-capable
   live adapter, production database/recovery, or canary activation path exists.
 - Public L2 fill/queue behavior is approximate. The collector and neutral composition are supervised,
@@ -207,9 +218,8 @@ Scheduled tasks: not registered
 5. Under separate human authorization only, implement and review credential/order-test transport,
    identifier reconciliation, withdrawal-disabled/IP-allowlisted key policy, and multi-operator
    incident/cancel/recovery drills. Do not send a real order.
-6. Re-run all four Work prompts manually against exact local paths. Register only individually
-   passing tasks and only if the current scheduled surface proves unattended local-file access.
-   Continue report-only/dedicated-worktree boundaries and never auto-merge/deploy/promote/change
-   risk/live state.
+6. Re-run the four Work prompts against the new version-3 quality export. Register a recurring task
+   only after its own report is acceptable; keep report-only/dedicated-worktree boundaries and never
+   auto-merge/deploy/promote/change risk/live state.
 7. Assemble reviewed evidence and re-run `validate-live-readiness`. A manual canary remains a future
    separately approved project even if the output reaches manual-review eligibility.

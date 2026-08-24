@@ -76,6 +76,53 @@ def test_replay_raw_rejects_empty_input(tmp_path: Path) -> None:
     assert "no verified raw events" in result.output
 
 
+def test_index_raw_quality_is_incremental_and_non_ordering(tmp_path: Path) -> None:
+    raw_root = tmp_path / "raw"
+    index_path = tmp_path / "index" / "raw-data-quality-index.json"
+    writer = ParquetRawEventWriter(raw_root, max_rows=1)
+    writer.append(make_trade_event(sequence=1, exchange_offset_ms=100, received_offset_ms=150))
+
+    first = runner.invoke(
+        app,
+        [
+            "index-raw-quality",
+            "--input-root",
+            str(raw_root),
+            "--index",
+            str(index_path),
+            "--storage-label",
+            "test-paper-data",
+        ],
+    )
+
+    assert first.exit_code == 0
+    payload = json.loads(first.stdout)
+    assert payload["measurement_status"] == "VERIFIED_STORAGE"
+    assert payload["active_rows"] == 1
+    assert payload["scanned_files"] == 1
+    assert payload["authentication_used"] is False
+    assert payload["order_submission_available"] is False
+    assert payload["current_experiment_authorized"] is False
+
+    second = runner.invoke(
+        app,
+        [
+            "index-raw-quality",
+            "--input-root",
+            str(raw_root),
+            "--index",
+            str(index_path),
+            "--storage-label",
+            "test-paper-data",
+        ],
+    )
+
+    assert second.exit_code == 0
+    reused = json.loads(second.stdout)
+    assert reused["scanned_files"] == 0
+    assert reused["reused_files"] == 1
+
+
 def test_scalping_assessment_retains_insufficient_data_without_trials(tmp_path: Path) -> None:
     raw_root = tmp_path / "raw"
     writer = ParquetRawEventWriter(raw_root, max_rows=1)

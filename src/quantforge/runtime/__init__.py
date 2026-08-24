@@ -25,7 +25,11 @@ from quantforge.runtime.realtime_pipeline import (
     read_realtime_pipeline_snapshot,
     write_realtime_pipeline_snapshot,
 )
-from quantforge.runtime.snapshots import DataQualitySnapshot, write_data_quality_snapshot
+from quantforge.runtime.snapshots import (
+    DataQualityMarketCoverage,
+    DataQualitySnapshot,
+    write_data_quality_snapshot,
+)
 from quantforge.runtime.universe_scanner import (
     RealtimeUniversePolicy,
     RealtimeUniverseScanner,
@@ -35,6 +39,7 @@ from quantforge.runtime.universe_scanner import (
 )
 
 __all__ = [
+    "DataQualityMarketCoverage",
     "DataQualitySnapshot",
     "LiveGateResult",
     "LiveSubmissionBlocked",

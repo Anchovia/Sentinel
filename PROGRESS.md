@@ -2,9 +2,9 @@
 
 ## Current checkpoint
 
-- Phase: 11.7 — Bounded Work Audit Exports
+- Phase: 11.8 — Incremental Raw Quality Index
 - Status: checkpoint `COMPLETE`; Phase 11 `IN_PROGRESS`
-- Planned implementation phases: 0–10 complete; Phase 11.1–11.7 checkpoints complete
+- Planned implementation phases: 0–10 complete; Phase 11.1–11.8 checkpoints complete
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; the live adapter has no network capability
@@ -12,8 +12,35 @@
 - Actual orders executed: no
 - Private/authenticated Upbit calls: no
 - Production Secrets accessed: no
-- Scheduled task registration: none
+- Active recurring scheduled tasks: none; one-time unattended Work filesystem test completed
 - Automatic merge/deploy/model promotion/live activation: unavailable
+
+## Completed in Phase 11.8
+
+- Added atomic `raw-data-quality-index-1` beside the public raw store. The first pass verifies every
+  active manifest checksum, byte size, Parquet contract, row count, constant source/event/schema
+  fields, payload-hash shape, exchange-time bounds, within-file identities, ordering, and market
+  availability. Later passes reuse unchanged manifest fingerprints and inspect only new, changed,
+  or verification-expired files.
+- Added bounded cache retirement for compacted/pruned manifests, a non-ordering
+  `index-raw-quality` command, and fail-closed behavior that preserves the last valid index if any
+  current file is damaged.
+- Added `paper-runtime-6` and version-3 live data-quality exports with verified files/rows/bytes,
+  anomaly counters, per-market detailed coverage, and readiness for a *new* preregistration. The
+  existing fixed-cutoff experiment remains immutable and unauthorized; model and paper-order gates
+  remain closed.
+- Kept the Korean monitor compact by showing only storage verification totals and research-data
+  accumulation state. No raw payload, credential, account, control, or order action was added.
+- Verified actual D-drive storage twice: the initial 222-file, 1,938,743-row, 230,947,947-byte pass
+  took 31.27 seconds; the next pass reused all 222 entries and scanned only five newly committed
+  files in 2.16 seconds. The resulting 227-file index covered 1,944,965 rows and 286 markets with
+  zero duplicate event identities or checksum failures.
+- The current future-experiment gate remains not ready: no market yet satisfies all 24-hour,
+  20,000-trade, and 20,000-orderbook requirements. This is not a profitability conclusion.
+- Recorded the one-time Work unattended local read/write test as an access success. Its stale
+  `STOPPED` runtime observation was an operational-input result, not an access failure; scheduled
+  timing still depends on the computer and desktop app being available. No recurring task is active.
+- Added ADR-023 and left the public README unchanged.
 
 ## Completed in Phase 11.7
 
@@ -246,17 +273,23 @@
 ## Validation evidence
 
 ```text
-Python: PASS — 3.13.15; no Phase 11.7 dependency added
+Python: PASS — 3.13.15; no Phase 11.8 dependency added
 ruff: PASS — all checks passed
-format check: PASS — 227 Python files formatted
-mypy: PASS — 114 source files, no issues
-pytest: PASS — 363 tests, 85.94% branch coverage
-secret scan: PASS — 344 text files checked
+format check: PASS — 230 Python files formatted
+mypy: PASS — 115 source files, no issues
+pytest: PASS — 369 tests, 85.87% branch coverage
+secret scan: PASS — 364 text files checked
 dependency audit: PASS — no known vulnerabilities
 Compose config: PASS — base + paper overlays
-container build: PASS — quantforge-paper-runtime:latest a087495dc683
-Work audit exports: PASS — work-ops-1 RUNNING; data quality PARTIAL; incidents NOT_CONFIGURED;
-  performance/models INSUFFICIENT_SAMPLE; 15-minute baseline created; auth/order false
+container build: PASS — quantforge-paper-runtime:latest 63fe67695ec7
+Work audit exports: PASS — work-ops-1 RUNNING; data quality VERIFIED_STORAGE with 2,000,404
+  indexed rows/140 manifests; incidents NOT_CONFIGURED; performance/models INSUFFICIENT_SAMPLE;
+  authentication/order capability false
+incremental D-drive quality index: PASS — initial 222 files/1,938,743 rows in 31.27 seconds; next
+  refresh reused 222 and scanned 5 new files in 2.16 seconds; 286 observed markets; current future-
+  preregistration eligible markets 0; current experiment authorization false
+Phase 11.8 restart: PASS — paper-runtime-6 RUNNING/healthy; WebSocket connected; VERIFIED_CLEAN;
+  parser errors/reconnects 0; model approval/paper/real order capability false
 synthetic registered entry/exit: PASS — deterministic conservative fills, positive net round trip,
   non-zero fees/slippage/adverse selection; neutral baseline orders/fills 0
 D-drive fixed-cutoff research inventory: PASS — 430,655 detailed events, 123 observed markets,
@@ -277,7 +310,7 @@ D-drive migration: PASS — 314,560 rows preserved; 781 -> 134 active files; 6,7
 model approval/paper-order gate/proposals/risk approvals/paper orders/fills/authentication/private/
   real/live capability all false or 0
 actual/private/test orders: NONE
-schedule registration: NONE
+scheduled filesystem access: PASS — one-time Work read/write test; recurring schedules NONE
 ```
 
 ## Known constraints
@@ -292,9 +325,10 @@ schedule registration: NONE
   must not be automatically relaxed and require human review plus a new consequential record.
 - The validator does not assemble evidence from production systems. Producers and human reviewers
   must create a Secret-free bundle with reproducible hashes; absent evidence stays absent.
-- Phase 8 tasks remain unregistered. Standard performance/model/incident files now exist, but they
-  intentionally report unavailable or insufficient evidence rather than representative results.
-  Unattended local-file access must be proven on the current Work surface before scheduling.
+- Phase 8 recurring tasks remain unregistered. Manual and one-time scheduled local-file access
+  passed, but standard performance/model/incident files intentionally report unavailable or
+  insufficient evidence rather than representative results. Execution still depends on the host
+  and desktop app being available.
 - The Windows host lacks `uv` and `make` on PATH, so exact Make targets were not run in this phase;
   their equivalent locked project-venv commands passed. Container builds use the pinned uv image.
 - The public collector, feature path, and neutral paper composition are supervised, but sustained

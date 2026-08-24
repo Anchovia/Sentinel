@@ -115,6 +115,12 @@ def render_paper_monitor(
     )
     storage_limit = _bytes(runtime.storage_max_bytes) if runtime.storage_max_bytes else "미설정"
     deleted_files = runtime.storage_retention_deleted_files + runtime.storage_capacity_deleted_files
+    quality_status = (
+        "검증됨" if runtime.quality_index_status == "VERIFIED_STORAGE" else "데이터 대기"
+    )
+    research_status = (
+        "새 실험 등록 가능" if runtime.research_ready_for_preregistration else "데이터 축적 중"
+    )
     processing_panel = (
         f"""<section class="panel"><h2>밀리초 처리</h2><div class="rows">
 <div class="row"><span class="label">처리 지연 p50</span><strong>{realtime.processing_latency_p50_ms:.3f}ms</strong></div>
@@ -214,6 +220,9 @@ border:1px dashed var(--line);border-radius:18px;color:var(--muted);margin-botto
 <div class="row"><span class="label">보관 한도</span><strong>{runtime.storage_retention_days}일 / {storage_limit}</strong></div>
 <div class="row"><span class="label">이번 실행 저장 행</span><strong>{runtime.committed_rows:,}</strong></div>
 <div class="row"><span class="label">이번 실행 저장 파일</span><strong>{runtime.committed_files:,}</strong></div>
+<div class="row"><span class="label">저장 데이터 검증</span><strong class="ok">{quality_status}</strong></div>
+<div class="row"><span class="label">검증 파일 / 행</span><strong>{runtime.verified_manifest_count:,} / {runtime.indexed_event_count:,}</strong></div>
+<div class="row"><span class="label">전략 연구 준비</span><strong>{research_status} · {runtime.research_eligible_market_count:,}개</strong></div>
 <div class="row"><span class="label">자동 압축 / 정리</span><strong>{runtime.storage_compacted_source_files:,} / {deleted_files:,}개</strong></div>
 <div class="row"><span class="label">회수한 공간</span><strong>{_bytes(runtime.storage_reclaimed_bytes)}</strong></div>
 <div class="row"><span class="label">남은 디스크</span><strong>{disk_free}</strong></div>

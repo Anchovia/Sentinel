@@ -166,10 +166,28 @@ docker compose --env-file compose.paper.local.env -f docker-compose.yml -f docke
 ```
 
 The active policy is ZSTD Parquet, completed-hour compaction every 15 minutes, 30-day retention,
-50GiB maximum active raw data, and a 20GiB minimum free-space floor. `paper-runtime-5` and the Korean
-monitor show the effective path, bounds, reclaimed bytes, and actual free space. The 50GiB cap may
+50GiB maximum active raw data, and a 20GiB minimum free-space floor. `paper-runtime-6` and the Korean
+monitor show the effective path, bounds, reclaimed bytes, verified rows/files, and actual free
+space. The 50GiB cap may
 delete data before 30 days during high activity. A file is retired by renaming its manifest to a
 reason-specific marker before its payload is removed.
+
+Bootstrap or independently refresh the verified incremental index with no exchange network or
+authentication:
+
+```text
+uv run quantforge index-raw-quality \
+  --input-root <paper-data-root>/raw \
+  --index <paper-data-root>/index/raw-data-quality-index.json \
+  --storage-label <non-secret-label>
+```
+
+The first run verifies every active file. Later runs reuse unchanged entries for 24 hours and scan
+new/changed files; `--reverify-after-seconds 0` forces a full checksum pass. Any size, checksum,
+schema, row, path, or contract mismatch must fail without replacing the prior valid index. Pause a
+manual replay if compaction is active and retry only after maintenance completes. A research-ready
+result allows drafting a new preregistration only; never edit the existing experiment cutoff or
+open a model/paper-order gate from this signal.
 
 If free space crosses the floor, the service must enter `FAILED` and close the public socket. Do not
 lower the floor merely to restart. Free space on the configured data drive, preserve the runtime and
@@ -354,7 +372,10 @@ uv run quantforge validate-automation-trigger \
 
 Work local-file tasks must be created from the desktop project and may write only report/proposal
 paths. Record `git diff -- src configs ops migrations dashboard` before and after. Do not undo an
-unexpected change; preserve and report it as a critical boundary violation.
+unexpected change; preserve and report it as a critical boundary violation. A one-time unattended
+read/write test passed on this host; its execution timing still depends on the computer and desktop
+app being available. Treat stale runtime input as an operations result, separately from filesystem
+access success.
 
 Codex code tasks must use the dedicated background worktree option. A no-finding result writes only
 its report. Reproduce before editing; add regression evidence; run all checks; stop without a PR on

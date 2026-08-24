@@ -242,6 +242,18 @@ retention days, active raw byte cap, minimum free bytes, active manifest-backed 
 runs/source-file counts, age/capacity deletion counts, reclaimed bytes, and actual filesystem free
 bytes. These counters are local operations evidence, not backup or durability proof.
 
+Phase 11.8 adds `raw-data-quality-index-1`, a bounded sidecar keyed by active manifest path and its
+canonical SHA-256. Each cached file record binds the data checksum, source/event/schema contract,
+row/byte/time bounds, verification time, within-file duplicate/order/quality counters, and sorted
+per-market receive-time availability. Aggregate records reconcile file, row, byte, event-type, and
+market totals. Compacted or retained-away manifests are removed on the next atomic refresh.
+
+`paper-runtime-6` adds verified manifest/row and future-preregistration counters. Version-3 live
+`DataQualitySnapshot` can bind its dataset hash to the verified manifest set and publish the
+aggregate counters plus market coverage. `VERIFIED_STORAGE` means the retained files passed the
+listed local integrity checks; it does not claim public-exchange completeness or approve a trial,
+model, paper order, or live action.
+
 Phase 7 defines `operations-dashboard-1`, containing UTC generation time and fixed Overview,
 Markets, Positions, Orders, Strategies, Models, System, and Incidents views. Decimal is retained for
 assets, balances, prices, quantities, fees, exposure, and PnL. Exchange order UUIDs are represented

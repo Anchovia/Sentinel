@@ -4,10 +4,11 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from factories import BASE_TIME, make_trade_bar, make_trade_event
+from factories import BASE_TIME, make_orderbook_event, make_trade_bar, make_trade_event
 from quantforge.features import FeatureSnapshot
 from quantforge.replay import ReplayEngine
 from quantforge.runtime import DataQualitySnapshot, write_data_quality_snapshot
+from quantforge.storage import ParquetRawEventWriter, update_raw_data_quality_index
 
 
 def _phase2_inputs():  # type: ignore[no-untyped-def]
@@ -93,7 +94,7 @@ def test_live_data_quality_snapshot_is_partial_and_versioned() -> None:
         processing_budget_breaches=0,
     )
 
-    assert snapshot.schema_version == 2
+    assert snapshot.schema_version == 3
     assert snapshot.source_kind == "public_paper_runtime"
     assert snapshot.measurement_status == "PARTIAL"
     assert snapshot.dataset_hash_scope == "live_counter_snapshot"
@@ -101,6 +102,48 @@ def test_live_data_quality_snapshot_is_partial_and_versioned() -> None:
     assert snapshot.gap_measurement_supported is False
     assert snapshot.checksum_measurement_supported is False
     assert len(snapshot.dataset_hash) == 64
+
+
+def test_live_data_quality_uses_verified_incremental_storage_index(tmp_path: Path) -> None:
+    root = tmp_path / "raw"
+    writer = ParquetRawEventWriter(root, max_rows=1)
+    writer.append(make_trade_event(sequence=1, exchange_offset_ms=100, received_offset_ms=110))
+    writer.append(make_orderbook_event(sequence=2, received_offset_ms=120))
+    writer.close()
+    quality_index = update_raw_data_quality_index(
+        root,
+        tmp_path / "index.json",
+        now_utc=BASE_TIME + timedelta(hours=1),
+    )
+
+    snapshot = DataQualitySnapshot.from_live_runtime(
+        generated_at_utc=BASE_TIME + timedelta(hours=1),
+        run_id="paper-run",
+        policy_hash="a" * 64,
+        accepted_messages=2,
+        processed_events=2,
+        event_counts=(("orderbook", 1), ("trade", 1)),
+        duplicate_count=0,
+        reconnects=0,
+        parse_errors=0,
+        feature_frames=0,
+        inference_ready_frames=0,
+        monitored_market_count=1,
+        observed_market_count=1,
+        last_event_at_utc=BASE_TIME,
+        storage_queue_depth=0,
+        storage_queue_overflows=0,
+        processing_budget_breaches=0,
+        raw_quality_index=quality_index,
+    )
+
+    assert snapshot.measurement_status == "VERIFIED_STORAGE"
+    assert snapshot.dataset_hash_scope == "verified_incremental_index"
+    assert snapshot.checksum_measurement_supported is True
+    assert snapshot.indexed_file_count == 2
+    assert snapshot.indexed_event_count == 2
+    assert snapshot.verified_manifest_count == 2
+    assert snapshot.current_experiment_authorized is False
 
 
 def test_version_one_data_quality_snapshot_remains_readable() -> None:

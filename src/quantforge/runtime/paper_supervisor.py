@@ -62,6 +62,7 @@ from quantforge.runtime.universe_scanner import (
 )
 from quantforge.storage import (
     ParquetRawEventWriter,
+    RawDataQualityIndex,
     RawFileManifest,
     RawStorageCapacityError,
     RawStorageMaintenance,
@@ -69,6 +70,7 @@ from quantforge.storage import (
     cleanup_orphan_temp_files,
     maintain_raw_storage,
     require_raw_storage_capacity,
+    update_raw_data_quality_index,
 )
 
 
@@ -94,7 +96,8 @@ class PaperRuntimeSnapshot(BaseModel):
         "paper-runtime-3",
         "paper-runtime-4",
         "paper-runtime-5",
-    ] = "paper-runtime-5"
+        "paper-runtime-6",
+    ] = "paper-runtime-6"
     run_id: UUID
     state: PaperRuntimeState
     started_at_utc: datetime
@@ -129,6 +132,11 @@ class PaperRuntimeSnapshot(BaseModel):
     storage_capacity_deleted_files: int = Field(default=0, ge=0)
     storage_reclaimed_bytes: int = Field(default=0, ge=0)
     disk_free_bytes: int | None = Field(default=None, ge=0)
+    quality_index_status: Literal["VERIFIED_STORAGE", "INSUFFICIENT_SAMPLE"] = "INSUFFICIENT_SAMPLE"
+    verified_manifest_count: int = Field(default=0, ge=0)
+    indexed_event_count: int = Field(default=0, ge=0)
+    research_eligible_market_count: int = Field(default=0, ge=0)
+    research_ready_for_preregistration: bool = False
     heartbeat_sequence: int = Field(ge=0)
     websocket_connected: bool
     last_event_at_utc: datetime | None = None
@@ -489,6 +497,14 @@ class PaperRuntimeSupervisor:
         self._storage_capacity_deleted_files = initial_maintenance.capacity_deleted_files
         self._storage_reclaimed_bytes = initial_maintenance.reclaimed_bytes
         self._disk_free_bytes = initial_maintenance.disk_free_bytes
+        self._raw_quality_index_path = (
+            self.raw_output.parent / "index" / "raw-data-quality-index.json"
+        )
+        self._raw_quality_index = update_raw_data_quality_index(
+            self.raw_output,
+            self._raw_quality_index_path,
+            storage_label=self.policy.storage_label,
+        )
         try:
             self._disk_free_bytes = require_raw_storage_capacity(
                 self.raw_output, self.policy.storage_policy
@@ -711,7 +727,7 @@ class PaperRuntimeSupervisor:
     ) -> None:
         selected = tuple(batch)
 
-        def commit() -> tuple[RawFileManifest, ...]:
+        def commit() -> tuple[tuple[RawFileManifest, ...], RawDataQualityIndex | None]:
             manifests: list[RawFileManifest] = []
             for event in selected:
                 manifests.extend(self._writer.append(event))
@@ -719,9 +735,19 @@ class PaperRuntimeSupervisor:
                 manifests.extend(self._writer.flush())
             if close:
                 manifests.extend(self._writer.close())
-            return tuple(manifests)
+            selected_manifests = tuple(manifests)
+            quality_index = None
+            if selected_manifests:
+                quality_index = update_raw_data_quality_index(
+                    self.raw_output,
+                    self._raw_quality_index_path,
+                    storage_label=self.policy.storage_label,
+                )
+            return selected_manifests, quality_index
 
-        manifests = await asyncio.to_thread(commit)
+        manifests, quality_index = await asyncio.to_thread(commit)
+        if quality_index is not None:
+            self._raw_quality_index = quality_index
         self._record_manifests(manifests)
         for _ in selected:
             self._storage_queue.task_done()
@@ -738,12 +764,20 @@ class PaperRuntimeSupervisor:
         self._retained_bytes += sum(manifest.byte_size for manifest in manifests)
 
     async def _run_storage_maintenance(self, *, compact: bool) -> None:
-        result = await asyncio.to_thread(
-            maintain_raw_storage,
-            self.raw_output,
-            policy=self.policy.storage_policy,
-            compact=compact,
-        )
+        def maintain_and_index() -> tuple[RawStorageMaintenance, RawDataQualityIndex]:
+            result = maintain_raw_storage(
+                self.raw_output,
+                policy=self.policy.storage_policy,
+                compact=compact,
+            )
+            index = update_raw_data_quality_index(
+                self.raw_output,
+                self._raw_quality_index_path,
+                storage_label=self.policy.storage_label,
+            )
+            return result, index
+
+        result, self._raw_quality_index = await asyncio.to_thread(maintain_and_index)
         self._record_storage_maintenance(result, compact=compact)
         try:
             self._disk_free_bytes = require_raw_storage_capacity(
@@ -835,6 +869,15 @@ class PaperRuntimeSupervisor:
             storage_capacity_deleted_files=self._storage_capacity_deleted_files,
             storage_reclaimed_bytes=self._storage_reclaimed_bytes,
             disk_free_bytes=self._disk_free_bytes,
+            quality_index_status=self._raw_quality_index.measurement_status,
+            verified_manifest_count=self._raw_quality_index.verified_file_count,
+            indexed_event_count=self._raw_quality_index.active_row_count,
+            research_eligible_market_count=len(
+                self._raw_quality_index.research_readiness.eligible_markets
+            ),
+            research_ready_for_preregistration=(
+                self._raw_quality_index.research_readiness.ready_for_new_preregistration
+            ),
             heartbeat_sequence=self._heartbeat_sequence,
             websocket_connected=connected,
             last_event_at_utc=self._last_event_at_utc,
@@ -942,6 +985,7 @@ class PaperRuntimeSupervisor:
             storage_queue_depth=runtime.storage_queue_depth,
             storage_queue_overflows=runtime.storage_queue_overflows,
             processing_budget_breaches=realtime.processing_budget_breaches,
+            raw_quality_index=self._raw_quality_index,
         )
         gross_pnl = sum((item.gross_pnl for item in portfolios), start=Decimal(0))
         net_pnl = sum((item.net_pnl for item in portfolios), start=Decimal(0))

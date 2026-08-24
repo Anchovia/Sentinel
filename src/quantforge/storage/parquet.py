@@ -236,6 +236,18 @@ def summarize_raw_storage(root: Path) -> RawStorageSummary:
     )
 
 
+def active_raw_file_manifests(root: Path) -> tuple[RawFileManifest, ...]:
+    """Return the size-validated active immutable manifest set in stable order."""
+
+    if not root.exists():
+        return ()
+    active = _active_manifest_records(root)
+    _validate_record_sizes(root, active)
+    return tuple(
+        record.manifest for record in sorted(active, key=lambda item: item.manifest.data_file)
+    )
+
+
 def _event_row(event: EventEnvelope) -> dict[str, object]:
     return {
         "event_id": str(event.event_id),

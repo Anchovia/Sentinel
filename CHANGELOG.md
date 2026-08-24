@@ -158,6 +158,16 @@ All notable changes are recorded here. The project follows semantic versioning o
   fabricated healthy values.
 - Atomic 15-minute Work audit baselines with 30-day and 100MiB bounds, direct-filesystem discovery
   guidance for ignored runtime JSON, and an empty versioned research paper registry.
+- An atomic `raw-data-quality-index-1` that verifies active manifest checksums, Parquet contracts,
+  row counts, ordering/anomaly counters, and per-market availability once, then reuses unchanged
+  file fingerprints and drops compacted or retired cache entries.
+- A non-ordering `index-raw-quality` bootstrap command, `paper-runtime-6`, version-3 Work data-quality
+  evidence, and compact Korean monitor totals for verified storage and future preregistration
+  availability. None can authorize the current experiment, approve a model, open a paper-order
+  gate, or submit an order.
+- The actual D-drive bootstrap verified 1,938,743 rows in 222 files in 31.27 seconds. A second pass
+  reused those files, scanned five new files in 2.16 seconds, and covered 1,944,965 rows across 286
+  markets with no checksum failure or duplicate event identity.
 
 ### Security
 

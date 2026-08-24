@@ -162,7 +162,7 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     assert snapshot.retained_rows == 2
     assert snapshot.retained_files > 0
     assert snapshot.retained_bytes > 0
-    assert snapshot.schema_version == "paper-runtime-5"
+    assert snapshot.schema_version == "paper-runtime-6"
     assert snapshot.storage_retention_days == 30
     assert snapshot.storage_max_bytes == 50 * 1024**3
     assert snapshot.disk_free_bytes is not None
@@ -231,10 +231,13 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     quality = DataQualitySnapshot.model_validate_json(
         (tmp_path / "runtime/data_quality/latest.json").read_bytes()
     )
-    assert quality.schema_version == 2
-    assert quality.source_kind == "public_paper_runtime"
-    assert quality.measurement_status == "PARTIAL"
+    assert quality.schema_version == 3
+    assert quality.source_kind == "public_paper_runtime_with_verified_storage"
+    assert quality.measurement_status == "VERIFIED_STORAGE"
     assert quality.delivered_events == 2
+    assert quality.indexed_event_count == 2
+    assert quality.verified_manifest_count > 0
+    assert quality.current_experiment_authorized is False
     assert quality.gap_measurement_supported is False
     incidents = WorkIncidentSnapshot.model_validate_json(
         (tmp_path / "runtime/incidents/open.json").read_bytes()

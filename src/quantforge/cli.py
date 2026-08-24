@@ -75,11 +75,13 @@ from quantforge.storage import (
     cleanup_orphan_temp_files,
     read_raw_events,
     scan_raw_event_research_inventory,
+    update_raw_data_quality_index,
 )
 
 app = typer.Typer(no_args_is_help=True, help="QuantForge research and operations CLI")
 DEFAULT_RAW_OUTPUT = Path("data/raw")
 DEFAULT_PAPER_RAW_OUTPUT = Path("data/paper/raw")
+DEFAULT_RAW_QUALITY_INDEX = Path("data/paper/index/raw-data-quality-index.json")
 DEFAULT_REPLAY_INPUT = Path("data/raw")
 DEFAULT_DATA_QUALITY_OUTPUT = Path("runtime_exports/data_quality")
 DEFAULT_OPERATIONS_OUTPUT = Path("runtime_exports")
@@ -191,6 +193,59 @@ def collect_public(
                 "output": str(output.resolve()),
                 "authentication_used": False,
                 "order_submission_available": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("index-raw-quality")
+def index_raw_quality(
+    input_root: Annotated[
+        Path, typer.Option(help="Active public raw Parquet root")
+    ] = DEFAULT_PAPER_RAW_OUTPUT,
+    index: Annotated[
+        Path, typer.Option(help="Bounded incremental quality index output")
+    ] = DEFAULT_RAW_QUALITY_INDEX,
+    storage_label: str = typer.Option(
+        "local-paper-data", help="Non-secret display label for the paper-data filesystem"
+    ),
+    reverify_after_seconds: int = typer.Option(
+        86_400,
+        min=0,
+        max=31_536_000,
+        help="Re-check cached file checksums after this many seconds",
+    ),
+) -> None:
+    """Incrementally verify public raw files; no authentication or order path exists."""
+
+    result = update_raw_data_quality_index(
+        input_root,
+        index,
+        storage_label=storage_label,
+        reverify_after_seconds=reverify_after_seconds,
+    )
+    typer.echo(
+        json.dumps(
+            {
+                "schema_version": result.schema_version,
+                "measurement_status": result.measurement_status,
+                "active_files": result.active_file_count,
+                "active_rows": result.active_row_count,
+                "active_bytes": result.active_byte_size,
+                "scanned_files": result.scanned_file_count,
+                "reused_files": result.reused_file_count,
+                "retired_cache_entries": result.retired_cache_entry_count,
+                "manifest_set_sha256": result.manifest_set_sha256,
+                "observed_markets": len(result.markets),
+                "research_eligible_markets": len(result.research_readiness.eligible_markets),
+                "ready_for_new_preregistration": (
+                    result.research_readiness.ready_for_new_preregistration
+                ),
+                "current_experiment_authorized": False,
+                "authentication_used": False,
+                "order_submission_available": False,
+                "index": str(index.resolve()),
             },
             sort_keys=True,
         )

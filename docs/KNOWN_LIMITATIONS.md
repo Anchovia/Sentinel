@@ -44,9 +44,10 @@
 - The first short-horizon plan requires 24 hours and sufficient detailed data in three markets.
   Shorter collection is retained as `BLOCKED` with zero trials. This gate is only a minimum for
   running the experiment, not proof of statistical power, stability, capacity, or profitability.
-- The first 430,655-row detailed inventory took roughly 11 minutes in the local Python path. It is
-  correct but too slow for frequent auditing; batch fingerprinting or a maintained research index
-  should be implemented before registering a high-frequency assessment schedule.
+- The original 430,655-row detailed inventory took roughly 11 minutes because it materialized every
+  selected row in Python. The maintained columnar index now verifies new/changed files incrementally,
+  but exact cross-file event-identity uniqueness, public-exchange completeness, gap reconstruction,
+  and a registered cutoff still require a bounded deterministic replay.
 - Final-holdout controls and experiment retention exist, but they do not remove selection bias,
   multiple testing, regime change, or limited sample risk.
 - Readiness policy thresholds are configurable governance defaults, not guarantees. The validator
@@ -83,6 +84,10 @@
 - Compaction runs outside the event hot path but can temporarily use material CPU and memory. Replay
   or other storage readers are not coordinated by a cross-process lock and should not run during a
   maintenance window.
+- The quality-index sidecar is bounded by active retained manifests rather than raw rows, but it is
+  rewritten after storage commits and can grow with the 30-day active-file set. Its first full
+  bootstrap and periodic checksum re-verification consume storage-worker CPU/I/O; they are not part
+  of measured feature/decision latency.
 
 ## Automation and delivery
 
@@ -94,8 +99,9 @@
   requires before/after Git evidence; every Codex candidate still needs human diff/PR review.
 - Only a detached no-op background worktree was exercised. No automated branch, PR, merge, deploy,
   model promotion, risk change, live activation, or order path exists.
-- The manual desktop Work trial can read ignored local JSON by exact path. Unattended scheduled
-  access to the same files has not been proven on the current product surface, so local-file tasks
-  must not be registered or described as active until that separate capability check passes.
+- Manual and one-time scheduled desktop Work trials can read and write the approved ignored local
+  paths by exact path. The scheduled trial observed stale `STOPPED` input because the runtime was
+  down, which does not invalidate filesystem access. Execution time still depends on the computer
+  and desktop app being available, and no recurring task is currently active.
 - Docker/Compose validation passes, but the full stack has no sustained production health or backup
   test. Development credentials and the restrictive placeholder license are not production choices.
