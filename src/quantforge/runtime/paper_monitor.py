@@ -52,6 +52,7 @@ def _recovery_label(snapshot: "RealtimePaperDecisionSnapshot") -> str:
         "NEW": "신규",
         "VERIFIED_CLEAN": "정상",
         "EMPTY_UNCLEAN_RECOVERED": "빈 상태 복구",
+        "OPERATOR_ACKNOWLEDGED": "검토 후 복구",
     }.get(snapshot.recovery_status.value, snapshot.recovery_status.value)
 
 

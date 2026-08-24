@@ -4,6 +4,7 @@ import math
 import os
 from collections import deque
 from collections.abc import Callable
+from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from enum import StrEnum
@@ -45,6 +46,17 @@ from quantforge.runtime.paper_recovery import (
     RealtimePaperRecoveryCheckpoint,
     read_realtime_paper_recovery_checkpoint,
     write_realtime_paper_recovery_checkpoint,
+)
+from quantforge.runtime.paper_recovery_review import (
+    PaperRecoveryAcknowledgement,
+    PaperRecoveryAcknowledgementReceipt,
+    PaperRecoveryClearanceEvidence,
+    PaperRecoveryReviewError,
+    consumed_paper_recovery_receipt_path,
+    pending_paper_recovery_acknowledgement_path,
+    read_paper_recovery_acknowledgement,
+    validate_paper_recovery_acknowledgement,
+    write_paper_recovery_acknowledgement_receipt,
 )
 from quantforge.runtime.realtime_pipeline import RealtimeFeatureFrame
 from quantforge.strategies import (
@@ -312,6 +324,7 @@ class RealtimePaperOrchestrator:
         approval: RealtimeModelApproval | None = None,
         strategies: tuple[Strategy, ...] | None = None,
         recovery_path: Path | None = None,
+        recovery_acknowledgement_path: Path | None = None,
         clock_ns: Callable[[], int] = perf_counter_ns,
     ) -> None:
         if not markets or len(markets) != len(set(markets)):
@@ -380,6 +393,7 @@ class RealtimePaperOrchestrator:
         self._latest_reason_codes: tuple[str, ...] = ()
         self._last_event_id: UUID | None = None
         self._recovery_path = recovery_path
+        self._recovery_acknowledgement_path = recovery_acknowledgement_path
         self._loaded_checkpoint: RealtimePaperRecoveryCheckpoint | None = None
         self._recovery_status = (
             PaperRecoveryStatus.NOT_CONFIGURED if recovery_path is None else PaperRecoveryStatus.NEW
@@ -409,12 +423,56 @@ class RealtimePaperOrchestrator:
             return
         if self._recovery_session_active:
             raise RealtimePaperBlocked("paper recovery session is already active")
+        consumed_acknowledgement: PaperRecoveryAcknowledgement | None = None
+        consumed_clearance: PaperRecoveryClearanceEvidence | None = None
+        acknowledgement_path: Path | None = None
         if self._loaded_checkpoint is not None:
             if (
                 self._loaded_checkpoint.clean_shutdown
                 and not self._loaded_checkpoint.recovery_blocked
             ):
                 self._recovery_status = PaperRecoveryStatus.VERIFIED_CLEAN
+            elif (
+                self._loaded_checkpoint.clean_shutdown and self._loaded_checkpoint.recovery_blocked
+            ):
+                acknowledgement_path = self._recovery_acknowledgement_path or (
+                    pending_paper_recovery_acknowledgement_path(
+                        self._recovery_path,
+                        self._loaded_checkpoint.checkpoint_hash,
+                    )
+                )
+                if acknowledgement_path.exists():
+                    try:
+                        consumed_acknowledgement = read_paper_recovery_acknowledgement(
+                            acknowledgement_path
+                        )
+                        prior_receipt = consumed_paper_recovery_receipt_path(
+                            self._recovery_path,
+                            consumed_acknowledgement.acknowledgement_id,
+                        )
+                        if prior_receipt.exists():
+                            raise PaperRecoveryReviewError(
+                                "paper recovery acknowledgement was already consumed"
+                            )
+                        consumed_clearance = validate_paper_recovery_acknowledgement(
+                            consumed_acknowledgement,
+                            self._loaded_checkpoint,
+                            consumed_at_utc=started_at_utc,
+                        )
+                    except (PaperRecoveryIntegrityError, PaperRecoveryReviewError) as exc:
+                        consumed_acknowledgement = None
+                        consumed_clearance = None
+                        self._reconcile_blocked_recovery(started_at_utc)
+                        self._reason = (
+                            f"PAPER_RECOVERY_ACKNOWLEDGEMENT_REJECTED_{type(exc).__name__.upper()}"
+                        )
+                    else:
+                        self._recovery_blocked = False
+                        self._recovery_status = PaperRecoveryStatus.OPERATOR_ACKNOWLEDGED
+                        self._state = RealtimePaperDecisionState.HOLD
+                        self._reason = "PAPER_RECOVERY_OPERATOR_ACKNOWLEDGED"
+                else:
+                    self._reconcile_blocked_recovery(started_at_utc)
             elif (
                 not self.policy.paper_order_simulation_enabled
                 and self._loaded_checkpoint_is_economically_empty()
@@ -424,19 +482,58 @@ class RealtimePaperOrchestrator:
                 self._state = RealtimePaperDecisionState.HOLD
                 self._reason = "EMPTY_UNCLEAN_PAPER_STATE_RECOVERED"
             else:
+                self._reconcile_blocked_recovery(started_at_utc)
+        self._recovery_session_active = True
+        resumed = self.persist_recovery_checkpoint(
+            generated_at_utc=started_at_utc,
+            clean_shutdown=False,
+        )
+        if consumed_acknowledgement is not None and consumed_clearance is not None:
+            if resumed is None or acknowledgement_path is None:
+                raise RealtimePaperBlocked("paper recovery acknowledgement had no durable state")
+            receipt = PaperRecoveryAcknowledgementReceipt.create(
+                consumed_at_utc=started_at_utc,
+                acknowledgement_id=consumed_acknowledgement.acknowledgement_id,
+                acknowledgement_hash=consumed_acknowledgement.acknowledgement_hash,
+                reviewer_ref=consumed_acknowledgement.reviewer_ref,
+                approval_reference=consumed_acknowledgement.approval_reference,
+                blocked_checkpoint_hash=consumed_acknowledgement.checkpoint_hash,
+                resumed_checkpoint_hash=resumed.checkpoint_hash,
+                clearance=consumed_clearance,
+            )
+            receipt_path = consumed_paper_recovery_receipt_path(
+                self._recovery_path,
+                consumed_acknowledgement.acknowledgement_id,
+            )
+            try:
+                write_paper_recovery_acknowledgement_receipt(receipt, receipt_path)
+            except (OSError, PaperRecoveryIntegrityError, ValueError) as exc:
                 self._recovery_blocked = True
                 self._recovery_status = PaperRecoveryStatus.UNCLEAN_RECONCILED
-                updates = self._broker.cancel_all(
-                    canceled_at=started_at_utc,
-                    reason="unclean paper recovery canceled every non-terminal order",
-                )
-                for market in self.markets:
-                    selected = tuple(update for update in updates if update.order.market == market)
-                    self._apply_updates(market, selected)
                 self._state = RealtimePaperDecisionState.HOLD
-                self._reason = "PAPER_RECOVERY_BLOCKED"
-        self._recovery_session_active = True
-        self.persist_recovery_checkpoint(generated_at_utc=started_at_utc, clean_shutdown=False)
+                self._reason = "PAPER_RECOVERY_RECEIPT_FAILED"
+                self.persist_recovery_checkpoint(
+                    generated_at_utc=started_at_utc,
+                    clean_shutdown=False,
+                )
+                raise RealtimePaperBlocked(
+                    "paper recovery acknowledgement receipt failed closed"
+                ) from exc
+            with suppress(OSError):
+                acknowledgement_path.unlink(missing_ok=True)
+
+    def _reconcile_blocked_recovery(self, recovered_at_utc: datetime) -> None:
+        self._recovery_blocked = True
+        self._recovery_status = PaperRecoveryStatus.UNCLEAN_RECONCILED
+        updates = self._broker.cancel_all(
+            canceled_at=recovered_at_utc,
+            reason="unclean paper recovery canceled every non-terminal order",
+        )
+        for market in self.markets:
+            selected = tuple(update for update in updates if update.order.market == market)
+            self._apply_updates(market, selected)
+        self._state = RealtimePaperDecisionState.HOLD
+        self._reason = "PAPER_RECOVERY_BLOCKED"
 
     def persist_recovery_checkpoint(
         self,

@@ -254,6 +254,19 @@ aggregate counters plus market coverage. `VERIFIED_STORAGE` means the retained f
 listed local integrity checks; it does not claim public-exchange completeness or approve a trial,
 model, paper order, or live action.
 
+`paper-recovery-acknowledgement-1` binds a human review UUID, pseudonymous reviewer reference,
+review reference/reason, UTC validity window, exact recovery checkpoint/policy hashes, ordered KRW
+market universe, and `paper-recovery-clearance-evidence-1`. Clearance records terminal/unknown
+order counts, broker order/fill counts, verified ledgers, reservations, locked Decimal cash,
+position-bearing markets, clean shutdown, persistent block, and false-only network/order fields.
+
+`paper-recovery-acknowledgement-receipt-1` binds the consumed approval hash and reviewer reference
+to the prior blocked checkpoint, newly active checkpoint, runtime consumption time, repeated
+clearance evidence, and false-only mutation/network/order fields. Its UUID-named durable presence
+makes the approval one-use even if an older checkpoint and pending file are restored together.
+Neither contract changes model approval, risk policy, runtime configuration, performance validity,
+or live capability.
+
 Phase 7 defines `operations-dashboard-1`, containing UTC generation time and fixed Overview,
 Markets, Positions, Orders, Strategies, Models, System, and Incidents views. Decimal is retained for
 assets, balances, prices, quantities, fees, exposure, and PnL. Exchange order UUIDs are represented

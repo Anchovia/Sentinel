@@ -6,7 +6,7 @@ import math
 import shutil
 import signal
 from collections.abc import Awaitable, Callable, Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from time import perf_counter
 from typing import Annotated, cast
@@ -54,13 +54,21 @@ from quantforge.research.scalping import (
     write_scalping_research_bundle,
 )
 from quantforge.runtime import (
+    PAPER_RECOVERY_CONFIRMATION,
     DataQualitySnapshot,
     LiveSubmissionGuard,
+    PaperRecoveryIntegrityError,
+    PaperRecoveryReviewError,
     RealtimePaperOrchestrator,
     RealtimePaperPipeline,
     RealtimeUniversePolicy,
     RealtimeUniverseScanner,
+    create_paper_recovery_acknowledgement,
+    pending_paper_recovery_acknowledgement_path,
+    read_realtime_paper_recovery_checkpoint,
+    validate_paper_recovery_clearance,
     write_data_quality_snapshot,
+    write_paper_recovery_acknowledgement,
 )
 from quantforge.runtime.paper_supervisor import (
     PaperRuntimePolicy,
@@ -145,6 +153,119 @@ def safety_status(as_json: bool = typer.Option(False, "--json")) -> None:
     typer.echo(f"Trading mode: {payload['trading_mode']}")
     typer.echo(f"Live submission allowed: {payload['live_submission_allowed']}")
     typer.echo(f"Failed live gates: {', '.join(result.failures) or 'none'}")
+
+
+@app.command("paper-recovery-status")
+def paper_recovery_status(
+    checkpoint: Annotated[Path, typer.Option(help="Paper recovery checkpoint JSON")],
+) -> None:
+    """Inspect whether a stopped paper checkpoint is eligible for human review."""
+
+    try:
+        parsed = read_realtime_paper_recovery_checkpoint(checkpoint)
+    except (PaperRecoveryIntegrityError, ValueError) as exc:
+        raise typer.BadParameter(str(exc), param_hint="--checkpoint") from exc
+    eligible = parsed.clean_shutdown and parsed.recovery_blocked
+    review_error = None
+    clearance = None
+    if eligible:
+        try:
+            clearance = validate_paper_recovery_clearance(
+                parsed,
+                verified_at_utc=datetime.now(UTC),
+            )
+        except (PaperRecoveryReviewError, ValueError) as exc:
+            eligible = False
+            review_error = str(exc)
+
+    pending = pending_paper_recovery_acknowledgement_path(
+        checkpoint,
+        parsed.checkpoint_hash,
+    )
+    typer.echo(
+        json.dumps(
+            {
+                "schema_version": parsed.schema_version,
+                "checkpoint": str(checkpoint.resolve()),
+                "checkpoint_hash": parsed.checkpoint_hash,
+                "clean_shutdown": parsed.clean_shutdown,
+                "recovery_blocked": parsed.recovery_blocked,
+                "eligible_for_acknowledgement": eligible,
+                "review_error": review_error,
+                "broker_orders": len(parsed.broker.orders),
+                "broker_fills": len(parsed.broker.fills),
+                "verified_ledgers": (
+                    clearance.verified_ledger_count if clearance is not None else None
+                ),
+                "pending_acknowledgement": str(pending.resolve()),
+                "pending_acknowledgement_exists": pending.exists(),
+                "paper_only": True,
+                "network_used": False,
+                "order_submission_available": False,
+                "block_cleared": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("approve-paper-recovery")
+def approve_paper_recovery(
+    checkpoint: Annotated[Path, typer.Option(help="Clean, blocked paper checkpoint JSON")],
+    reviewer_ref: Annotated[
+        str,
+        typer.Option(help="Pseudonymous 16-character lowercase hexadecimal reviewer reference"),
+    ],
+    approval_reference: Annotated[
+        str,
+        typer.Option(help="Reviewed ticket or local approval reference"),
+    ],
+    reason: Annotated[str, typer.Option(help="Non-secret human review rationale")],
+    confirmation: Annotated[
+        str,
+        typer.Option(help=f"Exact phrase: {PAPER_RECOVERY_CONFIRMATION}"),
+    ],
+    valid_for_minutes: int = typer.Option(60, min=1, max=1440),
+) -> None:
+    """Approve one paper-only recovery; the runtime must still revalidate it on restart."""
+
+    try:
+        parsed = read_realtime_paper_recovery_checkpoint(checkpoint)
+        acknowledgement = create_paper_recovery_acknowledgement(
+            parsed,
+            reviewer_ref=reviewer_ref,
+            approval_reference=approval_reference,
+            reason=reason,
+            confirmation=confirmation,
+            created_at_utc=datetime.now(UTC),
+            valid_for=timedelta(minutes=valid_for_minutes),
+        )
+        destination = pending_paper_recovery_acknowledgement_path(
+            checkpoint,
+            parsed.checkpoint_hash,
+        )
+        write_paper_recovery_acknowledgement(acknowledgement, destination)
+    except (PaperRecoveryIntegrityError, PaperRecoveryReviewError, ValueError) as exc:
+        raise typer.BadParameter(str(exc), param_hint="--checkpoint") from exc
+
+    typer.echo(
+        json.dumps(
+            {
+                "schema_version": acknowledgement.schema_version,
+                "acknowledgement": str(destination.resolve()),
+                "acknowledgement_hash": acknowledgement.acknowledgement_hash,
+                "checkpoint_hash": acknowledgement.checkpoint_hash,
+                "valid_until_utc": acknowledgement.valid_until_utc.isoformat(),
+                "human_reviewed": True,
+                "paper_only": True,
+                "network_used": False,
+                "order_submission_available": False,
+                "block_cleared": False,
+                "next_runtime_start_must_revalidate": True,
+            },
+            sort_keys=True,
+        )
+    )
 
 
 @app.command("collect-public")

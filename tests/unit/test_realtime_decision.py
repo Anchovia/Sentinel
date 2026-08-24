@@ -9,7 +9,19 @@ import pytest
 from factories import BASE_TIME, make_orderbook_event, make_trade_event
 from quantforge.features import FeatureSnapshot
 from quantforge.models import AlphaPrediction, DecisionAction, ModelReleaseStatus
-from quantforge.runtime.paper_recovery import PaperRecoveryStatus
+from quantforge.runtime.paper_recovery import (
+    PaperRecoveryStatus,
+    read_realtime_paper_recovery_checkpoint,
+    write_realtime_paper_recovery_checkpoint,
+)
+from quantforge.runtime.paper_recovery_review import (
+    PAPER_RECOVERY_CONFIRMATION,
+    consumed_paper_recovery_receipt_path,
+    create_paper_recovery_acknowledgement,
+    pending_paper_recovery_acknowledgement_path,
+    read_paper_recovery_acknowledgement_receipt,
+    write_paper_recovery_acknowledgement,
+)
 from quantforge.runtime.realtime_decision import (
     RealtimeAlphaModel,
     RealtimeModelApproval,
@@ -344,6 +356,99 @@ def test_unclean_checkpoint_cancels_open_order_releases_cash_and_blocks_gate(
     assert snapshot.portfolios[0].locked_cash == 0
     assert snapshot.portfolios[0].available_cash == snapshot.portfolios[0].cash_balance
     recovered.close(closed_at_utc=events[2].received_at_utc + timedelta(seconds=2))
+
+
+def test_clean_blocked_checkpoint_requires_one_use_review_before_gate_resumes(
+    tmp_path: Path,
+) -> None:
+    checkpoint = tmp_path / "state/realtime-paper-recovery.json"
+    model = _ApprovedAlpha()
+    features = RealtimePaperPipeline(("KRW-BTC",))
+    interrupted = RealtimePaperOrchestrator(
+        ("KRW-BTC",),
+        policy=_approved_policy(),
+        alpha_model=model,
+        approval=_approval(model),
+        strategies=(_FixedProposal(),),
+        recovery_path=checkpoint,
+    )
+    interrupted.begin_recovery_session(started_at_utc=BASE_TIME - timedelta(seconds=1))
+    events = _events()
+    for event in events[:3]:
+        interrupted.process(event, features.process(event))
+
+    reconciled = RealtimePaperOrchestrator(
+        ("KRW-BTC",),
+        policy=_approved_policy(),
+        alpha_model=model,
+        approval=_approval(model),
+        strategies=(_FixedProposal(),),
+        recovery_path=checkpoint,
+    )
+    reconciled.begin_recovery_session(
+        started_at_utc=events[2].received_at_utc + timedelta(seconds=1)
+    )
+    reconciled.close(closed_at_utc=events[2].received_at_utc + timedelta(seconds=2))
+
+    blocked = read_realtime_paper_recovery_checkpoint(checkpoint)
+    acknowledgement = create_paper_recovery_acknowledgement(
+        blocked,
+        reviewer_ref="0123456789abcdef",
+        approval_reference="incident-review-42",
+        reason="Reconciled paper state reviewed for isolated simulation restart.",
+        confirmation=PAPER_RECOVERY_CONFIRMATION,
+        created_at_utc=events[2].received_at_utc + timedelta(seconds=3),
+    )
+    pending = pending_paper_recovery_acknowledgement_path(
+        checkpoint,
+        blocked.checkpoint_hash,
+    )
+    write_paper_recovery_acknowledgement(acknowledgement, pending)
+
+    resumed = RealtimePaperOrchestrator(
+        ("KRW-BTC",),
+        policy=_approved_policy(),
+        alpha_model=model,
+        approval=_approval(model),
+        strategies=(_FixedProposal(),),
+        recovery_path=checkpoint,
+    )
+    resumed.begin_recovery_session(started_at_utc=events[2].received_at_utc + timedelta(seconds=4))
+    snapshot = resumed.snapshot(generated_at_utc=events[2].received_at_utc + timedelta(seconds=4))
+
+    assert snapshot.recovery_status is PaperRecoveryStatus.OPERATOR_ACKNOWLEDGED
+    assert snapshot.recovery_blocked is False
+    assert snapshot.paper_order_simulation_enabled is True
+    assert snapshot.decision_reason == "PAPER_RECOVERY_OPERATOR_ACKNOWLEDGED"
+    assert not pending.exists()
+    receipt_path = consumed_paper_recovery_receipt_path(
+        checkpoint,
+        acknowledgement.acknowledgement_id,
+    )
+    receipt = read_paper_recovery_acknowledgement_receipt(receipt_path)
+    assert receipt.blocked_checkpoint_hash == blocked.checkpoint_hash
+    assert receipt.acknowledgement_hash == acknowledgement.acknowledgement_hash
+    assert receipt.result == "OPERATOR_ACKNOWLEDGED"
+    resumed.close(closed_at_utc=events[2].received_at_utc + timedelta(seconds=5))
+
+    write_realtime_paper_recovery_checkpoint(blocked, checkpoint)
+    write_paper_recovery_acknowledgement(acknowledgement, pending)
+    replayed = RealtimePaperOrchestrator(
+        ("KRW-BTC",),
+        policy=_approved_policy(),
+        alpha_model=model,
+        approval=_approval(model),
+        strategies=(_FixedProposal(),),
+        recovery_path=checkpoint,
+    )
+    replayed.begin_recovery_session(started_at_utc=events[2].received_at_utc + timedelta(seconds=6))
+    replayed_snapshot = replayed.snapshot(
+        generated_at_utc=events[2].received_at_utc + timedelta(seconds=6)
+    )
+    assert replayed_snapshot.recovery_status is PaperRecoveryStatus.UNCLEAN_RECONCILED
+    assert replayed_snapshot.recovery_blocked is True
+    assert replayed_snapshot.paper_order_simulation_enabled is False
+    assert replayed_snapshot.decision_reason.startswith("PAPER_RECOVERY_ACKNOWLEDGEMENT_REJECTED_")
 
 
 def test_empty_unapproved_unclean_checkpoint_recovers_without_permanent_block(

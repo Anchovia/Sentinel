@@ -2,9 +2,9 @@
 
 ## Current checkpoint
 
-- Phase: 11.8 — Incremental Raw Quality Index
+- Phase: 11.9 — One-Use Paper Recovery Acknowledgement
 - Status: checkpoint `COMPLETE`; Phase 11 `IN_PROGRESS`
-- Planned implementation phases: 0–10 complete; Phase 11.1–11.8 checkpoints complete
+- Planned implementation phases: 0–10 complete; Phase 11.1–11.9 checkpoints complete
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; the live adapter has no network capability
@@ -14,6 +14,32 @@
 - Production Secrets accessed: no
 - Active recurring scheduled tasks: none; one-time unattended Work filesystem test completed
 - Automatic merge/deploy/model promotion/live activation: unavailable
+
+## Completed in Phase 11.9
+
+- Added versioned `paper-recovery-clearance-evidence-1`, `paper-recovery-acknowledgement-1`, and
+  `paper-recovery-acknowledgement-receipt-1` contracts. A short-lived human review binds the exact
+  blocked checkpoint, policy, ordered KRW universe, pseudonymous reviewer, review reference, and
+  reproducible clearance facts; every artifact is Secret-rejected and hash-bound.
+- Added read-only `paper-recovery-status` and explicit-confirmation `approve-paper-recovery` CLI
+  commands. Approval creation requires a cleanly stopped, still-blocked checkpoint, writes only the
+  canonical pending sidecar, and never clears the block, changes runtime/risk/model gates, calls a
+  network, or submits an order.
+- Made the next paper runtime start independently revalidate terminal and unknown order state,
+  reservations, locked Decimal cash, checkpoint/policy/market bindings, and every ledger restore/
+  round trip before clearing only the recovery block as `OPERATOR_ACKNOWLEDGED`.
+- Added an immutable consumed receipt and prior-receipt check so the approval cannot be reused even
+  if an older checkpoint and pending file are restored together. Missing, expired, tampered,
+  mismatched, changed, or already consumed approval remains fail-closed.
+- Kept interrupted sessions invalid for performance evidence and left model approval, the separate
+  paper-order policy gate, risk limits, runtime settings, private connectivity, and live submission
+  unchanged. Added ADR-024 and operator/data/architecture documentation; README remains unchanged.
+- Verified the current D-drive checkpoint read-only while running: it correctly reported
+  `clean_shutdown=false`, `recovery_blocked=false`, and not eligible for acknowledgement. No pending
+  approval was created against actual runtime data.
+- Rebuilt and recreated the paper service. It returned `healthy`, `RUNNING`, public WebSocket
+  connected, `VERIFIED_CLEAN`, paper-order gate false, paper/real orders 0, and parser/reconnect/
+  queue-overflow counters 0.
 
 ## Completed in Phase 11.8
 
@@ -273,23 +299,25 @@
 ## Validation evidence
 
 ```text
-Python: PASS — 3.13.15; no Phase 11.8 dependency added
+Python: PASS — 3.13.15; no Phase 11.9 dependency added
 ruff: PASS — all checks passed
-format check: PASS — 230 Python files formatted
-mypy: PASS — 115 source files, no issues
-pytest: PASS — 369 tests, 85.87% branch coverage
-secret scan: PASS — 364 text files checked
+format check: PASS — 167 Python files formatted
+mypy: PASS — 116 source files, no issues
+pytest: PASS — 373 tests, 85.69% branch coverage
+secret scan: PASS — 387 text files checked
 dependency audit: PASS — no known vulnerabilities
 Compose config: PASS — base + paper overlays
-container build: PASS — quantforge-paper-runtime:latest 63fe67695ec7
+container build: PASS — quantforge-paper-runtime:latest 7f6bafb5c2a1
 Work audit exports: PASS — work-ops-1 RUNNING; data quality VERIFIED_STORAGE with 2,000,404
   indexed rows/140 manifests; incidents NOT_CONFIGURED; performance/models INSUFFICIENT_SAMPLE;
   authentication/order capability false
 incremental D-drive quality index: PASS — initial 222 files/1,938,743 rows in 31.27 seconds; next
   refresh reused 222 and scanned 5 new files in 2.16 seconds; 286 observed markets; current future-
   preregistration eligible markets 0; current experiment authorization false
-Phase 11.8 restart: PASS — paper-runtime-6 RUNNING/healthy; WebSocket connected; VERIFIED_CLEAN;
-  parser errors/reconnects 0; model approval/paper/real order capability false
+Phase 11.9 restart: PASS — paper-runtime-6 RUNNING/healthy; WebSocket connected; VERIFIED_CLEAN;
+  parser errors/reconnects/queue overflows 0; model approval/paper/real order capability false
+recovery review live check: PASS — running D-drive checkpoint read-only; unblocked/ineligible as
+  expected; no pending acknowledgement or receipt created
 synthetic registered entry/exit: PASS — deterministic conservative fills, positive net round trip,
   non-zero fees/slippage/adverse selection; neutral baseline orders/fills 0
 D-drive fixed-cutoff research inventory: PASS — 430,655 detailed events, 123 observed markets,
@@ -334,8 +362,10 @@ scheduled filesystem access: PASS — one-time Work read/write test; recurring s
 - The public collector, feature path, and neutral paper composition are supervised, but sustained
   coverage has not accumulated and no alpha or exit lifecycle has paper approval. The full-path
   simulated fill is a fixture only; representative performance does not exist.
-- Clean paper state now restores deterministically. Unclean state is reconciled fail-closed and
-  remains blocked until a future reviewed operator acknowledgement workflow exists.
+- Clean paper state restores deterministically. Unclean state is reconciled fail-closed; a local
+  one-use human acknowledgement can clear only the recovery block after a clean stop and a second
+  runtime verification. This is not production recovery, cryptographic identity, multi-operator
+  authorization, or performance validation.
 - The Korean monitor now shows neutral decision, proposal, simulated-order/fill, and portfolio
   counters. The authenticated dashboard and Grafana remain developer/operations skeletons.
 - Dashboard, local journals, backup proof, public-L2 fill approximation, missing authenticated
@@ -349,8 +379,9 @@ scheduled filesystem access: PASS — one-time Work read/write test; recurring s
 Do not enable live trading. Keep the bounded D-drive burn-in running and verify maintenance across
 hour/day boundaries, actual retention pressure, restart recovery, parser failures, gaps, and disk
 growth. Next preregister falsifiable alpha and exit hypotheses, evaluate challengers on cost-
-inclusive chronological data, add a reviewed operator acknowledgement for unclean paper recovery,
-and submit an artifact for separate human paper review.
+inclusive chronological data, and submit any surviving artifact for separate human paper review.
+Exercise the recovery acknowledgement against an actual block only when a real paper incident
+creates one; do not manufacture or clear an incident merely to produce evidence.
 Only clean recovery, a reviewed artifact, and a separately enabled paper-order gate may turn the
 already composed path from neutral to simulated entry/exit lifecycle and representative performance
 exports.

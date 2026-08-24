@@ -204,6 +204,15 @@ configuration is disabled. The public collector continues in neutral mode. Conse
 order/accounting changes are synchronously checkpointed and their durability cost is included in
 decision latency; neutral heartbeats refresh the checkpoint off the market-event hot path.
 
+Phase 11.9 adds a separate one-use operator review sidecar without adding a reset field to the
+checkpoint. A stopped, clean, still-blocked checkpoint can receive a short-lived acknowledgement
+bound to its exact checkpoint/policy/market hashes and reviewed clearance facts. On the next start,
+the runtime—not the CLI—revalidates terminal broker state, absence of unknown orders and locks, and
+exact ledger round trips before clearing only the recovery block. It then persists a hash-bound
+consumption receipt. Replayed, expired, changed, malformed, or already consumed approval remains
+fail-closed. Model approval, the paper-order policy gate, risk limits, runtime settings, and every
+private/live boundary are unaffected.
+
 Phase 11.4 widens observation without applying dense processing to every listing:
 
 ```text

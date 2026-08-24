@@ -140,8 +140,38 @@ If the monitor reports `UNCLEAN_RECONCILED` or `재시작 복구: 확인 필요`
 2. Confirm every recovered non-terminal paper order was canceled and every cash/position lock is 0.
 3. Preserve the checkpoint, runtime snapshot, raw-data manifests, and logs as incident evidence.
 4. Mark the interrupted paper session invalid for performance claims.
-5. Continue keyless public collection only. A future reviewed operator workflow is required to clear
-   the persistent recovery block; restarting again does not clear it.
+5. Continue keyless public collection only until the incident has been reviewed. Restarting alone
+   does not clear the persistent block.
+
+To resume paper simulation after review, first stop the service cleanly. Use the exact namespaced
+checkpoint shown under the paper-data `state` directory; do not substitute the example suffix:
+
+```text
+uv run quantforge paper-recovery-status \
+  --checkpoint D:/Sentinel-Data/state/realtime-paper-recovery-<market-set-hash>.json
+```
+
+The status must report `clean_shutdown=true`, `recovery_blocked=true`, and
+`eligible_for_acknowledgement=true`. A running, unblocked, corrupt, uncertain-order, reserved-cash,
+or non-round-tripping ledger state is ineligible. After preserving the evidence, create one
+short-lived pending acknowledgement with a pseudonymous lowercase hexadecimal reviewer reference:
+
+```text
+uv run quantforge approve-paper-recovery \
+  --checkpoint D:/Sentinel-Data/state/realtime-paper-recovery-<market-set-hash>.json \
+  --reviewer-ref a1b2c3d4e5f60718 \
+  --approval-reference incident-review-42 \
+  --reason "Reconciled paper state reviewed for isolated simulation restart." \
+  --confirmation "CONFIRM CLEAR PAPER RECOVERY BLOCK"
+```
+
+This command does not clear the block. Start the paper service within the approval's validity
+window. The runtime revalidates the exact checkpoint, consumes the approval once, writes an
+immutable receipt under `state/recovery-acknowledgements/consumed`, and reports
+`OPERATOR_ACKNOWLEDGED`. A prior receipt, mismatch, expiry, tamper, open/unknown order, reservation,
+locked cash, or ledger failure prevents clearance. The model approval and independent paper-order
+gate remain separate; this workflow never enables live trading or validates the interrupted
+session's performance.
 
 The checkpoint deliberately excludes orderbooks. A new verified public L2 snapshot is required after
 every restart. `SIGTERM` and `SIGINT` request a clean supervisor stop and close the active public

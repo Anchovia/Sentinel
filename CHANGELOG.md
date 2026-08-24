@@ -127,6 +127,12 @@ All notable changes are recorded here. The project follows semantic versioning o
   simulation with no economic or ledger activity can clear an unclean marker automatically.
 - Active public WebSocket closure during a stop request so stalled network receive cannot prevent
   storage flush, paper-order cancellation, reservation release, or clean checkpoint persistence.
+- Short-lived `paper-recovery-acknowledgement-1` human review bound to the exact clean blocked
+  checkpoint, policy, KRW universe, reviewer reference, and revalidated terminal-order/lock/ledger
+  facts. Creating it does not clear the block or change any runtime gate.
+- Runtime-only one-use acknowledgement consumption with `OPERATOR_ACKNOWLEDGED` status and a
+  hash-bound receipt. Expired, tampered, mismatched, changed, or previously consumed approval fails
+  closed; model approval, paper-order policy, risk, settings, network, and live paths are unchanged.
 - Credential-free dynamic discovery of every current Upbit KRW pair, with strict public catalog and
   quote-ticker schema validation, warning-market exclusion, and market-set-hashed recovery state.
 - A tiered all-KRW paper universe: ticker monitoring across the full listing set and rotating dense
