@@ -2,9 +2,9 @@
 
 ## Current checkpoint
 
-- Phase: 11.9 — One-Use Paper Recovery Acknowledgement
+- Phase: 11.10 — Durable Paper Runtime Continuity Evidence
 - Status: checkpoint `COMPLETE`; Phase 11 `IN_PROGRESS`
-- Planned implementation phases: 0–10 complete; Phase 11.1–11.9 checkpoints complete
+- Planned implementation phases: 0–10 complete; Phase 11.1–11.10 checkpoints complete
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
 - Live submission: blocked; the live adapter has no network capability
@@ -14,6 +14,29 @@
 - Production Secrets accessed: no
 - Active recurring scheduled tasks: none; one-time unattended Work filesystem test completed
 - Automatic merge/deploy/model promotion/live activation: unavailable
+
+## Completed in Phase 11.10
+
+- Added a durable heartbeat lease and fsynced SHA-256 session ledger under the D-drive paper state.
+  Starts, clean/failed stops, missing terminal records, locally observed public-WebSocket/stale-data
+  gaps, and reconnect deltas are versioned and Secret-rejected.
+- The next start now distinguishes `CLEAN_STOP`, `FAILED_STOP`, and `UNEXPECTED_INTERRUPTION` from
+  the prior lease. Corrupt continuity evidence is preserved and reported `DEGRADED`; it cannot pass
+  the strict continuity result, while credential-free paper observation may continue.
+- Added `paper-runtime-continuity-1` and backward-readable `work-ops-2` exports. Work uses the durable
+  session evidence instead of treating a sparse 15-minute baseline alone as an outage, but the
+  false-only exchange-completeness limitation remains binding.
+- Kept the Korean monitor compact with current uptime, prior-session outcome, locally observed gap
+  count, and strict 6-hour/12-hour accumulation state. No control, account, credential, or order
+  action was added.
+- Added ADR-025 and continuity/data/architecture/runbook/automation documentation. README remains
+  unchanged and minimal.
+- Rebuilt and recreated the paper service, then performed one planned Compose restart. The D-drive
+  chain verified clean terminal transitions. During validation an earlier image process also exited
+  with code 1 after 322 seconds and no Docker kill event; `unless-stopped` restarted it and the new
+  ledger preserved the missing terminal record plus 40.046-second downtime as one
+  `UNEXPECTED_INTERRUPTION`. The final active session reports `VERIFIED`, prior `CLEAN_STOP`, no
+  observed feed gap/reconnect, healthy public WebSocket, recovery `VERIFIED_CLEAN`, and orders 0.
 
 ## Completed in Phase 11.9
 
@@ -299,16 +322,20 @@
 ## Validation evidence
 
 ```text
-Python: PASS — 3.13.15; no Phase 11.9 dependency added
+Python: PASS — 3.13.15; no Phase 11.10 dependency added
 ruff: PASS — all checks passed
-format check: PASS — 167 Python files formatted
-mypy: PASS — 116 source files, no issues
-pytest: PASS — 373 tests, 85.69% branch coverage
-secret scan: PASS — 387 text files checked
+format check: PASS — 236 files formatted
+mypy: PASS — 117 source files, no issues
+pytest: PASS — 379 tests, 85.64% branch coverage
+secret scan: PASS — 400 text files checked
 dependency audit: PASS — no known vulnerabilities
 Compose config: PASS — base + paper overlays
-container build: PASS — quantforge-paper-runtime:latest 7f6bafb5c2a1
-Work audit exports: PASS — work-ops-1 RUNNING; data quality VERIFIED_STORAGE with 2,000,404
+container build: PASS — quantforge-paper-runtime:latest 601f99523d68
+continuity restart: PASS_WITH_RETAINED_INCIDENT — VERIFIED/ACTIVE; prior CLEAN_STOP; 4 sessions,
+  2 clean stops, 0 failed stops, 1 earlier missing-terminal interruption/40.046s downtime, 0 observed
+  WebSocket/stale gaps/reconnects, exchange completeness false; final image remained healthy beyond
+  the earlier 322-second failure point
+Work audit exports: PASS — work-ops-2 RUNNING; data quality VERIFIED_STORAGE with 2,000,404
   indexed rows/140 manifests; incidents NOT_CONFIGURED; performance/models INSUFFICIENT_SAMPLE;
   authentication/order capability false
 incremental D-drive quality index: PASS — initial 222 files/1,938,743 rows in 31.27 seconds; next
@@ -368,6 +395,10 @@ scheduled filesystem access: PASS — one-time Work read/write test; recurring s
   authorization, or performance validation.
 - The Korean monitor now shows neutral decision, proposal, simulated-order/fill, and portfolio
   counters. The authenticated dashboard and Grafana remain developer/operations skeletons.
+- One Phase 11.10 validation process exited code 1 without a Docker kill event or terminal heartbeat.
+  The durable ledger retained the interruption, but the removed container's exception log was not
+  recoverable, so the exact application cause remains unconfirmed. The subsequent final-image
+  session is healthy; recurrence requires preserving its logs and a separate incident triage.
 - Dashboard, local journals, backup proof, public-L2 fill approximation, missing authenticated
   transport, and synthetic research limitations remain documented.
 - `D:/Sentinel-Data` is bounded local paper storage, not an encrypted off-host backup. The 50GiB cap

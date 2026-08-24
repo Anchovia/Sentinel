@@ -8,8 +8,8 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 ## Current state
 
 - Date: 2026-08-25 KST
-- Completed phases: 0–10; Phase 11.1–11.9 checkpoints complete
-- Current checkpoint: one-use reviewed paper recovery acknowledgement
+- Completed phases: 0–10; Phase 11.1–11.10 checkpoints complete
+- Current checkpoint: durable paper runtime continuity evidence
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
@@ -36,7 +36,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 11.6 preregistration: `4cb419c chore: 단타 전략 실험 사전등록`
 - Phase 11.6 implementation: `0e3040b feat: 단타 전략 연구 기반 구축`
 
-## Implemented through Phase 11.9
+## Implemented through Phase 11.10
 
 - Safety-first Python modular monolith, six closed live gates, Decimal domain/accounting boundary,
   keyless Upbit public transport, versioned immutable raw lineage, deterministic replay/bars/features,
@@ -98,7 +98,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   blocks regardless of other feature or edge values.
 - A test-only approved fixture proves the complete simulated order/fill/accounting plumbing. It is
   not shipped or promoted. Atomic decision exports and the Korean monitor show review status,
-  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-024 record consequential
+  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-025 record consequential
   choices. README remains intentionally minimal.
 - `realtime-paper-recovery-1` now preserves policy-bound orders, fills, reservations, FIFO lots,
   exact balances, ledger chains, counters, and the event cursor in the durable paper volume. Clean
@@ -116,6 +116,13 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   mismatch, changed facts, unknown/open orders, locks, or ledger failure remains fail-closed.
 - The workflow does not approve a model, enable the independent paper-order policy, change risk or
   settings, validate interrupted performance, access an exchange network, or add live capability.
+- `paper-runtime-continuity-1` now derives strict process/session evidence from an atomic D-drive
+  heartbeat lease and a low-volume fsynced SHA-256 event chain. The next start distinguishes clean,
+  failed, and missing-terminal restarts; locally observed socket/stale gaps and reconnect changes are
+  separate from sparse 15-minute Work baselines.
+- `work-ops-2` and the compact Korean monitor expose uptime, prior outcome, observed gaps, and strict
+  6-hour/12-hour results. They always refuse an exchange-completeness claim, do not reconstruct
+  history before the first recorded session, and have no model/order/private/live capability.
 - The paper runtime now discovers every current KRW pair from Upbit's credential-free official
   catalog at startup. All pairs receive ticker monitoring while a deterministic, fresh, liquid,
   warning-free 20-market focus receives trade and five-level orderbook streams.
@@ -135,22 +142,26 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   after interruption. Active totals are always rebuilt from verified manifests.
 - `paper-runtime-5` enforces and reports 30-day retention, 50GiB maximum active raw data, a 20GiB
   free-space fail-closed stop, 15-minute maintenance, compacted/deleted files, reclaimed bytes, and
-  actual filesystem free space. ADR-001 through ADR-024 record consequential choices.
+  actual filesystem free space. ADR-001 through ADR-025 record consequential choices.
 - Compose grants the paper runtime a 60-second stop grace period. The final signal stop persisted a
   clean checkpoint and the next run reported `VERIFIED_CLEAN` before resuming full coverage.
 
 ## Latest validation
 
 ```text
-Python 3.13.15; no Phase 11.9 dependency added
-ruff + format: PASS (167 Python files)
-mypy: PASS (116 source files)
-pytest: PASS (373 tests, 85.69% branch coverage)
-Secret scan: PASS (387 text files)
+Python 3.13.15; no Phase 11.10 dependency added
+ruff + format: PASS (236 files)
+mypy: PASS (117 source files)
+pytest: PASS (379 tests, 85.64% branch coverage)
+Secret scan: PASS (400 text files)
 pip-audit: PASS (no known vulnerabilities)
 Compose config: PASS
-Phase 11.9 image: PASS (quantforge-paper-runtime:latest, 7f6bafb5c2a1)
-Work audit exports: work-ops-1 RUNNING; data quality VERIFIED_STORAGE with 2,000,404 indexed
+Phase 11.10 image: PASS (quantforge-paper-runtime:latest, 601f99523d68)
+Continuity restart: PASS_WITH_RETAINED_INCIDENT; VERIFIED/ACTIVE, prior CLEAN_STOP, 4 sessions/
+2 clean stops, 0 failed stops, 1 earlier missing-terminal interruption with 40.046s downtime,
+observed WebSocket gaps/stale gaps/reconnects zero; exchange completeness false; final image stayed
+healthy beyond the earlier 322-second failure point
+Work audit exports: work-ops-2 RUNNING; data quality VERIFIED_STORAGE with 2,000,404 indexed
 rows/140 manifests; incidents NOT_CONFIGURED; performance/models INSUFFICIENT_SAMPLE;
 authentication/order capability false
 Incremental D-drive index: initial 222 files/1,938,743 rows in 31.27 seconds; next refresh reused
@@ -203,6 +214,10 @@ Scheduled filesystem access: one-time Work read/write PASS; recurring tasks not 
   runtime-revalidated, but it is not cryptographic operator identity, multi-operator authorization,
   production recovery, or permission to use an interrupted session as performance evidence.
   Long-history checkpoint growth has not been load-tested.
+- Phase 11.10 retained one real missing-terminal interruption from an earlier image: Docker recorded
+  exit code 1 after 322 seconds with no kill event, then restarted it after 40.046 seconds. The
+  replaced container's exception output is unavailable, so root cause is not claimed. Preserve logs
+  and invoke evidence-backed incident triage if the final image repeats it.
 - The Korean monitor covers public feed/storage and neutral paper counters. The authenticated
   server-rendered dashboard/Grafana views remain internal operations skeletons, and there are no
   representative paper strategy, round-trip, or performance results yet.

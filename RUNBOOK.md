@@ -178,6 +178,28 @@ every restart. `SIGTERM` and `SIGINT` request a clean supervisor stop and close 
 socket before storage/checkpoint cleanup. Checkpoint I/O on consequential order/accounting changes is
 part of decision latency.
 
+### Paper runtime continuity evidence
+
+Phase 11.10 continuity measurement starts with the first runtime created from that image; do not
+infer older history. Inspect `runtime_exports/ops/paper-continuity.json` for the current session and
+`D:/Sentinel-Data/state/paper-runtime-session-ledger.jsonl` for the durable low-volume chain. The
+Korean monitor shows the same four operator-level values: continuous uptime, prior-session outcome,
+locally observed gap count, and strict 6-hour/12-hour result.
+
+For a planned restart, use Compose stop/restart so the 60-second grace period can write
+`SESSION_STOPPED`. After the new container is healthy, require `previous_session_outcome=CLEAN_STOP`,
+`continuity_integrity=VERIFIED`, fresh public events, and no order capability. An active prior lease
+becomes `UNEXPECTED_INTERRUPTION` on the next start. Preserve and investigate that evidence; never
+rewrite the ledger or call a missing terminal record a clean stop.
+
+`DEGRADED` means the lease or hash chain did not verify. Public paper observation can remain active,
+but both continuity results must stay false. Preserve the affected files and investigate from a
+copy. Do not delete or repair them in place merely to pass an audit.
+
+The continuity contract does not prove exchange completeness. Keep
+`exchange_gap_completeness_claimed=false`, report evidence before `measurement_started_at_utc` as
+unknown, and use deterministic raw replay for any separate delivery/gap claim.
+
 ### Bounded paper-data storage
 
 The current Windows host stores bulk paper data at `D:/Sentinel-Data`. The machine-specific path is

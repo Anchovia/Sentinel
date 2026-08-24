@@ -19,6 +19,12 @@ from quantforge.runtime.audit_exports import (
     WorkPerformanceSnapshot,
     read_work_audit_baseline,
 )
+from quantforge.runtime.paper_continuity import (
+    PaperSessionOutcome,
+    PaperSessionState,
+    read_paper_runtime_continuity_snapshot,
+    read_paper_runtime_session_ledger,
+)
 from quantforge.runtime.paper_recovery import (
     PaperRecoveryStatus,
     read_realtime_paper_recovery_checkpoint,
@@ -199,6 +205,9 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     assert "모델 검토" in monitor
     assert "재시작 복구" in monitor
     assert "재시작 복구</span><strong>신규" in monitor
+    assert "연속 가동" in monitor
+    assert "이전 실행" in monitor
+    assert "연속 기준선" in monitor
     realtime = read_realtime_pipeline_snapshot(tmp_path / "runtime/ops/realtime-pipeline.json")
     assert realtime.processed_events == 2
     assert realtime.decision_state == "HOLD"
@@ -219,14 +228,29 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     )
     assert recovery.clean_shutdown is True
     assert recovery.recovery_blocked is False
+    continuity = read_paper_runtime_continuity_snapshot(
+        tmp_path / "runtime/ops/paper-continuity.json"
+    )
+    assert continuity.current_session_state is PaperSessionState.STOPPED
+    assert continuity.previous_session_outcome is PaperSessionOutcome.NO_PRIOR_SESSION
+    assert continuity.history_event_count == 2
+    assert continuity.clean_stop_count == 1
+    assert continuity.exchange_gap_completeness_claimed is False
+    continuity_ledger = read_paper_runtime_session_ledger(
+        tmp_path / "state/paper-runtime-session-ledger.jsonl"
+    )
+    assert len(continuity_ledger) == 2
 
     work_ops = WorkOperationsSnapshot.model_validate_json(
         (tmp_path / "runtime/ops/latest.json").read_bytes()
     )
+    assert work_ops.schema_version == "work-ops-2"
     assert work_ops.runtime_state == "STOPPED"
     assert work_ops.trading_mode == "paper"
     assert work_ops.paper_orders == 0
     assert work_ops.private_websocket_state == "NOT_CONFIGURED"
+    assert work_ops.previous_session_outcome == "NO_PRIOR_SESSION"
+    assert work_ops.exchange_gap_completeness_claimed is False
     assert work_ops.safety.real_order_submission_available is False
     quality = DataQualitySnapshot.model_validate_json(
         (tmp_path / "runtime/data_quality/latest.json").read_bytes()
@@ -311,6 +335,12 @@ async def test_supervisor_retains_totals_across_runs(tmp_path: Path) -> None:
     )
     assert decision.recovery_status is PaperRecoveryStatus.VERIFIED_CLEAN
     assert decision.recovery_blocked is False
+    continuity = read_paper_runtime_continuity_snapshot(
+        tmp_path / "runtime/ops/paper-continuity.json"
+    )
+    assert continuity.previous_session_outcome is PaperSessionOutcome.CLEAN_STOP
+    assert continuity.session_count == 2
+    assert continuity.clean_stop_count == 2
 
 
 @pytest.mark.asyncio

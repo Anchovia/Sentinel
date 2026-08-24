@@ -44,6 +44,11 @@ from quantforge.runtime.audit_exports import (
     WorkPerformanceSnapshot,
 )
 from quantforge.runtime.live_guard import LiveSubmissionGuard
+from quantforge.runtime.paper_continuity import (
+    PaperRuntimeContinuitySnapshot,
+    PaperRuntimeContinuityTracker,
+    write_paper_runtime_continuity_snapshot,
+)
 from quantforge.runtime.paper_monitor import write_paper_monitor
 from quantforge.runtime.realtime_decision import (
     RealtimePaperDecisionSnapshot,
@@ -477,6 +482,12 @@ class PaperRuntimeSupervisor:
 
         self.run_id = uuid4()
         self.started_at_utc = datetime.now(UTC)
+        self._continuity = PaperRuntimeContinuityTracker(
+            self.raw_output.parent / "state",
+            run_id=self.run_id,
+            started_at_utc=self.started_at_utc,
+            stale_after_seconds=self.policy.stale_after_seconds,
+        )
         self._event_counts: defaultdict[str, int] = defaultdict(int)
         self._duplicate_messages = 0
         self._parser_errors = 0
@@ -548,6 +559,7 @@ class PaperRuntimeSupervisor:
     async def run(self) -> PaperRuntimeSnapshot:
         cleanup_orphan_temp_files(self.raw_output)
         self._decision.begin_recovery_session(started_at_utc=self.started_at_utc)
+        self._continuity.start()
         await self._write_heartbeat(PaperRuntimeState.STARTING)
         storage_task = asyncio.create_task(
             self._storage_worker(), name=f"paper-storage-{self.run_id}"
@@ -889,7 +901,24 @@ class PaperRuntimeSupervisor:
             raw_output=self.raw_output.as_posix(),
             policy_hash=self.policy.digest,
         )
+        if state in {PaperRuntimeState.STOPPED, PaperRuntimeState.FAILED}:
+            continuity = self._continuity.stop(
+                stopped_at_utc=now_utc,
+                failed=state is PaperRuntimeState.FAILED,
+                shutdown_reason=shutdown_reason or "paper_runtime_stopped",
+                failure_type=failure_type,
+                last_event_at_utc=self._last_event_at_utc,
+                reconnect_count=self._client.reconnect_count,
+            )
+        else:
+            continuity = self._continuity.observe(
+                observed_at_utc=now_utc,
+                websocket_connected=connected,
+                last_event_at_utc=self._last_event_at_utc,
+                reconnect_count=self._client.reconnect_count,
+            )
         write_paper_runtime_snapshot(snapshot, self.output_root)
+        write_paper_runtime_continuity_snapshot(continuity, self.output_root)
         event_age = (
             max(0.0, (now_utc - self._last_event_at_utc).total_seconds())
             if self._last_event_at_utc is not None
@@ -947,12 +976,14 @@ class PaperRuntimeSupervisor:
             realtime=realtime_snapshot,
             decision=decision_snapshot,
             universe=universe_snapshot,
+            continuity=continuity,
         )
         self._write_work_audit_exports(
             runtime=snapshot,
             dashboard=dashboard,
             realtime=realtime_snapshot,
             decision=decision_snapshot,
+            continuity=continuity,
         )
         return snapshot
 
@@ -963,6 +994,7 @@ class PaperRuntimeSupervisor:
         dashboard: DashboardSnapshot,
         realtime: RealtimePipelineSnapshot,
         decision: RealtimePaperDecisionSnapshot,
+        continuity: PaperRuntimeContinuitySnapshot,
     ) -> None:
         generated_at_utc = runtime.updated_at_utc
         portfolios = decision.portfolios
@@ -1036,6 +1068,21 @@ class PaperRuntimeSupervisor:
                 ledger_records=decision.ledger_records,
                 recovery_status=decision.recovery_status.value,
                 recovery_blocked=decision.recovery_blocked,
+                continuity_integrity=continuity.integrity.value,
+                continuity_measurement_started_at_utc=(continuity.measurement_started_at_utc),
+                current_session_uptime_seconds=(continuity.current_session_uptime_seconds),
+                previous_session_outcome=continuity.previous_session_outcome.value,
+                last_shutdown_at_utc=continuity.last_shutdown_at_utc,
+                last_shutdown_reason=continuity.last_shutdown_reason,
+                unexpected_interruption_count=(continuity.unexpected_interruption_count),
+                observed_websocket_gap_count=continuity.websocket_gap_count,
+                observed_stale_data_gap_count=continuity.stale_data_gap_count,
+                current_gap_kind=continuity.current_gap_kind.value,
+                longest_current_session_gap_seconds=(
+                    continuity.longest_current_session_gap_seconds
+                ),
+                six_hour_baseline_ready=continuity.six_hour_baseline_ready,
+                twelve_hour_baseline_ready=continuity.twelve_hour_baseline_ready,
                 gross_pnl_krw=gross_pnl,
                 net_pnl_krw=net_pnl,
                 fees_krw=fees,

@@ -13,6 +13,7 @@ from quantforge.operations.exports import assert_runtime_export_safe
 from quantforge.operations.models import DashboardSnapshot, HealthState, MarketView
 
 if TYPE_CHECKING:
+    from quantforge.runtime.paper_continuity import PaperRuntimeContinuitySnapshot
     from quantforge.runtime.paper_supervisor import PaperRuntimeSnapshot
     from quantforge.runtime.realtime_decision import RealtimePaperDecisionSnapshot
     from quantforge.runtime.realtime_pipeline import RealtimePipelineSnapshot
@@ -32,6 +33,17 @@ def _bytes(value: int) -> str:
             return f"{amount:,.{decimals}f} {unit}"
         amount /= 1024
     return f"{value:,} B"
+
+
+def _duration(seconds: float) -> str:
+    total = max(0, int(seconds))
+    hours, remainder = divmod(total, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours}시간 {minutes}분"
+    if minutes:
+        return f"{minutes}분 {seconds}초"
+    return f"{seconds}초"
 
 
 def _event_counts(snapshot: "PaperRuntimeSnapshot") -> str:
@@ -84,6 +96,7 @@ def render_paper_monitor(
     realtime: "RealtimePipelineSnapshot | None" = None,
     decision: "RealtimePaperDecisionSnapshot | None" = None,
     universe: "RealtimeUniverseSnapshot | None" = None,
+    continuity: "PaperRuntimeContinuitySnapshot | None" = None,
 ) -> str:
     """Render only public-market and fail-closed collection information."""
 
@@ -93,6 +106,7 @@ def render_paper_monitor(
         "realtime": realtime.model_dump(mode="json") if realtime is not None else None,
         "decision": decision.model_dump(mode="json") if decision is not None else None,
         "universe": universe.model_dump(mode="json") if universe is not None else None,
+        "continuity": continuity.model_dump(mode="json") if continuity is not None else None,
     }
     assert_runtime_export_safe(safe_payload)
     state = {
@@ -122,6 +136,25 @@ def render_paper_monitor(
     research_status = (
         "새 실험 등록 가능" if runtime.research_ready_for_preregistration else "데이터 축적 중"
     )
+    continuity_rows = ""
+    if continuity is not None:
+        outcome = {
+            "NO_PRIOR_SESSION": "첫 기록",
+            "CLEAN_STOP": "정상 종료",
+            "FAILED_STOP": "오류 종료",
+            "UNEXPECTED_INTERRUPTION": "갑작스러운 중단",
+            "UNKNOWN": "확인 불가",
+        }[continuity.previous_session_outcome.value]
+        gap_count = continuity.websocket_gap_count + continuity.stale_data_gap_count
+        baseline = (
+            f"6시간 {'충족' if continuity.six_hour_baseline_ready else '축적 중'} / "
+            f"12시간 {'충족' if continuity.twelve_hour_baseline_ready else '축적 중'}"
+        )
+        continuity_rows = f"""
+<div class="row"><span class="label">연속 가동</span><strong>{_duration(continuity.current_session_uptime_seconds)}</strong></div>
+<div class="row"><span class="label">이전 실행</span><strong>{outcome}</strong></div>
+<div class="row"><span class="label">관측된 공백</span><strong>{gap_count:,}건</strong></div>
+<div class="row"><span class="label">연속 기준선</span><strong>{baseline}</strong></div>"""
     processing_panel = (
         f"""<section class="panel"><h2>밀리초 처리</h2><div class="rows">
 <div class="row"><span class="label">처리 지연 p50</span><strong>{realtime.processing_latency_p50_ms:.3f}ms</strong></div>
@@ -216,6 +249,7 @@ border:1px dashed var(--line);border-radius:18px;color:var(--muted);margin-botto
 <div class="row"><span class="label">파서 오류</span><strong>{runtime.parser_errors:,}건</strong></div>
 <div class="row"><span class="label">재연결</span><strong>{runtime.reconnects:,}회</strong></div>
 <div class="row"><span class="label">중복 메시지</span><strong>{runtime.duplicate_messages:,}건</strong></div>
+{continuity_rows}
 </div></section><section class="panel"><h2>보관 상태</h2><div class="rows">
 <div class="row"><span class="label">저장 위치</span><strong>{escape(runtime.storage_label)}</strong></div>
 <div class="row"><span class="label">보관 한도</span><strong>{runtime.storage_retention_days}일 / {storage_limit}</strong></div>
@@ -250,6 +284,7 @@ def write_paper_monitor(
     realtime: "RealtimePipelineSnapshot | None" = None,
     decision: "RealtimePaperDecisionSnapshot | None" = None,
     universe: "RealtimeUniverseSnapshot | None" = None,
+    continuity: "PaperRuntimeContinuitySnapshot | None" = None,
 ) -> Path:
     """Atomically replace the local monitor so browser refreshes never see a partial file."""
 
@@ -259,7 +294,14 @@ def write_paper_monitor(
     temporary = destination_dir / f".paper-monitor.{uuid4().hex}.tmp"
     try:
         temporary.write_text(
-            render_paper_monitor(dashboard, runtime, realtime, decision, universe),
+            render_paper_monitor(
+                dashboard,
+                runtime,
+                realtime,
+                decision,
+                universe,
+                continuity,
+            ),
             encoding="utf-8",
         )
         os.replace(temporary, destination)

@@ -35,7 +35,7 @@ class AuditSafety(AuditExportModel):
 
 
 class WorkOperationsSnapshot(AuditExportModel):
-    schema_version: Literal["work-ops-1"] = "work-ops-1"
+    schema_version: Literal["work-ops-1", "work-ops-2"] = "work-ops-2"
     generated_at_utc: datetime
     source_run_id: UUID
     source_started_at_utc: datetime
@@ -75,6 +75,20 @@ class WorkOperationsSnapshot(AuditExportModel):
     ledger_records: int = Field(ge=0)
     recovery_status: str
     recovery_blocked: bool
+    continuity_integrity: str = "NOT_CONFIGURED"
+    continuity_measurement_started_at_utc: datetime | None = None
+    current_session_uptime_seconds: float = Field(default=0, ge=0)
+    previous_session_outcome: str = "UNKNOWN"
+    last_shutdown_at_utc: datetime | None = None
+    last_shutdown_reason: str | None = None
+    unexpected_interruption_count: int = Field(default=0, ge=0)
+    observed_websocket_gap_count: int = Field(default=0, ge=0)
+    observed_stale_data_gap_count: int = Field(default=0, ge=0)
+    current_gap_kind: str = "UNKNOWN"
+    longest_current_session_gap_seconds: float = Field(default=0, ge=0)
+    six_hour_baseline_ready: bool = False
+    twelve_hour_baseline_ready: bool = False
+    exchange_gap_completeness_claimed: Literal[False] = False
     gross_pnl_krw: Decimal
     net_pnl_krw: Decimal
     fees_krw: Decimal = Field(ge=0)
@@ -101,6 +115,8 @@ class WorkOperationsSnapshot(AuditExportModel):
         "source_started_at_utc",
         "source_updated_at_utc",
         "last_event_at_utc",
+        "continuity_measurement_started_at_utc",
+        "last_shutdown_at_utc",
     )
     @classmethod
     def require_utc(cls, value: datetime | None) -> datetime | None:

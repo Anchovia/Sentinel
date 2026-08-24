@@ -90,6 +90,14 @@
   rewritten after storage commits and can grow with the 30-day active-file set. Its first full
   bootstrap and periodic checksum re-verification consume storage-worker CPU/I/O; they are not part
   of measured feature/decision latency.
+- Durable paper continuity begins only with the first Phase 11.10 session. It can distinguish clean,
+  failed, and missing-terminal restarts and locally observed public-feed gaps while the D drive is
+  available, but it cannot reconstruct older interruptions, detect a host outage until restart, or
+  prove exchange delivery completeness. One observed reconnect/gap closes the strict result for the
+  rest of that session; no rolling-window recovery is claimed.
+- The continuity ledger is deliberately low-volume and append-only but has no long-history
+  compaction yet. It is single-host evidence, not an external watchdog, replicated audit service,
+  operating-system event log, production SLA, or off-host backup.
 
 ## Automation and delivery
 

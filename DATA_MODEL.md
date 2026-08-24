@@ -267,6 +267,18 @@ makes the approval one-use even if an older checkpoint and pending file are rest
 Neither contract changes model approval, risk policy, runtime configuration, performance validity,
 or live capability.
 
+`paper-runtime-continuity-lease-1` is the atomic last-known D-drive record for one paper session. It
+contains the run/start/update times, active/stopped/failed state, public-socket and latest-event
+observation, reconnect and observed-gap counters, longest current-session gap, and terminal reason.
+Its SHA-256 detects partial or manual mutation; it is not an exchange sequence ledger.
+
+`paper-runtime-session-event-1` is a low-volume fsynced JSONL hash chain of session starts, clean or
+failed stops, missing-terminal interruptions, observed public-WebSocket/stale-data gap transitions,
+and reconnect-counter changes. `paper-runtime-continuity-1` derives the current session uptime,
+prior outcome, integrity, strict six/twelve-hour continuity results, and false-only authentication,
+order, live, and exchange-completeness fields. `work-ops-2` carries the same compact evidence while
+remaining backward-readable as version 1.
+
 Phase 7 defines `operations-dashboard-1`, containing UTC generation time and fixed Overview,
 Markets, Positions, Orders, Strategies, Models, System, and Incidents views. Decimal is retained for
 assets, balances, prices, quantities, fees, exposure, and PnL. Exchange order UUIDs are represented

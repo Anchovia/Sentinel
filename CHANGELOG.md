@@ -174,6 +174,16 @@ All notable changes are recorded here. The project follows semantic versioning o
 - The actual D-drive bootstrap verified 1,938,743 rows in 222 files in 31.27 seconds. A second pass
   reused those files, scanned five new files in 2.16 seconds, and covered 1,944,965 rows across 286
   markets with no checksum failure or duplicate event identity.
+- An atomic D-drive continuity lease and low-volume fsynced SHA-256 session ledger that distinguish
+  clean/failed stops, missing-terminal interruptions, locally observed public-WebSocket/stale-data
+  gaps, and reconnect changes without claiming exchange-delivery completeness.
+- `paper-runtime-continuity-1`, backward-readable `work-ops-2`, strict 6-hour/12-hour continuity
+  results, compact Korean monitor rows, and Work audit guidance that no longer treats a sparse
+  15-minute baseline alone as proof of an outage.
+- Actual Compose restart evidence with verified clean terminal transitions and one retained prior
+  missing-terminal interruption: an earlier image exited code 1 without a Docker kill event and was
+  automatically restarted after 40.046 seconds. The final session has prior `CLEAN_STOP`, healthy
+  public observation, and every paper, private, authenticated, and real-order capability closed.
 
 ### Security
 

@@ -213,6 +213,20 @@ consumption receipt. Replayed, expired, changed, malformed, or already consumed 
 fail-closed. Model approval, the paper-order policy gate, risk limits, runtime settings, and every
 private/live boundary are unaffected.
 
+Phase 11.10 adds a durable operations-evidence branch outside the market-event hot path:
+
+```text
+runtime heartbeat/terminal transition -> atomic continuity lease on D drive
+                                      -> low-volume fsynced session/gap hash chain
+                                      -> compact continuity + Work ops v2 exports
+```
+
+The next start classifies the prior lease as clean stop, failed stop, or missing-terminal
+interruption. Public-WebSocket disconnects, stale-event intervals, and reconnect changes are local
+observations only. The export explicitly refuses an exchange-completeness claim, and evidence before
+the first recorded session remains unknown. Corrupt continuity evidence is preserved and marked
+degraded; it does not open any model, paper-order, private, or live path.
+
 Phase 11.4 widens observation without applying dense processing to every listing:
 
 ```text
