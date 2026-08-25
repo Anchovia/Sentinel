@@ -7,9 +7,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 
 ## Current state
 
-- Date: 2026-08-25 KST
+- Date: 2026-08-26 KST
 - Completed phases: 0–10; Phase 11.1–11.10 checkpoints complete
-- Current checkpoint: durable paper runtime continuity evidence
+- Current checkpoint: durable paper runtime continuity evidence plus storage-acceptance stabilization
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
@@ -35,6 +35,26 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 11.3: `f067442 feat: 모의 거래 재시작 복구 구축`
 - Phase 11.6 preregistration: `4cb419c chore: 단타 전략 실험 사전등록`
 - Phase 11.6 implementation: `0e3040b feat: 단타 전략 연구 기반 구축`
+
+## Stabilization after Phase 11.10
+
+- Docker restart evidence exposed a terminal snapshot validation error: raw storage could commit an
+  event that its session had not yet counted as accepted when later causal processing failed. The
+  validation error then replaced the original processing exception during shutdown.
+- `PaperRuntimeSupervisor` now defines successful bounded storage-queue admission as acceptance and
+  records event counts, duplicate state, timestamps, and ingress latency before downstream causal
+  work. Queue overflow remains fail-closed and uncounted.
+- A regression test forces the exact post-admission failure boundary and verifies the original error,
+  a valid `FAILED` snapshot, equal accepted/committed rows, and no order capability. This restores an
+  existing invariant; it does not change a data, risk, order, approval, or live-trading contract, so
+  no new ADR was required.
+- The paper image was rebuilt and recreated without replacing durable data. The old session stopped
+  cleanly at 50,449 accepted/committed rows and the new session started `RUNNING`, healthy, connected
+  to the public WebSocket, and at zero Docker restarts with every authentication/order gate closed.
+- A 15-minute per-minute monitor crossed the configured storage-maintenance interval with zero
+  restarts, OOM kills, parser errors, or reconnects. Maintenance compacted active files and reclaimed
+  2,332,645 bytes; the final read reported 86,322 accepted, 84,475 committed, 1,093,099 retained rows,
+  and no authentication, paper-order, or live-submission capability.
 
 ## Implemented through Phase 11.10
 
@@ -152,9 +172,12 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 Python 3.13.15; no Phase 11.10 dependency added
 ruff + format: PASS (236 files)
 mypy: PASS (117 source files)
-pytest: PASS (379 tests, 85.64% branch coverage)
-Secret scan: PASS (400 text files)
+pytest: PASS (380 tests, 85.64% branch coverage)
+Secret scan: PASS (361 text files)
 pip-audit: PASS (no known vulnerabilities)
+Runtime acceptance regression: PASS; original downstream exception preserved, accepted=committed=1
+Stabilized image: PASS (quantforge-paper-runtime:latest, 9e3c59fe3665); 15-minute maintenance-cycle
+monitor PASS, Docker restarts/OOM/parser errors/reconnects zero, final state RUNNING/healthy
 Compose config: PASS
 Phase 11.10 image: PASS (quantforge-paper-runtime:latest, 601f99523d68)
 Continuity restart: PASS_WITH_RETAINED_INCIDENT; VERIFIED/ACTIVE, prior CLEAN_STOP, 4 sessions/

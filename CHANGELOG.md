@@ -185,6 +185,12 @@ All notable changes are recorded here. The project follows semantic versioning o
   automatically restarted after 40.046 seconds. The final session has prior `CLEAN_STOP`, healthy
   public observation, and every paper, private, authenticated, and real-order capability closed.
 
+### Fixed
+
+- Record paper runtime acceptance immediately after bounded storage-queue admission so a later
+  processing failure cannot persist more rows than the terminal snapshot reports as accepted or
+  mask the original exception with a snapshot validation error.
+
 ### Security
 
 - Paper mode and all live approvals default to disabled.

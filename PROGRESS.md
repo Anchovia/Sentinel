@@ -2,8 +2,8 @@
 
 ## Current checkpoint
 
-- Phase: 11.10 — Durable Paper Runtime Continuity Evidence
-- Status: checkpoint `COMPLETE`; Phase 11 `IN_PROGRESS`
+- Phase: 11.10 — Durable Paper Runtime Continuity Evidence and Runtime Stabilization
+- Status: checkpoint `COMPLETE`; post-checkpoint stabilization `COMPLETE`; Phase 11 `IN_PROGRESS`
 - Planned implementation phases: 0–10 complete; Phase 11.1–11.10 checkpoints complete
 - Branch: `main` (explicitly requested by repository owner)
 - Trading mode: `paper`
@@ -14,6 +14,29 @@
 - Production Secrets accessed: no
 - Active recurring scheduled tasks: none; one-time unattended Work filesystem test completed
 - Automatic merge/deploy/model promotion/live activation: unavailable
+
+## Runtime stabilization after Phase 11.10
+
+- Diagnosed five Docker restarts whose visible terminal error was
+  `committed rows cannot exceed accepted messages`. Raw storage accepted an event before causal
+  processing, while the accepted counter advanced only after processing; any downstream exception
+  could therefore persist one more row and make terminal snapshot validation mask the original
+  failure.
+- Moved accepted-message, duplicate, timestamp, and ingress-latency accounting directly after
+  successful bounded-queue admission. Queue overflow still fails before acceptance, while any later
+  processing error now retains its original type and writes a valid `FAILED` snapshot with exact
+  committed/accepted counts.
+- Added a regression test that forces processing to fail after storage admission and proves the
+  original `RuntimeError`, one accepted message, one committed row, and no order capability.
+- Verified Ruff and formatting across 236 files, mypy across 117 source files, all 380 tests at
+  85.64% coverage, 361-file Secret scanning, and `pip-audit` with no known vulnerabilities.
+- Rebuilt and recreated only the paper runtime while preserving its durable data. The prior session
+  stopped cleanly with 50,449 accepted and committed rows; the replacement started healthy with
+  authentication, paper-order submission, and live submission all unavailable.
+- Kept the replacement under per-minute restart supervision through the configured 900-second
+  storage-maintenance interval. It remained `RUNNING` and healthy with Docker restarts, OOM kills,
+  parser errors, and reconnects all zero; maintenance compacted active files and reclaimed 2,332,645
+  bytes while public collection continued.
 
 ## Completed in Phase 11.10
 

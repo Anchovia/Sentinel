@@ -398,6 +398,31 @@ async def test_failure_is_persisted_and_propagated(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_processing_failure_preserves_storage_acceptance_and_original_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    event = make_trade_event(sequence=1, exchange_offset_ms=100, received_offset_ms=150)
+    supervisor = _supervisor(tmp_path, _factory(events=(event,)))
+
+    def fail_after_storage_acceptance(*_args: object) -> None:
+        raise RuntimeError("processing failed after storage acceptance")
+
+    monkeypatch.setattr(supervisor._realtime, "process", fail_after_storage_acceptance)
+
+    with pytest.raises(RuntimeError, match="processing failed after storage acceptance"):
+        await supervisor.run()
+
+    snapshot = read_paper_runtime_snapshot(tmp_path / "runtime/ops/paper-runtime.json")
+    assert snapshot.state is PaperRuntimeState.FAILED
+    assert snapshot.failure_type == "RuntimeError"
+    assert snapshot.accepted_messages == 1
+    assert snapshot.committed_rows == 1
+    assert snapshot.retained_rows == 1
+    assert snapshot.order_submission_available is False
+
+
+@pytest.mark.asyncio
 async def test_bounded_storage_queue_overflow_fails_without_silent_loss(tmp_path: Path) -> None:
     events = tuple(
         make_trade_event(

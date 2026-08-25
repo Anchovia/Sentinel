@@ -669,6 +669,16 @@ class PaperRuntimeSupervisor:
             raise PaperRuntimeBlocked(
                 "bounded raw-storage queue overflowed; public processing stopped"
             ) from exc
+        # Queue acceptance defines runtime acceptance. Record it before downstream work so a
+        # processing failure cannot leave a persisted row ahead of the terminal snapshot counter.
+        self._event_counts[event.event_type] += 1
+        if event.is_duplicate:
+            self._duplicate_messages += 1
+        self._last_event_at_utc = event.received_at_utc
+        self._last_exchange_at_utc = event.exchange_timestamp
+        latency_ms = event.ingress_latency_us / 1_000
+        if self._max_ingress_latency_ms is None or latency_ms > self._max_ingress_latency_ms:
+            self._max_ingress_latency_ms = latency_ms
         if self._universe_scanner is not None:
             self._universe_scanner.ingest(event)
         frame = self._realtime.process(event)
@@ -679,14 +689,6 @@ class PaperRuntimeSupervisor:
         )
         if event.market in focused:
             self._decision.process(event, frame)
-        self._event_counts[event.event_type] += 1
-        if event.is_duplicate:
-            self._duplicate_messages += 1
-        self._last_event_at_utc = event.received_at_utc
-        self._last_exchange_at_utc = event.exchange_timestamp
-        latency_ms = event.ingress_latency_us / 1_000
-        if self._max_ingress_latency_ms is None or latency_ms > self._max_ingress_latency_ms:
-            self._max_ingress_latency_ms = latency_ms
         self._market.ingest(event)
 
     async def _storage_worker(self) -> None:
