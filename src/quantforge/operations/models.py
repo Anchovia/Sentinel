@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -126,7 +126,10 @@ class SystemView(OperationsModel):
     rate_limit_remaining: Annotated[int | None, Field(ge=0)] = None
     rest_latency_ms: Annotated[float | None, Field(ge=0)] = None
     order_latency_ms: Annotated[float | None, Field(ge=0)] = None
+    # This is the latest public-event exchange-ahead proxy, not a host NTP reading.
     clock_skew_ms: float | None = None
+    latest_ingress_latency_ms: float | None = None
+    max_ingress_latency_ms: Annotated[float | None, Field(ge=0)] = None
     database_state: HealthState = HealthState.UNKNOWN
     disk_free_bytes: Annotated[int | None, Field(ge=0)] = None
     backup_state: HealthState = HealthState.UNKNOWN
@@ -172,7 +175,9 @@ class IncidentView(OperationsModel):
 
 
 class DashboardSnapshot(OperationsModel):
-    schema_version: str = "operations-dashboard-1"
+    schema_version: Literal["operations-dashboard-1", "operations-dashboard-2"] = (
+        "operations-dashboard-2"
+    )
     generated_at_utc: datetime
     overview: OverviewView
     markets: tuple[MarketView, ...] = ()

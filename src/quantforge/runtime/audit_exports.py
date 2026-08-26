@@ -35,7 +35,7 @@ class AuditSafety(AuditExportModel):
 
 
 class WorkOperationsSnapshot(AuditExportModel):
-    schema_version: Literal["work-ops-1", "work-ops-2"] = "work-ops-2"
+    schema_version: Literal["work-ops-1", "work-ops-2", "work-ops-3"] = "work-ops-3"
     generated_at_utc: datetime
     source_run_id: UUID
     source_started_at_utc: datetime
@@ -61,6 +61,8 @@ class WorkOperationsSnapshot(AuditExportModel):
     storage_queue_capacity: int = Field(ge=0)
     storage_queue_overflows: int = Field(ge=0)
     max_ingress_latency_ms: float | None = Field(default=None, ge=0)
+    latest_ingress_latency_ms: float | None = None
+    latest_exchange_clock_ahead_ms: float | None = Field(default=None, ge=0)
     feature_latency_p99_ms: float = Field(ge=0)
     decision_latency_p99_ms: float = Field(ge=0)
     rest_api_state: AuditEvidenceState = AuditEvidenceState.NOT_APPLICABLE

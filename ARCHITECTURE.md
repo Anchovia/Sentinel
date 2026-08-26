@@ -264,12 +264,12 @@ validated events -> bounded queue -> atomic ZSTD Parquet + v1 manifest
                    heartbeat free-space check (<20GiB -> fail-closed stop)
 ```
 
-The host path is injected through an ignored local Compose environment file and is mounted only at
-`/app/data/paper`; the current owner path is `D:/Sentinel-Data`. Compaction commits replacement data
-and lineage before retiring sources, and startup resumes interrupted retirement markers. Active
-manifest totals, not directory guesses, drive the monitor. Maintenance runs in the storage worker,
-outside the event/feature/decision hot path. The original Docker named volume is retained only as a
-migration rollback copy; neither it nor the D drive is an off-host backup.
+The host path may be injected through an ignored local Compose environment file and is mounted only
+at `/app/data/paper`; without that override Compose uses the repository-local `./data/paper`
+fallback. Compaction commits replacement data and lineage before retiring sources, and startup
+resumes interrupted retirement markers. Active manifest totals, not host-drive guesses, drive the
+monitor. Maintenance runs in the storage worker, outside the event/feature/decision hot path. Any
+same-host path or preserved Docker volume is rollback convenience, not an off-host backup.
 
 Phase 11.6 adds an offline research branch that never enters the supervised order path:
 

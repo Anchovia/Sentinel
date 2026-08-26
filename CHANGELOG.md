@@ -142,8 +142,8 @@ All notable changes are recorded here. The project follows semantic versioning o
   rotations. All model, paper-order, private, and real-order controls remain closed.
 - Incremental exact portfolio aggregates that keep focused risk decisions from rescanning every
   monitored market on each event.
-- Configurable host bind storage for bulk paper data, with the current local runtime isolated on
-  `D:/Sentinel-Data` and the machine-specific override excluded from Git.
+- Configurable host bind storage for bulk paper data, with an optional machine-specific override
+  excluded from Git and a portable repository-local fallback.
 - Checked ZSTD compaction with version-2 supersession manifests and interruption-resumable retirement
   markers that preserve replay rows while reducing completed-hour small files.
 - A 30-day raw retention ceiling, 50GiB active-data cap, 20GiB free-space fail-closed stop, and
@@ -180,6 +180,9 @@ All notable changes are recorded here. The project follows semantic versioning o
 - `paper-runtime-continuity-1`, backward-readable `work-ops-2`, strict 6-hour/12-hour continuity
   results, compact Korean monitor rows, and Work audit guidance that no longer treats a sparse
   15-minute baseline alone as proof of an outage.
+- `paper-runtime-7`, `work-ops-3`, and `operations-dashboard-2` timing evidence separating session
+  maximum positive ingress latency, newest signed ingress latency, and the newest exchange-ahead
+  proxy without claiming an independent host NTP measurement.
 - Actual Compose restart evidence with verified clean terminal transitions and one retained prior
   missing-terminal interruption: an earlier image exited code 1 without a Docker kill event and was
   automatically restarted after 40.046 seconds. The final session has prior `CLEAN_STOP`, healthy
@@ -194,6 +197,12 @@ All notable changes are recorded here. The project follows semantic versioning o
   the last accepted time with monotonic elapsed time, retaining a `local_clock_regression` quality
   flag, and forcing the affected feature frame to remain `HOLD` instead of restarting the runtime.
 - Version the stabilized live receive semantics as `upbit-public-live-v2` and record ADR-026.
+- Stop reporting a stale or duplicate ticker's positive ingress-latency high-water mark as host
+  clock skew; retain it as staleness evidence and use only the fresh negative-latency magnitude for
+  the backward-compatible dashboard clock proxy.
+- Require the six-hour scheduled operations prompt to use the complete `automation-report-1`
+  fixture shape, validate its same-stem JSON manifest, avoid fixed-drive assumptions, and treat
+  denied optional host/Docker access as unknown rather than an incident by itself.
 
 ### Security
 

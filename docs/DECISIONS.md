@@ -28,5 +28,6 @@
 | ADR-024 | Require one-use hash-bound human acknowledgement for blocked paper recovery | Accepted | 2026-08-25 |
 | ADR-025 | Persist hash-bound paper session and locally observed continuity evidence | Accepted | 2026-08-25 |
 | ADR-026 | Stabilize live availability across local wall-clock regression | Accepted | 2026-08-26 |
+| ADR-027 | Separate ingress staleness from typed operations clock evidence | Accepted | 2026-08-26 |
 
 Consequential changes require a new ADR; do not silently rewrite accepted rationale.

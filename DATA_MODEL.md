@@ -261,6 +261,15 @@ aggregate counters plus market coverage. `VERIFIED_STORAGE` means the retained f
 listed local integrity checks; it does not claim public-exchange completeness or approve a trial,
 model, paper order, or live action.
 
+`paper-runtime-7` separates timing evidence that version 6 exposed ambiguously.
+`max_ingress_latency_ms` is the nonnegative session high-water mark for positive
+receive-minus-exchange latency and can reflect an old or duplicate ticker.
+`latest_ingress_latency_ms` is the newest event's signed value, while
+`latest_exchange_clock_ahead_ms=max(0, -latest_ingress_latency_ms)` is a fresh public-event proxy for
+an exchange timestamp ahead of local receipt. `operations-dashboard-2.clock_skew_ms` carries that
+same proxy and separately exposes both ingress fields. None of these fields is an independent host
+NTP measurement.
+
 `paper-recovery-acknowledgement-1` binds a human review UUID, pseudonymous reviewer reference,
 review reference/reason, UTC validity window, exact recovery checkpoint/policy hashes, ordered KRW
 market universe, and `paper-recovery-clearance-evidence-1`. Clearance records terminal/unknown
@@ -274,7 +283,8 @@ makes the approval one-use even if an older checkpoint and pending file are rest
 Neither contract changes model approval, risk policy, runtime configuration, performance validity,
 or live capability.
 
-`paper-runtime-continuity-lease-1` is the atomic last-known D-drive record for one paper session. It
+`paper-runtime-continuity-lease-1` is the atomic last-known record in the mounted paper-data state
+directory for one paper session. It
 contains the run/start/update times, active/stopped/failed state, public-socket and latest-event
 observation, reconnect and observed-gap counters, longest current-session gap, and terminal reason.
 Its SHA-256 detects partial or manual mutation; it is not an exchange sequence ledger.
@@ -283,13 +293,16 @@ Its SHA-256 detects partial or manual mutation; it is not an exchange sequence l
 failed stops, missing-terminal interruptions, observed public-WebSocket/stale-data gap transitions,
 and reconnect-counter changes. `paper-runtime-continuity-1` derives the current session uptime,
 prior outcome, integrity, strict six/twelve-hour continuity results, and false-only authentication,
-order, live, and exchange-completeness fields. `work-ops-2` carries the same compact evidence while
-remaining backward-readable as version 1.
+order, live, and exchange-completeness fields. `work-ops-3` carries the same compact evidence plus
+the separated timing fields while remaining backward-readable as versions 1 and 2.
 
 Phase 7 defines `operations-dashboard-1`, containing UTC generation time and fixed Overview,
 Markets, Positions, Orders, Strategies, Models, System, and Incidents views. Decimal is retained for
 assets, balances, prices, quantities, fees, exposure, and PnL. Exchange order UUIDs are represented
 only by a short one-way reference hash; account UUIDs are forbidden.
+
+`operations-dashboard-2` adds explicitly separated latest/max ingress timing fields and narrows the
+legacy `clock_skew_ms` meaning to the latest exchange-ahead proxy. Version 1 remains readable.
 
 Incident, emergency-control, and audit histories are append-only JSONL chains with sequence,
 previous hash, and record hash. Control records bind a hashed idempotency key to one request

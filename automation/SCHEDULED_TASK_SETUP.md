@@ -27,6 +27,13 @@ This file is an operator checklist. The repository does not register or enable a
   `runtime_exports/research/proposals/**`.
 - Capture `git diff -- src configs ops migrations dashboard` before and after. If it changes, stop
   and report the breach without trying to conceal or rewrite it.
+- A scheduled sandbox denial for host NTP, the Docker named pipe, or a host-only mount does not prove
+  an operational failure. Use the fresh redacted exports for supported claims, leave the independent
+  host check unknown, and never guess a drive letter. Do not confuse positive ingress latency from
+  an old ticker with clock skew.
+- Generate `automation-report-1` from `tests/fixtures/automation/work-noop-report.json` and validate
+  the exact file before accepting a run. On Windows, `.venv/Scripts/quantforge.exe` is the fallback
+  when `uv` is not on `PATH`.
 
 ## Codex tasks
 

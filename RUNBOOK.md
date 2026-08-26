@@ -148,7 +148,7 @@ checkpoint shown under the paper-data `state` directory; do not substitute the e
 
 ```text
 uv run quantforge paper-recovery-status \
-  --checkpoint D:/Sentinel-Data/state/realtime-paper-recovery-<market-set-hash>.json
+  --checkpoint <paper-data-root>/state/realtime-paper-recovery-<market-set-hash>.json
 ```
 
 The status must report `clean_shutdown=true`, `recovery_blocked=true`, and
@@ -158,7 +158,7 @@ short-lived pending acknowledgement with a pseudonymous lowercase hexadecimal re
 
 ```text
 uv run quantforge approve-paper-recovery \
-  --checkpoint D:/Sentinel-Data/state/realtime-paper-recovery-<market-set-hash>.json \
+  --checkpoint <paper-data-root>/state/realtime-paper-recovery-<market-set-hash>.json \
   --reviewer-ref a1b2c3d4e5f60718 \
   --approval-reference incident-review-42 \
   --reason "Reconciled paper state reviewed for isolated simulation restart." \
@@ -182,9 +182,10 @@ part of decision latency.
 
 Phase 11.10 continuity measurement starts with the first runtime created from that image; do not
 infer older history. Inspect `runtime_exports/ops/paper-continuity.json` for the current session and
-`D:/Sentinel-Data/state/paper-runtime-session-ledger.jsonl` for the durable low-volume chain. The
-Korean monitor shows the same four operator-level values: continuous uptime, prior-session outcome,
-locally observed gap count, and strict 6-hour/12-hour result.
+`<paper-data-root>/state/paper-runtime-session-ledger.jsonl` for the durable low-volume chain. Resolve
+the actual host root from the Docker mount or reviewed local Compose override; never guess a drive
+letter. The Korean monitor shows the same four operator-level values: continuous uptime,
+prior-session outcome, locally observed gap count, and strict 6-hour/12-hour result.
 
 For a planned restart, use Compose stop/restart so the 60-second grace period can write
 `SESSION_STOPPED`. After the new container is healthy, require `previous_session_outcome=CLEAN_STOP`,
@@ -202,8 +203,9 @@ unknown, and use deterministic raw replay for any separate delivery/gap claim.
 
 ### Bounded paper-data storage
 
-The current Windows host stores bulk paper data at `D:/Sentinel-Data`. The machine-specific path is
-kept only in ignored `compose.paper.local.env`:
+The paper-data host path is machine-specific. Without an override, Compose uses the repository-local
+`./data/paper` fallback. A host with a dedicated data drive may keep this non-secret override only in
+ignored `compose.paper.local.env`:
 
 ```text
 QF_PAPER_DATA_HOST_PATH=D:/Sentinel-Data
@@ -218,9 +220,10 @@ docker compose --env-file compose.paper.local.env -f docker-compose.yml -f docke
 ```
 
 The active policy is ZSTD Parquet, completed-hour compaction every 15 minutes, 30-day retention,
-50GiB maximum active raw data, and a 20GiB minimum free-space floor. `paper-runtime-6` and the Korean
-monitor show the effective path, bounds, reclaimed bytes, verified rows/files, and actual free
-space. The 50GiB cap may
+50GiB maximum active raw data, and a 20GiB minimum free-space floor. `paper-runtime-7` and the Korean
+monitor show the storage label, bounds, reclaimed bytes, verified rows/files, and actual mounted
+filesystem free space. Resolve a host path independently from Docker only when that permission is
+available. The 50GiB cap may
 delete data before 30 days during high activity. A file is retired by renaming its manifest to a
 reason-specific marker before its payload is removed.
 
@@ -259,6 +262,12 @@ docker compose --env-file compose.paper.local.env -f docker-compose.yml -f docke
 ```
 
 Default endpoints bind to localhost: API 8000, Grafana 3000, Prometheus 9090, PostgreSQL 5432. The committed Grafana/PostgreSQL passwords are development-only and must not be used in production.
+
+For a host-level read-only mount check, inspect the running `paper-runtime` container and identify the
+source whose destination is `/app/data/paper`. Scheduled sandboxes may be unable to access the Docker
+named pipe; record that host claim as unknown instead of assuming a `D:` path. Fresh
+`paper-runtime-7`, `work-ops-3`, and verified quality-index fields remain the primary supported
+runtime/storage evidence in that environment.
 
 The paper Compose service resolves `ALL-KRW` at startup without credentials. It monitors every
 current KRW pair by ticker and assigns trade/five-level-orderbook processing to 20 focused pairs.

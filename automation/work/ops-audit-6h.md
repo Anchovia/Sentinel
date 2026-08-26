@@ -24,8 +24,35 @@ the snapshot's limitations and report history before `measurement_started_at_utc
 Never convert process continuity or observed-gap counts into exchange-delivery completeness;
 `exchange_gap_completeness_claimed=false` and the data-quality gap capability remain binding.
 
+For a version-2 operations export, treat both `max_ingress_latency_ms` and the legacy dashboard
+`clock_skew_ms` as potentially containing the same positive session latency high-water mark. Neither
+is host NTP evidence.
+
+For a version-3 operations export, interpret the corrected timing fields precisely:
+
+- `max_ingress_latency_ms` is the current session's positive latency high-water mark. An old or
+  duplicate ticker may dominate it, so it is not Windows/NTP clock skew.
+- `latest_ingress_latency_ms` is the newest event's signed receive-minus-exchange latency.
+- `latest_exchange_clock_ahead_ms` is the nonnegative magnitude when that newest exchange timestamp
+  is ahead of local receipt. It is a public-event proxy, not independent host-time evidence.
+
+Use event type, quality flags, freshness, and recent baselines before classifying timing. Do not
+elevate the result solely because the scheduled sandbox cannot query `w32tm`, the Docker named pipe,
+or a host mount while fresh verified runtime/continuity exports support the requested claim. Keep the
+unverified Docker restart/OOM or host-time claim explicitly unknown. Never assume `D:\Sentinel-Data`
+or another fixed host path; report the exported storage label, verified rows/files/bytes, disk-free
+value, and configured safety floor. Treat an independently visible Docker mount as optional extra
+evidence only.
+
 Classify NORMAL/WARNING/HIGH/CRITICAL. Do not take an operational action. Set `requires_codex` or
 `requires_operator` only with evidence. Write
 `reports/work/ops/YYYY/MM/DD/<timestamp>-ops-audit.md` and the same-stem JSON report manifest. If no
 material change exists, use a short NORMAL/NO_ACTION report. If inputs are missing, use BLOCKED.
-Validate the manifest and confirm `git diff -- src configs ops migrations dashboard` is unchanged.
+Create the manifest from the complete field shape in
+`tests/fixtures/automation/work-noop-report.json`; do not invent a shortened JSON structure. Include
+both same-stem files in `writes`, use structured evidence records, and preserve all eight false-only
+safety fields. Validate it with
+`uv run quantforge validate-automation-report --report <manifest> --workspace-root <checkout> --allowlist automation/write-allowlist.yaml`.
+If `uv` is unavailable on Windows, use `.venv/Scripts/quantforge.exe` with the same subcommand and
+arguments. Do not call an invalid manifest complete. Confirm
+`git diff -- src configs ops migrations dashboard` is unchanged.

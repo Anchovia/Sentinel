@@ -208,6 +208,24 @@ def test_repository_skill_and_schedule_catalog_is_complete() -> None:
     assert all((ROOT / task["prompt"]).is_file() for task in catalog["tasks"])
 
 
+def test_ops_audit_prompt_separates_timing_and_requires_manifest_validation() -> None:
+    prompt = (ROOT / "automation" / "work" / "ops-audit-6h.md").read_text(encoding="utf-8")
+
+    assert "max_ingress_latency_ms" in prompt
+    assert "latest_exchange_clock_ahead_ms" in prompt
+    assert "tests/fixtures/automation/work-noop-report.json" in prompt
+    assert "validate-automation-report" in prompt
+    assert "Never assume `D:\\Sentinel-Data`" in prompt
+
+    data_prompt = (ROOT / "automation" / "work" / "data-quality-daily.md").read_text(
+        encoding="utf-8"
+    )
+    assert "max_ingress_latency_ms" in data_prompt
+    assert "latest_exchange_clock_ahead_ms" in data_prompt
+    assert "tests/fixtures/automation/work-noop-report.json" in data_prompt
+    assert "validate-automation-report" in data_prompt
+
+
 def test_json_schemas_are_closed_and_safety_is_false_only() -> None:
     report_schema = json.loads(
         (ROOT / "automation" / "schemas" / "report.schema.json").read_text(encoding="utf-8")

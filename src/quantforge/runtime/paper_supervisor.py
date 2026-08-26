@@ -102,7 +102,8 @@ class PaperRuntimeSnapshot(BaseModel):
         "paper-runtime-4",
         "paper-runtime-5",
         "paper-runtime-6",
-    ] = "paper-runtime-6"
+        "paper-runtime-7",
+    ] = "paper-runtime-7"
     run_id: UUID
     state: PaperRuntimeState
     started_at_utc: datetime
@@ -147,6 +148,8 @@ class PaperRuntimeSnapshot(BaseModel):
     last_event_at_utc: datetime | None = None
     last_exchange_at_utc: datetime | None = None
     max_ingress_latency_ms: float | None = None
+    latest_ingress_latency_ms: float | None = None
+    latest_exchange_clock_ahead_ms: float | None = Field(default=None, ge=0)
     last_error_type: str | None = None
     shutdown_reason: str | None = None
     failure_type: str | None = None
@@ -174,7 +177,11 @@ class PaperRuntimeSnapshot(BaseModel):
             raise ValueError("paper runtime timestamps must be UTC-aware")
         return value
 
-    @field_validator("max_ingress_latency_ms")
+    @field_validator(
+        "max_ingress_latency_ms",
+        "latest_ingress_latency_ms",
+        "latest_exchange_clock_ahead_ms",
+    )
     @classmethod
     def require_finite_latency(cls, value: float | None) -> float | None:
         if value is not None and not math.isfinite(value):
@@ -183,6 +190,12 @@ class PaperRuntimeSnapshot(BaseModel):
 
     @model_validator(mode="after")
     def validate_lifecycle(self) -> "PaperRuntimeSnapshot":
+        if (
+            self.schema_version == "paper-runtime-7"
+            and self.max_ingress_latency_ms is not None
+            and self.max_ingress_latency_ms < 0
+        ):
+            raise ValueError("version-7 maximum ingress latency must be nonnegative")
         if self.updated_at_utc < self.started_at_utc:
             raise ValueError("runtime update cannot precede its start")
         if self.stopped_at_utc is not None and self.stopped_at_utc < self.started_at_utc:
@@ -530,6 +543,8 @@ class PaperRuntimeSupervisor:
         self._last_event_at_utc: datetime | None = None
         self._last_exchange_at_utc: datetime | None = None
         self._max_ingress_latency_ms: float | None = None
+        self._latest_ingress_latency_ms: float | None = None
+        self._latest_exchange_clock_ahead_ms: float | None = None
         self._last_error_type: str | None = None
         self._requested_shutdown_reason: str | None = None
         self._market = _MarketAccumulator(self.markets)
@@ -677,8 +692,14 @@ class PaperRuntimeSupervisor:
         self._last_event_at_utc = event.received_at_utc
         self._last_exchange_at_utc = event.exchange_timestamp
         latency_ms = event.ingress_latency_us / 1_000
-        if self._max_ingress_latency_ms is None or latency_ms > self._max_ingress_latency_ms:
-            self._max_ingress_latency_ms = latency_ms
+        positive_latency_ms = max(0.0, latency_ms)
+        if (
+            self._max_ingress_latency_ms is None
+            or positive_latency_ms > self._max_ingress_latency_ms
+        ):
+            self._max_ingress_latency_ms = positive_latency_ms
+        self._latest_ingress_latency_ms = latency_ms
+        self._latest_exchange_clock_ahead_ms = max(0.0, -latency_ms)
         if self._universe_scanner is not None:
             self._universe_scanner.ingest(event)
         frame = self._realtime.process(event)
@@ -897,6 +918,8 @@ class PaperRuntimeSupervisor:
             last_event_at_utc=self._last_event_at_utc,
             last_exchange_at_utc=self._last_exchange_at_utc,
             max_ingress_latency_ms=self._max_ingress_latency_ms,
+            latest_ingress_latency_ms=self._latest_ingress_latency_ms,
+            latest_exchange_clock_ahead_ms=self._latest_exchange_clock_ahead_ms,
             last_error_type=self._last_error_type,
             shutdown_reason=shutdown_reason,
             failure_type=failure_type,
@@ -953,7 +976,9 @@ class PaperRuntimeSupervisor:
                 market_event_age_seconds=event_age,
                 queue_depth=self._storage_queue.qsize(),
                 parser_errors=self._parser_errors,
-                clock_skew_ms=self._max_ingress_latency_ms,
+                clock_skew_ms=self._latest_exchange_clock_ahead_ms,
+                latest_ingress_latency_ms=self._latest_ingress_latency_ms,
+                max_ingress_latency_ms=self._max_ingress_latency_ms,
                 disk_free_bytes=self._disk_free_bytes,
             ),
         )
@@ -1062,6 +1087,8 @@ class PaperRuntimeSupervisor:
                 storage_queue_capacity=runtime.storage_queue_capacity,
                 storage_queue_overflows=runtime.storage_queue_overflows,
                 max_ingress_latency_ms=runtime.max_ingress_latency_ms,
+                latest_ingress_latency_ms=runtime.latest_ingress_latency_ms,
+                latest_exchange_clock_ahead_ms=(runtime.latest_exchange_clock_ahead_ms),
                 feature_latency_p99_ms=realtime.processing_latency_p99_ms,
                 decision_latency_p99_ms=decision.decision_latency_p99_ms,
                 paper_orders=decision.paper_orders,

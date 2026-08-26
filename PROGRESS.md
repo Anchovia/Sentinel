@@ -2,7 +2,7 @@
 
 ## Current checkpoint
 
-- Phase: 11.10 — Durable Paper Runtime Continuity Evidence and Runtime Stabilization
+- Phase: 11.10 — Durable Paper Runtime Continuity Evidence and Operations Audit Stabilization
 - Status: checkpoint `COMPLETE`; post-checkpoint stabilization `COMPLETE`; Phase 11 `IN_PROGRESS`
 - Planned implementation phases: 0–10 complete; Phase 11.1–11.10 checkpoints complete
 - Branch: `main` (explicitly requested by repository owner)
@@ -12,8 +12,41 @@
 - Actual orders executed: no
 - Private/authenticated Upbit calls: no
 - Production Secrets accessed: no
-- Active recurring scheduled tasks: none; one-time unattended Work filesystem test completed
+- Active scheduled tasks: six-hour local report-only audit (`gpt-5.6-luna`, recurring) and one-time
+  24-hour data verification (`gpt-5.6-terra`); both run as separate local Codex tasks
 - Automatic merge/deploy/model promotion/live activation: unavailable
+
+## Six-hour operations-audit stabilization
+
+- Reviewed the first unattended six-hour report against the exact runtime exports, retained raw
+  index, Windows time service, Docker state, logs, and actual container mounts. The public paper
+  runtime had passed its strict six-hour baseline with verified continuity, no current gap,
+  reconnect, parser error, queue overflow, Docker restart, or OOM kill.
+- Traced the reported 5,661,490.659ms `clock_skew_ms` to a stale duplicate `KRW-USDG` ticker whose
+  exchange timestamp was 94.4 minutes older than receipt. A retained-row scan confirmed the event
+  carried `stale_at_ingress` and `duplicate_raw_payload`; independent host sampling was near 0.13s,
+  so the report's host-clock conclusion was unsupported.
+- Separated the session positive-latency high-water mark, newest signed ingress latency, and newest
+  exchange-ahead magnitude. `operations-dashboard-2.clock_skew_ms` now uses only the fresh
+  exchange-ahead proxy, consistent with real-time risk, while stale ticker evidence remains visible.
+- Versioned the compatible lifecycle/audit contracts as `paper-runtime-7` and `work-ops-3`. Added a
+  regression with a 600-second stale event followed by a 1.5-second exchange-ahead event; all 39
+  targeted supervisor/automation tests pass.
+- The generated audit manifest failed the closed `automation-report-1` model with 24 validation
+  errors. The operations skill and six-hour prompt now require the complete fixture shape,
+  structured evidence, all eight false-only safety fields, and successful CLI validation.
+- Removed fixed `D:` assumptions from current operator/audit guidance. The running container was
+  independently verified to mount `C:/Sentinel/data/paper`, with the runtime's mounted filesystem
+  safely above the 20GiB floor. Scheduled sandbox denial of optional Docker/NTP/host-path access is
+  recorded as unknown rather than treated as an incident by itself.
+- ADR-027 records the timing and scheduled-evidence contract. Model, risk, paper-order,
+  authentication, private-network, and live gates remain unchanged and closed.
+- Keep the currently healthy pre-change container running through the 12/24-hour continuity
+  checkpoints. Rebuilding and recreating it now would reset the strict session horizon; roll out the
+  version-7 image only after the 24-hour evidence is captured, using the normal clean-stop path.
+- Full repository validation passes: Ruff and format across 238 files, mypy across 117 source files,
+  385 tests at 85.70% branch coverage, 407-file Secret scanning, `pip-audit` with no known
+  vulnerabilities, the canonical automation manifest boundary, and the combined Compose config.
 
 ## Runtime stabilization after Phase 11.10
 
@@ -371,14 +404,15 @@
 ## Validation evidence
 
 ```text
-Python: PASS — 3.13.15; no Phase 11.10 dependency added
+Python: PASS — 3.13.15; no dependency added by the operations audit stabilization
 ruff: PASS — all checks passed
-format check: PASS — 236 files formatted
+format check: PASS — 238 files formatted
 mypy: PASS — 117 source files, no issues
-pytest: PASS — 379 tests, 85.64% branch coverage
-secret scan: PASS — 400 text files checked
+pytest: PASS — 385 tests, 85.70% branch coverage
+secret scan: PASS — 407 text files checked
 dependency audit: PASS — no known vulnerabilities
 Compose config: PASS — base + paper overlays
+automation report fixture: PASS — schema and write boundary validated
 container build: PASS — quantforge-paper-runtime:latest 601f99523d68
 continuity restart: PASS_WITH_RETAINED_INCIDENT — VERIFIED/ACTIVE; prior CLEAN_STOP; 4 sessions,
   2 clean stops, 0 failed stops, 1 earlier missing-terminal interruption/40.046s downtime, 0 observed
@@ -414,7 +448,8 @@ D-drive migration: PASS — 314,560 rows preserved; 781 -> 134 active files; 6,7
 model approval/paper-order gate/proposals/risk approvals/paper orders/fills/authentication/private/
   real/live capability all false or 0
 actual/private/test orders: NONE
-scheduled filesystem access: PASS — one-time Work read/write test; recurring schedules NONE
+scheduled filesystem access: PASS — recurring six-hour local audit and one-time 24-hour verification
+active; first six-hour Markdown report reviewed, JSON manifest invalid and prompt corrected
 ```
 
 ## Known constraints
@@ -429,10 +464,12 @@ scheduled filesystem access: PASS — one-time Work read/write test; recurring s
   must not be automatically relaxed and require human review plus a new consequential record.
 - The validator does not assemble evidence from production systems. Producers and human reviewers
   must create a Secret-free bundle with reproducible hashes; absent evidence stays absent.
-- Phase 8 recurring tasks remain unregistered. Manual and one-time scheduled local-file access
-  passed, but standard performance/model/incident files intentionally report unavailable or
-  insufficient evidence rather than representative results. Execution still depends on the host
-  and desktop app being available.
+- The portable Phase 8 catalog remains unregistered, while two explicitly owner-approved host-local
+  Codex tasks are active. Their execution still depends on this host and desktop app. The first
+  six-hour report's invalid manifest is retained as failed audit evidence; the corrected prompt must
+  pass its next scheduled run before automation reliability is claimed. Standard performance/model/
+  incident files still report unavailable or insufficient evidence rather than representative
+  results.
 - The Windows host lacks `uv` and `make` on PATH, so exact Make targets were not run in this phase;
   their equivalent locked project-venv commands passed. Container builds use the pinned uv image.
 - The public collector, feature path, and neutral paper composition are supervised, but sustained
@@ -450,13 +487,14 @@ scheduled filesystem access: PASS — one-time Work read/write test; recurring s
   session is healthy; recurrence requires preserving its logs and a separate incident triage.
 - Dashboard, local journals, backup proof, public-L2 fill approximation, missing authenticated
   transport, and synthetic research limitations remain documented.
-- `D:/Sentinel-Data` is bounded local paper storage, not an encrypted off-host backup. The 50GiB cap
-  may shorten the effective 30-day window, and pruned raw payloads require a separate backup to
-  recover.
+- The currently mounted `C:/Sentinel/data/paper` fallback is bounded local paper storage, not an
+  encrypted off-host backup. The 50GiB cap may shorten the effective 30-day window, and pruned raw
+  payloads require a separate backup to recover. Historical D-drive evidence remains historical and
+  must not be used to infer the current mount.
 
 ## Next milestone
 
-Do not enable live trading. Keep the bounded D-drive burn-in running and verify maintenance across
+Do not enable live trading. Keep the bounded mounted-data burn-in running and verify maintenance across
 hour/day boundaries, actual retention pressure, restart recovery, parser failures, gaps, and disk
 growth. Next preregister falsifiable alpha and exit hypotheses, evaluate challengers on cost-
 inclusive chronological data, and submit any surviving artifact for separate human paper review.

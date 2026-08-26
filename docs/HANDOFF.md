@@ -9,7 +9,8 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 
 - Date: 2026-08-26 KST
 - Completed phases: 0–10; Phase 11.1–11.10 checkpoints complete
-- Current checkpoint: durable continuity plus storage-acceptance and local-clock stabilization
+- Current checkpoint: durable continuity plus storage-acceptance, local-clock, and audit-evidence
+  stabilization
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
@@ -17,7 +18,8 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Live network capability: false
 - Actual/private/test orders: none
 - Production Secrets: not requested or accessed
-- Active recurring scheduled tasks: none; one-time unattended Work filesystem test completed
+- Active scheduled tasks: recurring six-hour local report-only audit on `gpt-5.6-luna` and one-time
+  24-hour data verification on `gpt-5.6-terra`; both create separate local Codex tasks
 - Phase 0: `cfc1617 feat: QuantForge 안전 기반 구축`
 - Phase 1: `136295c feat: 업비트 공개 데이터 파이프라인 구축`
 - Phase 2: `41b64d1 feat: 결정적 재생과 인과 특징 구축`
@@ -35,6 +37,32 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 11.3: `f067442 feat: 모의 거래 재시작 복구 구축`
 - Phase 11.6 preregistration: `4cb419c chore: 단타 전략 실험 사전등록`
 - Phase 11.6 implementation: `0e3040b feat: 단타 전략 연구 기반 구축`
+
+## Six-hour operations-audit stabilization
+
+- The first unattended report correctly observed a healthy public paper runtime and strict six-hour
+  continuity, but misclassified the session's maximum positive ingress latency as Windows clock
+  skew. The exact 5,661,490.659ms row was a stale duplicate `KRW-USDG` ticker, not an NTP reading.
+- Independent host evidence showed W32Time running automatically, a `time.windows.com` source and
+  roughly 0.13s sampled offset. Docker was `running`/`healthy`, restart count 0, OOM false, and the
+  inspected error-log filter was empty.
+- `paper-runtime-7`, `work-ops-3`, and `operations-dashboard-2` now publish the positive session
+  latency high-water mark, newest signed latency, and newest exchange-ahead proxy separately. The
+  legacy dashboard clock field uses only the fresh exchange-ahead proxy.
+- The report's JSON sidecar failed the repository `automation-report-1` validator with 24 errors.
+  The scheduled prompt and operations-audit skill now require the exact fixture shape, structured
+  evidence, false-only safety fields, and a successful validator run before completion.
+- Audit guidance no longer guesses `D:/Sentinel-Data`. The current container actually mounts
+  `C:/Sentinel/data/paper`; host-only checks remain optional/unknown when a scheduled sandbox cannot
+  access them, while fresh verified runtime exports remain usable for their supported claims.
+- ADR-027 records the decision. Targeted supervisor and automation validation passes 39 tests. Full
+  validation passes 385 tests at 85.70% branch coverage, Ruff/format across 238 files, mypy across
+  117 source files, 407-file Secret scanning, dependency audit, manifest boundary, and Compose
+  config. Only the intentionally deferred runtime replacement remains.
+- Do not recreate the healthy current container before the 24-hour checkpoint solely to expose the
+  corrected fields. The active audit prompts understand the legacy version-2 ambiguity. After the
+  checkpoint, use the normal 60-second clean-stop Compose replacement and verify version-7 exports,
+  `CLEAN_STOP`, restart/OOM zero, and continued keyless paper-only safety.
 
 ## Stabilization after Phase 11.10
 
@@ -139,7 +167,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   blocks regardless of other feature or edge values.
 - A test-only approved fixture proves the complete simulated order/fill/accounting plumbing. It is
   not shipped or promoted. Atomic decision exports and the Korean monitor show review status,
-  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-026 record consequential
+  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-027 record consequential
   choices. README remains intentionally minimal.
 - `realtime-paper-recovery-1` now preserves policy-bound orders, fills, reservations, FIFO lots,
   exact balances, ledger chains, counters, and the event cursor in the durable paper volume. Clean
@@ -157,7 +185,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   mismatch, changed facts, unknown/open orders, locks, or ledger failure remains fail-closed.
 - The workflow does not approve a model, enable the independent paper-order policy, change risk or
   settings, validate interrupted performance, access an exchange network, or add live capability.
-- `paper-runtime-continuity-1` now derives strict process/session evidence from an atomic D-drive
+- `paper-runtime-continuity-1` now derives strict process/session evidence from an atomic mounted-data
   heartbeat lease and a low-volume fsynced SHA-256 event chain. The next start distinguishes clean,
   failed, and missing-terminal restarts; locally observed socket/stale gaps and reconnect changes are
   separate from sparse 15-minute Work baselines.
@@ -175,27 +203,30 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Full-list recovery checkpoints are namespaced by the discovered market-set hash. BTC/USDT quote
   markets remain outside the KRW accounting and risk contracts. README remains intentionally
   minimal.
-- The local paper-data mount is now supplied by ignored `compose.paper.local.env`; this host uses
-  `D:/Sentinel-Data`, while committed configuration remains portable. The prior
-  `quantforge_paper-data` named volume is intentionally preserved as a migration rollback copy.
+- Phase 11.5 used an ignored `compose.paper.local.env` override for `D:/Sentinel-Data`; the current
+  container instead uses the committed repository-local fallback at `C:/Sentinel/data/paper`.
+  Historical D-drive and preserved `quantforge_paper-data` volume evidence is rollback context, not
+  proof of the current mount or an off-host backup.
 - ZSTD raw files from completed creation hours are compacted through checksummed version-2
   supersession manifests. Age/capacity retirement uses durable reason markers and resumes safely
   after interruption. Active totals are always rebuilt from verified manifests.
 - `paper-runtime-5` enforces and reports 30-day retention, 50GiB maximum active raw data, a 20GiB
   free-space fail-closed stop, 15-minute maintenance, compacted/deleted files, reclaimed bytes, and
-  actual filesystem free space. ADR-001 through ADR-026 record consequential choices.
+  actual filesystem free space. ADR-001 through ADR-027 record consequential choices.
 - Compose grants the paper runtime a 60-second stop grace period. The final signal stop persisted a
   clean checkpoint and the next run reported `VERIFIED_CLEAN` before resuming full coverage.
 
 ## Latest validation
 
 ```text
-Python 3.13.15; no Phase 11.10 dependency added
-ruff + format: PASS (237 files)
+Python 3.13.15; no dependency added by the operations audit stabilization
+ruff + format: PASS (238 files)
 mypy: PASS (117 source files)
-pytest: PASS (382 tests, 85.67% branch coverage)
-Secret scan: PASS (372 text files)
+pytest: PASS (385 tests, 85.70% branch coverage)
+Secret scan: PASS (407 text files)
 pip-audit: PASS (no known vulnerabilities)
+Automation report fixture: PASS (schema and write boundary)
+Compose config: PASS (base + paper overlays)
 Runtime acceptance regression: PASS; original downstream exception preserved, accepted=committed=1
 Wall-clock regression: PASS; monotonic continuation, quality flag retained, affected frame HOLD
 Clock-stabilized image: PASS (quantforge-paper-runtime:latest, 3f6728165257)
@@ -237,7 +268,8 @@ VERIFIED_CLEAN; healthy
 Model approval, paper-order gate, proposals, risk approvals, paper orders/fills,
 authentication/private/real/live capability all false or zero
 Actual/private/test orders: none
-Scheduled filesystem access: one-time Work read/write PASS; recurring tasks not registered
+Scheduled filesystem access: recurring six-hour local audit and one-time 24-hour verification active;
+first six-hour Markdown report reviewed, JSON manifest invalid and prompt corrected
 ```
 
 ## Important constraints
@@ -249,9 +281,11 @@ Scheduled filesystem access: one-time Work read/write PASS; recurring tasks not 
   evidence. Numeric thresholds do not guarantee profitability, safety, capacity, or recovery.
 - The validator reads a prepared bundle; it does not query production systems. Evidence production
   must remain Secret-free, reproducible, and independently reviewed.
-- Work/Codex recurring schedules are not active. Manual and one-time scheduled local-file access
-  passed, but representative strategy performance, incident-store integration, and model drift are
-  still unavailable. Scheduled execution remains dependent on the computer and desktop app.
+- The portable schedule catalog remains unregistered, while two explicitly owner-approved local
+  Codex tasks are active. The first six-hour report's invalid manifest is retained as failed audit
+  evidence; the corrected prompt must pass its next run before automation reliability is claimed.
+  Representative strategy performance, incident-store integration, and model drift remain
+  unavailable. Scheduled execution depends on the computer and desktop app.
 - No authenticated exchange client, credential provider, cancellation/order endpoint, order-capable
   live adapter, production database/recovery, or canary activation path exists.
 - Public L2 fill/queue behavior is approximate. The collector and neutral composition are supervised,
@@ -270,8 +304,9 @@ Scheduled filesystem access: one-time Work read/write PASS; recurring tasks not 
   representative paper strategy, round-trip, or performance results yet.
 - Dashboard/recovery/authorization/network/storage hardening remains incomplete. Consult
   `docs/KNOWN_LIMITATIONS.md` and `docs/readiness/LIVE_READINESS.md`.
-- D-drive retention is single-host local storage, not an encrypted backup. High activity can reach
-  the 50GiB cap before 30 days, and pruned payloads need independent backup to recover.
+- The current `C:/Sentinel/data/paper` fallback is single-host local storage, not an encrypted
+  backup. High activity can reach the 50GiB cap before 30 days, and pruned payloads need independent
+  backup to recover. Historical D-drive results do not identify the current mount.
 - The Windows host lacks `uv` and `make` on PATH; exact Make targets were unavailable. Equivalent
   isolated-venv checks and the pinned-uv container build passed.
 - The owner requires concise Korean Conventional Commits, committed and pushed on `main`, and a
@@ -279,7 +314,7 @@ Scheduled filesystem access: one-time Work read/write PASS; recurring tasks not 
 
 ## Next actions
 
-1. Keep paper mode. Observe bounded D-drive maintenance across hour/day boundaries and under real
+1. Keep paper mode. Observe bounded mounted-data maintenance across hour/day boundaries and under real
    disk growth; verify compaction, retention pressure, restarts, coverage, gaps, parser failures, and
    reconnects without treating uptime as readiness.
 2. Preregister falsifiable alpha and exit hypotheses, run cost-inclusive chronological challengers,

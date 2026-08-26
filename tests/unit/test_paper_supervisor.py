@@ -10,7 +10,7 @@ from factories import make_orderbook_event, make_trade_event
 from quantforge.config import Environment, QuantForgeSettings
 from quantforge.domain import EventEnvelope
 from quantforge.exchange.upbit.errors import MalformedUpbitPayload, UpbitAdapterError
-from quantforge.operations import read_dashboard_snapshot
+from quantforge.operations import DashboardSnapshot, read_dashboard_snapshot
 from quantforge.runtime.audit_exports import (
     WorkAuditExportWriter,
     WorkIncidentSnapshot,
@@ -168,7 +168,7 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     assert snapshot.retained_rows == 2
     assert snapshot.retained_files > 0
     assert snapshot.retained_bytes > 0
-    assert snapshot.schema_version == "paper-runtime-6"
+    assert snapshot.schema_version == "paper-runtime-7"
     assert snapshot.storage_retention_days == 30
     assert snapshot.storage_max_bytes == 50 * 1024**3
     assert snapshot.disk_free_bytes is not None
@@ -244,7 +244,7 @@ async def test_supervisor_commits_public_events_and_secret_free_status(tmp_path:
     work_ops = WorkOperationsSnapshot.model_validate_json(
         (tmp_path / "runtime/ops/latest.json").read_bytes()
     )
-    assert work_ops.schema_version == "work-ops-2"
+    assert work_ops.schema_version == "work-ops-3"
     assert work_ops.runtime_state == "STOPPED"
     assert work_ops.trading_mode == "paper"
     assert work_ops.paper_orders == 0
@@ -423,6 +423,38 @@ async def test_processing_failure_preserves_storage_acceptance_and_original_erro
 
 
 @pytest.mark.asyncio
+async def test_stale_ingress_is_not_reported_as_exchange_clock_ahead(tmp_path: Path) -> None:
+    stale = make_trade_event(
+        sequence=1,
+        exchange_offset_ms=0,
+        received_offset_ms=600_000,
+    )
+    exchange_ahead = make_trade_event(
+        sequence=2,
+        exchange_offset_ms=602_000,
+        received_offset_ms=600_500,
+    )
+    supervisor = _supervisor(tmp_path, _factory(events=(stale, exchange_ahead)))
+
+    snapshot = await supervisor.run()
+    dashboard = read_dashboard_snapshot(tmp_path / "runtime/ops/dashboard.json")
+    work_ops = WorkOperationsSnapshot.model_validate_json(
+        (tmp_path / "runtime/ops/latest.json").read_bytes()
+    )
+
+    assert snapshot.max_ingress_latency_ms == 600_000
+    assert snapshot.latest_ingress_latency_ms == -1_500
+    assert snapshot.latest_exchange_clock_ahead_ms == 1_500
+    assert dashboard.schema_version == "operations-dashboard-2"
+    assert dashboard.system.max_ingress_latency_ms == 600_000
+    assert dashboard.system.latest_ingress_latency_ms == -1_500
+    assert dashboard.system.clock_skew_ms == 1_500
+    assert work_ops.max_ingress_latency_ms == 600_000
+    assert work_ops.latest_ingress_latency_ms == -1_500
+    assert work_ops.latest_exchange_clock_ahead_ms == 1_500
+
+
+@pytest.mark.asyncio
 async def test_bounded_storage_queue_overflow_fails_without_silent_loss(tmp_path: Path) -> None:
     events = tuple(
         make_trade_event(
@@ -510,6 +542,7 @@ def test_version_one_runtime_snapshot_remains_read_compatible() -> None:
         "websocket_connected": True,
         "raw_output": "data/paper/raw",
         "policy_hash": "a" * 64,
+        "max_ingress_latency_ms": -250.0,
     }
 
     parsed = PaperRuntimeSnapshot.model_validate(payload)
@@ -521,3 +554,28 @@ def test_version_one_runtime_snapshot_remains_read_compatible() -> None:
     assert parsed.storage_queue_depth == 0
     assert parsed.storage_queue_capacity == 0
     assert parsed.storage_queue_overflows == 0
+    assert parsed.max_ingress_latency_ms == -250.0
+
+    with pytest.raises(ValueError, match="version-7 maximum ingress latency must be nonnegative"):
+        PaperRuntimeSnapshot.model_validate(
+            {
+                **payload,
+                "schema_version": "paper-runtime-7",
+            }
+        )
+
+
+def test_version_one_dashboard_clock_value_remains_read_compatible() -> None:
+    parsed = DashboardSnapshot.model_validate(
+        {
+            "schema_version": "operations-dashboard-1",
+            "generated_at_utc": "2026-08-23T00:00:00Z",
+            "overview": {"code_version": "0.1.0"},
+            "system": {"clock_skew_ms": -250.0},
+        }
+    )
+
+    assert parsed.schema_version == "operations-dashboard-1"
+    assert parsed.system.clock_skew_ms == -250.0
+    assert parsed.system.latest_ingress_latency_ms is None
+    assert parsed.system.max_ingress_latency_ms is None
