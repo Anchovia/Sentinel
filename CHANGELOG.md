@@ -190,6 +190,10 @@ All notable changes are recorded here. The project follows semantic versioning o
 - Record paper runtime acceptance immediately after bounded storage-queue admission so a later
   processing failure cannot persist more rows than the terminal snapshot reports as accepted or
   mask the original exception with a snapshot validation error.
+- Stabilize public receive availability when the local wall clock moves backwards by advancing from
+  the last accepted time with monotonic elapsed time, retaining a `local_clock_regression` quality
+  flag, and forcing the affected feature frame to remain `HOLD` instead of restarting the runtime.
+- Version the stabilized live receive semantics as `upbit-public-live-v2` and record ADR-026.
 
 ### Security
 

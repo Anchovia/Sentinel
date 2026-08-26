@@ -56,7 +56,10 @@ Control-plane consumers receive redacted, read-oriented snapshots. They cannot r
 
 ## Reliability contracts
 
-- UTC-aware timestamps only; monotonic clocks for latency.
+- UTC-aware timestamps only; monotonic clocks for latency and live receive-order continuity. A local
+  wall-clock regression advances availability from the prior accepted sample by monotonic elapsed
+  time, records a quality flag and versioned normalization lineage, and keeps the affected feature
+  frame `HOLD`; a monotonic-clock regression remains fatal.
 - Append-only event/ledger records with stable identifiers and checksums.
 - Idempotent event processing and order submission identifiers.
 - Reconciliation before orders after restart or uncertain responses.

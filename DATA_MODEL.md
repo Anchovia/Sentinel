@@ -16,6 +16,13 @@ raw_payload, raw_payload_hash, normalization_version
 is_snapshot, is_realtime, is_duplicate, quality_flags
 ```
 
+`upbit-public-v1` identifies direct wire mapping with the caller-supplied receive clocks.
+`upbit-public-live-v2` identifies the supervised live collector: `received_at_utc` is the sampled UTC
+wall clock unless it would regress, in which case it advances from the prior accepted availability by
+the elapsed `received_monotonic_ns` interval and adds `local_clock_regression`. Raw payload bytes and
+their hash remain unchanged. The causal feature frame stays `HOLD` for the flagged event, and an
+actual monotonic-clock regression is rejected.
+
 Raw payloads enter immutable partition files. Files use atomic temporary writes, ZSTD compression,
 row/time statistics, checksums, and manifests. Raw and derived storage are separate. Bounded paper
 retention may later retire a complete manifest-backed file; it never edits individual retained rows.

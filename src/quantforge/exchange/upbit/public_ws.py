@@ -4,7 +4,7 @@ import asyncio
 from collections.abc import Awaitable, Callable, Sequence
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from random import random
 from time import monotonic_ns
 from typing import Protocol, cast
@@ -24,6 +24,8 @@ from quantforge.exchange.upbit.subscriptions import (
 )
 from quantforge.market_data import EventDeduplicator
 from quantforge.monitoring import MarketDataMetrics, create_market_data_metrics
+
+LIVE_NORMALIZATION_VERSION = "upbit-public-live-v2"
 
 
 class WebSocketConnection(Protocol):
@@ -128,6 +130,8 @@ class UpbitPublicWebSocketClient:
         self._send_lock = asyncio.Lock()
         self._active_connection: WebSocketConnection | None = None
         self._request: SubscriptionRequest = build_subscription_request(self._subscriptions)
+        self._last_received_at_utc: datetime | None = None
+        self._last_received_monotonic_ns: int | None = None
 
     @property
     def connected(self) -> bool:
@@ -153,14 +157,26 @@ class UpbitPublicWebSocketClient:
                         raw = await websocket.recv()
                         self.metrics.received.inc()
                         try:
+                            received_at_utc, received_monotonic_ns, clock_regressed = (
+                                self._receive_time()
+                            )
                             event = map_public_message(
                                 raw,
-                                received_at_utc=self._wall_clock(),
-                                received_monotonic_ns=self._monotonic_clock_ns(),
+                                received_at_utc=received_at_utc,
+                                received_monotonic_ns=received_monotonic_ns,
                                 connection_id=connection_id,
                                 subscription_id=self._request.subscription_id,
                                 local_sequence=accepted + 1,
                             )
+                            updates: dict[str, object] = {
+                                "normalization_version": LIVE_NORMALIZATION_VERSION
+                            }
+                            if clock_regressed:
+                                updates["quality_flags"] = (
+                                    *event.quality_flags,
+                                    "local_clock_regression",
+                                )
+                            event = event.model_copy(update=updates)
                             event = self._deduplicator.mark(event)
                         except UpbitAdapterError as exc:
                             self.metrics.rejected.labels(reason=type(exc).__name__).inc()
@@ -192,6 +208,25 @@ class UpbitPublicWebSocketClient:
                 self.metrics.connected.set(0)
                 self._active_connection = None
         return accepted
+
+    def _receive_time(self) -> tuple[datetime, int, bool]:
+        wall_time = self._wall_clock()
+        monotonic_time_ns = self._monotonic_clock_ns()
+        previous_monotonic_ns = self._last_received_monotonic_ns
+        if previous_monotonic_ns is not None and monotonic_time_ns < previous_monotonic_ns:
+            raise RuntimeError("local monotonic receive clock moved backwards")
+
+        previous_received_at = self._last_received_at_utc
+        clock_regressed = previous_received_at is not None and wall_time < previous_received_at
+        if clock_regressed:
+            assert previous_received_at is not None
+            assert previous_monotonic_ns is not None
+            elapsed_ns = monotonic_time_ns - previous_monotonic_ns
+            wall_time = previous_received_at + timedelta(microseconds=elapsed_ns // 1_000)
+
+        self._last_received_at_utc = wall_time
+        self._last_received_monotonic_ns = monotonic_time_ns
+        return wall_time, monotonic_time_ns, clock_regressed
 
     async def replace_subscriptions(self, subscriptions: Sequence[UpbitSubscription]) -> None:
         selected = tuple(subscriptions)

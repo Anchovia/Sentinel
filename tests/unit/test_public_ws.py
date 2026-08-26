@@ -2,7 +2,7 @@ import asyncio
 from collections import deque
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import TracebackType
 
@@ -16,6 +16,7 @@ from quantforge.exchange.upbit.public_ws import (
     UpbitPublicWebSocketClient,
 )
 from quantforge.exchange.upbit.subscriptions import UpbitSubscription
+from quantforge.runtime import RealtimePaperPipeline
 
 FIXTURES = Path(__file__).parents[1] / "fixtures" / "upbit"
 
@@ -116,6 +117,69 @@ async def test_malformed_message_is_isolated_and_collection_continues() -> None:
     assert connector.calls[0][0] == "wss://api.upbit.com/websocket/v1"
     assert connector.calls[0][1].ping_interval_seconds == 30
     assert connector.calls[0][1].ping_timeout_seconds == 10
+
+
+@pytest.mark.asyncio
+async def test_wall_clock_regression_uses_monotonic_elapsed_time_and_continues() -> None:
+    trade = (FIXTURES / "trade.default.json").read_bytes()
+    orderbook = (FIXTURES / "orderbook.synthetic.json").read_bytes()
+    connector = FakeConnector([FakeWebSocket([trade, orderbook])])
+    events: list[EventEnvelope] = []
+    pipeline = RealtimePaperPipeline(("KRW-BTC",))
+    base = datetime(2025, 5, 7, 9, 46, 14, tzinfo=UTC)
+    wall_times = iter((base + timedelta(milliseconds=100), base + timedelta(milliseconds=50)))
+    monotonic_times = iter((1_000_000_000, 1_100_000_000))
+
+    async def process_event(event: EventEnvelope) -> None:
+        events.append(event)
+        pipeline.process(event)
+
+    client = UpbitPublicWebSocketClient(
+        [UpbitSubscription("trade", ("KRW-BTC",))],
+        process_event,
+        connector=connector,
+        wall_clock=lambda: next(wall_times),
+        monotonic_clock_ns=lambda: next(monotonic_times),
+    )
+
+    assert await client.run(max_messages=2) == 2
+    assert events[0].received_at_utc == base + timedelta(milliseconds=100)
+    assert events[1].received_at_utc == base + timedelta(milliseconds=200)
+    assert {event.normalization_version for event in events} == {"upbit-public-live-v2"}
+    assert "local_clock_regression" in events[1].quality_flags
+    snapshot = pipeline.snapshot(generated_at_utc=base + timedelta(seconds=1))
+    assert snapshot.processed_events == 2
+    latest = snapshot.latest_features[0]
+    assert latest.ready_for_inference is False
+    assert "LOCAL_CLOCK_REGRESSION" in latest.hold_reasons
+
+
+@pytest.mark.asyncio
+async def test_monotonic_clock_regression_remains_fatal() -> None:
+    trade = (FIXTURES / "trade.default.json").read_bytes()
+    orderbook = (FIXTURES / "orderbook.synthetic.json").read_bytes()
+    connector = FakeConnector([FakeWebSocket([trade, orderbook])])
+    wall_times = iter(
+        (
+            datetime(2025, 5, 7, 9, 46, 14, tzinfo=UTC),
+            datetime(2025, 5, 7, 9, 46, 15, tzinfo=UTC),
+        )
+    )
+    monotonic_times = iter((2, 1))
+
+    async def ignore_event(event: EventEnvelope) -> None:
+        del event
+
+    client = UpbitPublicWebSocketClient(
+        [UpbitSubscription("trade", ("KRW-BTC",))],
+        ignore_event,
+        connector=connector,
+        wall_clock=lambda: next(wall_times),
+        monotonic_clock_ns=lambda: next(monotonic_times),
+    )
+
+    with pytest.raises(RuntimeError, match="monotonic receive clock moved backwards"):
+        await client.run(max_messages=2)
 
 
 @pytest.mark.asyncio

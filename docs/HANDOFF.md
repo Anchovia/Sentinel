@@ -9,7 +9,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 
 - Date: 2026-08-26 KST
 - Completed phases: 0–10; Phase 11.1–11.10 checkpoints complete
-- Current checkpoint: durable paper runtime continuity evidence plus storage-acceptance stabilization
+- Current checkpoint: durable continuity plus storage-acceptance and local-clock stabilization
 - Branch: `main` by explicit owner instruction
 - Remote: `origin` -> `https://github.com/Anchovia/Sentinel.git`
 - Default mode: paper
@@ -55,6 +55,27 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   restarts, OOM kills, parser errors, or reconnects. Maintenance compacted active files and reclaimed
   2,332,645 bytes; the final read reported 86,322 accepted, 84,475 committed, 1,093,099 retained rows,
   and no authentication, paper-order, or live-submission capability.
+- Continued runtime evidence then exposed the preserved downstream cause: the prior image restarted
+  three times because `received_at_utc` moved backwards inside an otherwise sequential public event
+  callback. The container was not OOM-killed and transport reconnect accounting remained zero.
+- `UpbitPublicWebSocketClient` now pairs every wall-clock sample with the process monotonic clock. If
+  the wall clock regresses, availability advances by monotonic elapsed time, the stored envelope is
+  marked `local_clock_regression`, and the real-time frame remains
+  `LOCAL_CLOCK_REGRESSION`/`HOLD`. A true monotonic-clock regression remains fatal.
+- The exact 50ms regression is covered through the public client and causal pipeline: collection
+  continues at a deterministic adjusted time, the anomaly remains queryable, and no inference-ready
+  frame is emitted. New live envelopes use `upbit-public-live-v2`; raw exchange payloads, risk,
+  approval, and order contracts did not change. ADR-026 records the availability-time decision.
+- The initial fix image replaced the three-restart container after a clean 76,025-row terminal
+  flush. Final versioned image `3f6728165257` then cleanly replaced that intermediate session.
+  Durable data remained mounted; the final image started healthy with every authentication,
+  paper-order, and live-submission capability closed.
+- A read-only check of the newest committed Parquet file found 860/860 rows carrying
+  `normalization_version=upbit-public-live-v2`.
+- The final image passed a 15-minute per-minute monitor with Docker restarts, OOM kills, parser
+  errors, reconnects, and exceptions all zero. The final read reported 127,660 accepted, 123,307
+  committed, and 2,286,110 retained rows. Maintenance elapsed with no currently eligible compaction;
+  reclaimed bytes remained zero and collection continued.
 
 ## Implemented through Phase 11.10
 
@@ -118,7 +139,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   blocks regardless of other feature or edge values.
 - A test-only approved fixture proves the complete simulated order/fill/accounting plumbing. It is
   not shipped or promoted. Atomic decision exports and the Korean monitor show review status,
-  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-025 record consequential
+  proposals, paper orders/fills, PnL, and latency. ADR-001 through ADR-026 record consequential
   choices. README remains intentionally minimal.
 - `realtime-paper-recovery-1` now preserves policy-bound orders, fills, reservations, FIFO lots,
   exact balances, ledger chains, counters, and the event cursor in the durable paper volume. Clean
@@ -162,7 +183,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   after interruption. Active totals are always rebuilt from verified manifests.
 - `paper-runtime-5` enforces and reports 30-day retention, 50GiB maximum active raw data, a 20GiB
   free-space fail-closed stop, 15-minute maintenance, compacted/deleted files, reclaimed bytes, and
-  actual filesystem free space. ADR-001 through ADR-025 record consequential choices.
+  actual filesystem free space. ADR-001 through ADR-026 record consequential choices.
 - Compose grants the paper runtime a 60-second stop grace period. The final signal stop persisted a
   clean checkpoint and the next run reported `VERIFIED_CLEAN` before resuming full coverage.
 
@@ -170,12 +191,15 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 
 ```text
 Python 3.13.15; no Phase 11.10 dependency added
-ruff + format: PASS (236 files)
+ruff + format: PASS (237 files)
 mypy: PASS (117 source files)
-pytest: PASS (380 tests, 85.64% branch coverage)
-Secret scan: PASS (361 text files)
+pytest: PASS (382 tests, 85.67% branch coverage)
+Secret scan: PASS (372 text files)
 pip-audit: PASS (no known vulnerabilities)
 Runtime acceptance regression: PASS; original downstream exception preserved, accepted=committed=1
+Wall-clock regression: PASS; monotonic continuation, quality flag retained, affected frame HOLD
+Clock-stabilized image: PASS (quantforge-paper-runtime:latest, 3f6728165257)
+Clock-stabilized monitor: PASS (15 minutes); RUNNING/healthy, restart/OOM/parser/reconnect/error zero
 Stabilized image: PASS (quantforge-paper-runtime:latest, 9e3c59fe3665); 15-minute maintenance-cycle
 monitor PASS, Docker restarts/OOM/parser errors/reconnects zero, final state RUNNING/healthy
 Compose config: PASS

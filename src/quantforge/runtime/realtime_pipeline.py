@@ -354,6 +354,8 @@ class RealtimePaperPipeline:
             reasons.append("BOOK_CROSSED")
         if "exchange_clock_ahead" in event.quality_flags:
             reasons.append("EXCHANGE_CLOCK_AHEAD")
+        if "local_clock_regression" in event.quality_flags:
+            reasons.append("LOCAL_CLOCK_REGRESSION")
         return RealtimeFeatureFrame(
             frame_id=deterministic_execution_id("realtime-feature", event.event_id, state.sequence),
             market=event.market,

@@ -37,6 +37,32 @@
   storage-maintenance interval. It remained `RUNNING` and healthy with Docker restarts, OOM kills,
   parser errors, and reconnects all zero; maintenance compacted active files and reclaimed 2,332,645
   bytes while public collection continued.
+- Continued observation exposed the original downstream failure that the counter fix was intended
+  to preserve: the prior image restarted three times on
+  `real-time events require nondecreasing availability`, without an OOM or transport failure.
+- Confirmed the public client invokes one event callback sequentially. Its process monotonic clock
+  continued to define receipt order, while Windows/NTP wall-clock correction could make
+  `received_at_utc` move backwards and trip the defensive causal pipeline check.
+- The collector now advances a regressed wall-clock sample from the prior accepted availability by
+  the measured monotonic elapsed time. Raw payloads remain exact, the adjusted envelope retains a
+  `local_clock_regression` quality flag, and the affected feature frame fails closed as
+  `LOCAL_CLOCK_REGRESSION`/`HOLD`; an actual monotonic-clock regression still raises.
+- Versioned the supervised receive semantics as `upbit-public-live-v2`, documented the persisted
+  event meaning in `DATA_MODEL.md`, and recorded the consequential time-contract decision in ADR-026.
+- Added an end-to-end public-client/pipeline regression test with a 50ms backward wall-clock step.
+  Collection continues at a deterministic 200ms adjusted availability, the quality flag persists,
+  and no inference-ready frame is produced.
+- Verified Ruff and formatting across 237 files, mypy across 117 source files, all 382 tests at
+  85.67% coverage, 372-file Secret scanning, and `pip-audit` with no known vulnerabilities.
+- The initial fix image replaced the three-restart session after its clean 76,025
+  accepted/committed-row flush. Final versioned image `3f6728165257` then cleanly replaced that
+  intermediate session with durable storage preserved and all order capabilities closed.
+- Read the newest committed Parquet file inside the final container through the single-file reader:
+  all 860 sampled rows carried `normalization_version=upbit-public-live-v2`.
+- Monitored the final image every minute for 15 minutes. It remained `RUNNING`/healthy with Docker
+  restarts, OOM kills, parser errors, reconnects, and exceptions all zero; the final read reported
+  127,660 accepted, 123,307 committed, and 2,286,110 retained rows. The maintenance interval elapsed
+  with no currently eligible compaction, so reclaimed bytes remained zero without blocking writes.
 
 ## Completed in Phase 11.10
 
