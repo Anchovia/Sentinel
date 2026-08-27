@@ -158,6 +158,7 @@ class RawEventResearchInventory(BaseModel):
 
     schema_version: Literal["raw-event-research-inventory-1"] = "raw-event-research-inventory-1"
     dataset_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    manifest_set_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     maximum_exchange_timestamp_utc: datetime | None = None
     maximum_received_at_utc: datetime | None = None
     selected_file_count: Annotated[int, Field(ge=0)]
@@ -761,7 +762,17 @@ def scan_raw_event_research_inventory(
         "local_sequence",
         "raw_payload_hash",
     )
-    for record in _active_manifest_records(root):
+    active_records = tuple(
+        sorted(_active_manifest_records(root), key=lambda item: item.manifest.data_file)
+    )
+    manifest_digest = sha256()
+    for record in active_records:
+        manifest_sha256 = sha256(
+            orjson.dumps(record.manifest.model_dump(mode="json"), option=orjson.OPT_SORT_KEYS)
+        ).hexdigest()
+        manifest_digest.update(f"{record.manifest.data_file}|{manifest_sha256}\n".encode())
+
+    for record in active_records:
         manifest = record.manifest
         if manifest.event_type not in {"trade", "orderbook"}:
             continue
@@ -861,6 +872,7 @@ def scan_raw_event_research_inventory(
     )
     return RawEventResearchInventory(
         dataset_hash=digest.hexdigest(),
+        manifest_set_sha256=manifest_digest.hexdigest(),
         maximum_exchange_timestamp_utc=maximum_exchange_timestamp_utc,
         maximum_received_at_utc=maximum_received_at_utc,
         selected_file_count=selected_files,

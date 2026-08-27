@@ -52,6 +52,9 @@
 - Added an optional UTC receive-time cutoff to the backward-readable experiment plan and research
   inventory. New growing-feed selections apply both exchange and receive bounds before duplicate
   checks, preventing a later-arriving old exchange event from changing the selected row set.
+- Bound each research inventory to the exact active manifest-set hash captured at scan start, so a
+  preregistration can prove its plan lineage matched the files used to derive the row hash even when
+  later compaction changes the active file layout.
 - Added regression coverage for old-plan compatibility, registration-time ordering, deterministic
   dual-cutoff scans, and late-arrival exclusion. No trial, backtest, final-holdout access, model
   approval, paper order, authenticated call, or live action occurred.

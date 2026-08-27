@@ -1,0 +1,39 @@
+# ADR-028: Dual-Cutoff Growing-Feed Research Selection
+
+- Status: accepted
+- Date: 2026-08-27
+- Scope: public-data research and paper simulation only
+
+## Context
+
+The first short-horizon plan fixed only a maximum exchange timestamp. The raw public feed is still
+growing, and an event can arrive later while carrying an older exchange timestamp. Reconstructing
+the same exchange-time selection after such an arrival could therefore add a row and change the
+dataset hash even though the visible cutoff did not change. The retained stale duplicate ticker
+evidence demonstrates that exchange time alone is not an availability boundary.
+
+## Decision
+
+Add a backward-readable optional `maximum_received_at_utc` to the version-1 scalping experiment plan
+and raw research inventory. Every new growing-feed registration must set it at or before the
+registration time. Inventory scanning applies the exchange and receive bounds before duplicate
+identity checks, then hashes the selected availability-ordered row identities. It also records the
+exact active manifest-set hash captured at scan start so plan lineage and scanned files can be
+compared without racing a later compaction cycle.
+
+Keep historical plans readable without inventing a receive bound for them. Do not mutate or
+reinterpret the original blocked experiment. A new eligible experiment uses a new identifier, exact
+committed code revision, both UTC cutoffs, manifest-set lineage, and the resulting row-identity hash.
+
+This decision changes only offline public-data selection. It does not run a trial, open the sealed
+final holdout, approve a model, enable paper orders, access authentication, or create a live path.
+
+## Consequences
+
+- Later-arriving events cannot silently alter a registered growing-feed selection, even when their
+  exchange timestamps precede the fixed exchange cutoff.
+- Compaction may change manifest lineage, but not the selected row-identity hash when row content is
+  preserved.
+- Existing version-1 artifacts remain valid and immutable; the additive field is required by policy
+  for new registrations rather than retroactively fabricated.
+- A new experiment can be fingerprinted reproducibly before any planned trial is executed.

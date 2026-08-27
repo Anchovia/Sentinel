@@ -147,6 +147,8 @@ def test_inventory_scan_is_content_addressed_and_honors_cutoff(tmp_path: Path) -
     second = scan_raw_event_research_inventory(tmp_path, maximum_exchange_timestamp_utc=cutoff)
 
     assert first == second
+    assert first.manifest_set_sha256 is not None
+    assert len(first.manifest_set_sha256) == 64
     assert first.selected_event_count == 2
     assert first.markets[0].trade_events == 1
     assert first.markets[0].orderbook_events == 1

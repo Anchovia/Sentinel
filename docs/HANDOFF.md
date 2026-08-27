@@ -69,6 +69,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - New growing-feed plans can fix `maximum_received_at_utc` in addition to the exchange timestamp.
   The inventory filters both bounds before duplicate checks, so rows received after registration
   cannot enter through an older exchange timestamp.
+- The scanner also returns the exact active manifest-set hash captured at scan start. Require it to
+  equal the new plan's lineage at preregistration; later compaction may change file layout but not a
+  correctly preserved selected row hash.
 - The extension remains backward-readable for the historical plan, but every new plan must carry
   both UTC cutoffs. ADR-028 records this rule.
 - No trial or final holdout has been run. Next bind the eligible 24-hour retained rows to the exact
