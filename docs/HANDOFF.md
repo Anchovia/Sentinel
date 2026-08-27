@@ -115,9 +115,14 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   No durable research metric or artifact was produced. The committed working ledger under
   `reports/codex/research/qf-scalp-20260827-v3/ledger.json` consumes it as infrastructure `FAILED`
   under chain hash `3c43e0f84136fcfe178b12f5939e02cafada5ad3f8525a557f16a56d126c8bdb`.
-- Do not retry work unit 1. Next run only work unit 2/18
-  (`72366e67-b0dc-5192-a2e2-2a6e4883373b`) from the dedicated worktree, but pass the approved
-  primary-workspace report/ledger path explicitly. Keep the final holdout sealed.
+- Work unit 2/18 (`72366e67-b0dc-5192-a2e2-2a6e4883373b`) used a fresh dedicated worktree and the
+  approved primary-workspace report path after two atomic write probes passed. It ran for 900.640
+  seconds and was retained as `RawEventReadTimeout` when a later market read received only 13.8194
+  remaining seconds. It has no metric or artifact; the ledger chain is
+  `931c7c18a0a6dc45f261f97ffac736350fc11291f176935ba1ae3d755d2e7099`.
+- Do not retry work units 1 or 2. Pause before unit 3/18 and review whether v3's fixed 900-second
+  budget can complete its 15-market atomic unit. If it cannot, retain v3 as failed and preregister
+  a smaller resumable v4 unit rather than changing v3 in place. Keep the final holdout sealed.
 
 ## Six-hour operations-audit stabilization
 

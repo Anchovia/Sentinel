@@ -103,11 +103,16 @@
   from a dedicated worktree. The managed sandbox denied the worktree-local report directory before
   any durable metric or artifact existed. The working ledger therefore retains the ID as
   infrastructure `FAILED`, with no metrics, no artifact, and chain hash
-  `3c43e0f84136fcfe178b12f5939e02cafada5ad3f8525a557f16a56d126c8bdb`; it must not be retried.
-- ADR-028 records selection; ADR-029 records bounded execution and this first failure. The next
-  research action is work unit 2/18 (`72366e67-b0dc-5192-a2e2-2a6e4883373b`) using the primary
-  workspace's approved report path while the exact registered code runs in the dedicated worktree.
-  Keep the final holdout sealed.
+  `3c43e0f84136fcfe178b12f5939e02cafada5ad3f8525a557f16a56d126c8bdb`; it will not be retried.
+- Ran work unit 2/18 (`72366e67-b0dc-5192-a2e2-2a6e4883373b`, H-SCALP-001/base/fold-2)
+  from a dedicated worktree after both primary-workspace and cross-worktree atomic write probes
+  passed. It exhausted 900.640 seconds while a later market read had 13.8194 seconds remaining and
+  was durably retained as `RawEventReadTimeout`, with no metrics or artifact. The working-ledger
+  chain is now `931c7c18a0a6dc45f261f97ffac736350fc11291f176935ba1ae3d755d2e7099`.
+- ADR-028 records selection; ADR-029 records bounded execution and both failures. Do not retry either
+  consumed ID. Before work unit 3/18, review whether the registered 900-second budget can complete
+  the 15-market atomic trial; if not, retain v3 as failed and preregister a smaller resumable v4
+  execution unit. Keep the final holdout sealed.
 
 ## Six-hour operations-audit stabilization
 

@@ -57,7 +57,7 @@ change, paper-order gate, or live action.
 - The final holdout remains sealed. Opening it still requires a separate reviewed one-shot path and
   is deliberately absent from this runner.
 
-## First execution evidence
+## Execution evidence
 
 The first registered work unit was attempted in a dedicated worktree, but the managed filesystem
 denied creation of its worktree-local `reports/codex/research` directory. No durable strategy metric
@@ -66,3 +66,10 @@ trial ID is consumed as infrastructure `FAILED` and is not rerun. Subsequent uni
 execution in the dedicated worktree while resolving ledger and artifact destinations to the
 approved primary-workspace report root before computation. This changes no trial parameter, source
 revision, data selection, or final-holdout boundary.
+
+The second registered work unit used the approved primary-workspace report destination after atomic
+write probes passed. It consumed 900.640 seconds and was retained as `FAILED` when a later market
+raw read exceeded its final 13.8194-second allowance. It produced no metric or artifact. This is
+evidence that the registered 900-second limit may be too small for the 15-market atomic work unit;
+the limit is not relaxed in place, and further v3 execution pauses for review. If the unit is not
+feasible, v3 remains failed evidence and a smaller resumable unit requires a new preregistration.

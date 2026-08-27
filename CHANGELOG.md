@@ -177,6 +177,9 @@ All notable changes are recorded here. The project follows semantic versioning o
 - The first v3 work-unit ID retained as an infrastructure `FAILED` result after the isolated
   worktree report path was denied; no performance artifact or metric was inferred, the ID will not
   be retried, and final-holdout/order access remained absent.
+- The second v3 work-unit ID retained as `FAILED` after its fixed 900-second budget expired during
+  bounded raw-event loading; it produced no metric or artifact and leaves the remaining work units
+  untouched pending an execution-budget review.
 - A checksummed detailed-event inventory plus deterministic long-only research engine that routes
   entries, profit/stop/time exits, latency, partial/non-fills, and all cost attribution through the
   conservative L2 paper broker and exact Decimal ledger.
