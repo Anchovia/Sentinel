@@ -41,6 +41,7 @@ V3_LEDGER_PATH = V3_PLAN_PATH.with_suffix(".ledger.json")
 V3_EXECUTION_PATH = V3_PLAN_PATH.with_suffix(".execution.json")
 V4_PLAN_PATH = V3_PLAN_PATH.with_name("2026-08-28-scalping-challenger-v4.json")
 V4_LEDGER_PATH = V4_PLAN_PATH.with_suffix(".ledger.json")
+V4_EXECUTION_PATH = V4_PLAN_PATH.with_suffix(".execution.json")
 DATASET_HASH = "a" * 64
 MANIFEST_HASH = "b" * 64
 SOURCE_REVISION = "2" * 40
@@ -375,6 +376,30 @@ def test_committed_v3_execution_plan_seals_exact_non_holdout_work_units(
     repeated_path = tmp_path / V3_EXECUTION_PATH.name
     write_scalping_trial_execution_plan(execution, repeated_path)
     assert repeated_path.read_bytes() == V3_EXECUTION_PATH.read_bytes()
+
+
+def test_committed_v4_execution_plan_seals_market_work_units() -> None:
+    plan = load_scalping_experiment_plan(V4_PLAN_PATH)
+    registration = read_experiment_ledger(V4_LEDGER_PATH)
+    execution = load_scalping_trial_execution_plan(V4_EXECUTION_PATH)
+
+    assert execution.schema_version == "scalping-trial-execution-plan-2"
+    assert execution.digest == "b4d60606d0ac6234c97f847fd0311322c857d0eb5d05ff77e9fa2a3db2564446"
+    assert execution.experiment_plan_sha256 == plan.digest
+    assert execution.registration_record_hash == registration.records[0].record_hash
+    assert execution.source_revision == plan.source_revision
+    assert execution.observed_manifest_set_sha256 == (
+        "524e3cc94c207191c3a93394fc91c44bd5410566fd64db49ee92f5029cc19101"
+    )
+    assert len(execution.eligible_markets) == 15
+    assert len(execution.trials) == 270
+    assert sum(trial.split_role is SplitRole.VALIDATION for trial in execution.trials) == 180
+    assert sum(trial.split_role is SplitRole.TEST for trial in execution.trials) == 90
+    assert all(trial.market in execution.eligible_markets for trial in execution.trials)
+    assert execution.maximum_events_per_market == 500_000
+    assert execution.maximum_total_events_per_trial == 500_000
+    assert execution.maximum_elapsed_seconds_per_trial == 900
+    assert execution.final_holdout_access is False
 
 
 def test_runner_records_one_trial_at_a_time_with_neutral_baseline(tmp_path: Path) -> None:

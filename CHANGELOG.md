@@ -180,6 +180,8 @@ All notable changes are recorded here. The project follows semantic versioning o
 - A registration-only `qf-scalp-20260828-v4` ledger binding all 270 market-partitioned units to the
   exact committed runner, unchanged fixed-cutoff dataset, complete metrics, and sealed holdout
   before any v4 computation.
+- An immutable v4 execution plan revalidating all 9,157,974 fixed-cutoff rows and sealing 180
+  validation plus 90 test market units, 500,000-event/900-second bounds, and false-only safety state.
 - The first v3 work-unit ID retained as an infrastructure `FAILED` result after the isolated
   worktree report path was denied; no performance artifact or metric was inferred, the ID will not
   be retried, and final-holdout/order access remained absent.

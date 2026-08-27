@@ -119,14 +119,24 @@
   checkpoints, and each unit is capped at 500,000 total events. Existing v3 execution bytes retain
   their digest. ADR-030 records the decision; v4 registration and execution-plan sealing must bind
   the exact committed runner before any new computation.
-- Runner validation passes Ruff/format across 243 files, mypy across 118 source files, 403 tests
-  split into 402 dedicated-worktree tests plus the primary-checkout boundary test at 85.01%
-  coverage, 350-file Secret scanning, and `pip-audit` with no known vulnerabilities.
+- Runner validation passes Ruff/format across 243 files, mypy across 118 source files, 405 tests
+  split into 404 dedicated-worktree tests plus the primary-checkout boundary test at 85.00%
+  coverage, 352-file Secret scanning, and `pip-audit` with no known vulnerabilities.
 - Preregistered `qf-scalp-20260828-v4` against runner revision `2f96729`, unchanged dataset/cutoff/
   clean-row contracts, plan digest
   `8d3a5fe1bcd5f22b16c0bc8fc7a93b8e2390581dc37eca068cf96a79b97057ee`, and registration chain
   `8a1827182eecb96abd9306773ad5cc3c39fc28c3582090895c459ae53ba6678f`. Its one record fixes all
   fifteen sorted markets and 270 trial cells; it contains no trial, decision, or holdout access.
+- The first execution-plan invocation used the parent paper directory instead of its `raw` child and
+  failed closed before scanning. Direct SHA-256 verification proved the named Parquet still matched
+  its manifest exactly; no data or manifest was repaired. Re-running with the registered raw root
+  verified all 283 active detailed files and reproduced exactly 9,157,974 rows plus dataset hash
+  `4002405439cbe4afbedf64ea90a84be486640754a0a2de12a4d726760dae8fd6`.
+- The immutable v4 execution plan has observed manifest-set hash
+  `524e3cc94c207191c3a93394fc91c44bd5410566fd64db49ee92f5029cc19101`, digest
+  `b4d60606d0ac6234c97f847fd0311322c857d0eb5d05ff77e9fa2a3db2564446`, 180 validation and 90
+  test units, matching 500,000 per-market/total-event caps, and a 900-second wall limit. No v4 trial,
+  final-holdout access, decision, authentication, private network, or order action occurred.
 
 ## Six-hour operations-audit stabilization
 

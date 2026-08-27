@@ -109,7 +109,7 @@ DEFAULT_AUTOMATION_ALLOWLIST = Path("automation/write-allowlist.yaml")
 DEFAULT_READINESS_POLICY = Path("configs/readiness.default.yaml")
 DEFAULT_PAPER_RUNTIME_SNAPSHOT = Path("runtime_exports/ops/paper-runtime.json")
 DEFAULT_SCALPING_PLAN = Path("research/experiments/2026-08-24-scalping-challenger-v1.json")
-DEFAULT_SCALPING_CURRENT_PLAN = Path("research/experiments/2026-08-27-scalping-challenger-v3.json")
+DEFAULT_SCALPING_CURRENT_PLAN = Path("research/experiments/2026-08-28-scalping-challenger-v4.json")
 DEFAULT_SCALPING_CURRENT_LEDGER = DEFAULT_SCALPING_CURRENT_PLAN.with_suffix(".ledger.json")
 DEFAULT_CODEX_RESEARCH_OUTPUT = Path("reports/codex/research")
 

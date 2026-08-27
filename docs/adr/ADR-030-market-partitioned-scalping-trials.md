@@ -41,3 +41,12 @@ committed version-2 runner; its execution plan must be sealed before any trial i
   multiplicity review remain separate downstream work.
 - The final holdout remains sealed, and no v4 trial is authorized until its registration-only ledger
   and immutable execution plan bind the exact committed runner revision.
+
+## Execution-plan evidence
+
+The registration-only v4 ledger has chain hash
+`8a1827182eecb96abd9306773ad5cc3c39fc28c3582090895c459ae53ba6678f`. A bounded rescan of 283
+current detailed files reproduced the registered 9,157,974 rows and dataset hash. Execution-plan
+digest `b4d60606d0ac6234c97f847fd0311322c857d0eb5d05ff77e9fa2a3db2564446` seals 180 validation and
+90 test units with matching 500,000 per-market/total-event limits and a 900-second wall limit. No
+trial or final-holdout access occurred while producing this evidence.

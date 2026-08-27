@@ -129,13 +129,19 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   v3's exact digest, never retries its failures, and cannot select markets from observed results.
   Commit the runner first, then bind that exact revision in the registration-only v4 ledger and
   immutable execution plan before any trial.
-- Runner validation passes Ruff/format, strict mypy, all 403 tests (the primary-checkout boundary
-  test was run in its required checkout), 85.01% coverage, Secret scanning, and dependency audit.
+- Runner validation passes Ruff/format, strict mypy, all 405 tests (the primary-checkout boundary
+  test was run in its required checkout), 85.00% coverage, Secret scanning, and dependency audit.
 - `research/experiments/2026-08-28-scalping-challenger-v4.{json,ledger.json}` is the new immutable
   registration pair. It binds source `2f96729`, plan digest `8d3a5fe1bcd5f22b16c0bc8fc7a93b8e2390581dc37eca068cf96a79b97057ee`,
   registration chain `8a1827182eecb96abd9306773ad5cc3c39fc28c3582090895c459ae53ba6678f`,
   fifteen sorted markets, 270 cells, and no trial/decision/holdout access. Seal its execution plan
-  before running the first cell.
+  before running the first cell; the next item records that completed seal.
+- `research/experiments/2026-08-28-scalping-challenger-v4.execution.json` is now sealed. The bounded
+  scan revalidated 9,157,974 rows and the exact historical dataset hash across 283 current detailed
+  files. The execution digest is `b4d60606d0ac6234c97f847fd0311322c857d0eb5d05ff77e9fa2a3db2564446`;
+  it fixes 180 validation/90 test units and 500,000-event/900-second limits. The earlier apparent
+  checksum failure was an incorrect parent input-root argument; direct hashing matched the manifest
+  and no raw data was changed. No v4 trial has run.
 
 ## Six-hour operations-audit stabilization
 
