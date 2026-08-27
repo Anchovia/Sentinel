@@ -79,6 +79,8 @@ from quantforge.runtime.paper_supervisor import (
 )
 from quantforge.storage import (
     ParquetRawEventWriter,
+    RawResearchInventoryProgress,
+    RawResearchInventoryTimeout,
     RawStoragePolicy,
     cleanup_orphan_temp_files,
     read_raw_events,
@@ -798,17 +800,67 @@ def assess_scalping_research(
     output_root: Annotated[
         Path, typer.Option(help="Codex research report root")
     ] = DEFAULT_CODEX_RESEARCH_OUTPUT,
+    scratch_root: Annotated[
+        Path | None,
+        typer.Option(help="Temporary external-sort root; runs are removed on exit"),
+    ] = None,
+    maximum_elapsed_seconds: Annotated[
+        float,
+        typer.Option(min=1.0, help="Fail-closed inventory wall-time budget"),
+    ] = 900.0,
 ) -> None:
     """Fingerprint detailed public data and retain an insufficient-data result."""
 
+    def report_progress(item: RawResearchInventoryProgress) -> None:
+        if (
+            item.phase == "scan"
+            and item.completed_units not in {1, item.total_units}
+            and item.completed_units % 10 != 0
+        ):
+            return
+        typer.echo(
+            json.dumps(
+                {
+                    "phase": item.phase,
+                    "completed_units": item.completed_units,
+                    "total_units": item.total_units,
+                    "selected_event_count": item.selected_event_count,
+                },
+                sort_keys=True,
+            ),
+            err=True,
+        )
+
     plan = load_scalping_experiment_plan(plan_path)
-    inventory = scan_raw_event_research_inventory(
-        input_root,
-        maximum_exchange_timestamp_utc=(plan.dataset_selection.maximum_exchange_timestamp_utc),
-        maximum_received_at_utc=plan.dataset_selection.maximum_received_at_utc,
-        exclude_marked_duplicates=plan.dataset_selection.exclude_marked_duplicates,
-        exclude_quality_flagged_events=(plan.dataset_selection.exclude_quality_flagged_events),
-    )
+    try:
+        inventory = scan_raw_event_research_inventory(
+            input_root,
+            maximum_exchange_timestamp_utc=(plan.dataset_selection.maximum_exchange_timestamp_utc),
+            maximum_received_at_utc=plan.dataset_selection.maximum_received_at_utc,
+            exclude_marked_duplicates=plan.dataset_selection.exclude_marked_duplicates,
+            exclude_quality_flagged_events=(plan.dataset_selection.exclude_quality_flagged_events),
+            scratch_root=scratch_root,
+            maximum_elapsed_seconds=maximum_elapsed_seconds,
+            progress=report_progress,
+        )
+    except RawResearchInventoryTimeout as exc:
+        typer.echo(
+            json.dumps(
+                {
+                    "status": "TIMEOUT",
+                    "reason": str(exc),
+                    "report_written": False,
+                    "trial_count": 0,
+                    "final_holdout_used": False,
+                    "authentication_used": False,
+                    "order_network_used": False,
+                    "real_orders_executed": False,
+                },
+                sort_keys=True,
+            ),
+            err=True,
+        )
+        raise typer.Exit(code=2) from exc
     sufficiency = evaluate_scalping_data_sufficiency(plan, inventory)
     if sufficiency.meets_requirements:
         typer.echo(

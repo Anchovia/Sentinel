@@ -61,8 +61,22 @@
 - Added regression coverage for old-plan compatibility, registration-time ordering, deterministic
   dual-cutoff scans, and late-arrival exclusion. No trial, backtest, final-holdout access, model
   approval, paper order, authenticated call, or live action occurred.
-- ADR-028 records the dataset-selection decision. The next step is to commit this contract, bind the
-  24-hour eligible rows to that exact source revision, and create an open `v2` preregistration ledger.
+- The first full clean-row fingerprint attempt exposed an implementation bottleneck: row-wise Arrow
+  conversion accumulated about 1.77GB of Python identities and produced no result after 118 minutes.
+  It was stopped; no report, registration, trial, holdout access, or dataset conclusion was written.
+- Replaced the unbounded object accumulation with Arrow batch filtering/grouping, fixed-width sorted
+  scratch runs, exact external event-ID duplicate detection, and k-way dataset-hash merging. The
+  scratch directory is removed on success, failure, or timeout, and the CLI defaults to a 900-second
+  fail-closed budget with coarse stderr progress.
+- The exact legacy hash, global tuple order, cross-run duplicate failure, filters, timeout, and cleanup
+  are covered by tests. A 25,000-row/five-file benchmark retained hash
+  `def61b40829c66084f2586594047ba439f63259fae7f841b0f27618caff241ab` and improved from 30.900 to
+  0.936 seconds (26,697.8 rows/second), about 33 times faster.
+- Full validation passes: Ruff and format across 245 files, mypy across 117 source files, 391 tests
+  at 85.67% coverage, 524-file Secret scanning, and `pip-audit` with no known vulnerabilities.
+- ADR-028 records the dataset-selection decision. Next commit this implementation, run the fixed
+  24-hour fingerprint under the hard timeout, then create an open `v2` registration only if the
+  result independently meets the preregistered minimum.
 
 ## Six-hour operations-audit stabilization
 

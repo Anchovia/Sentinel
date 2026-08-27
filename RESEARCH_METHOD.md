@@ -41,6 +41,12 @@ any nonempty ingestion quality flag. The experiment plan, inventory, and event r
 apply the same filters. Excluded rows remain retained in raw storage as audit evidence; they are not
 deleted or rewritten.
 
+Large inventory fingerprints use bounded batches, ephemeral fixed-width sorted runs, and a k-way
+merge. The merged bytes reproduce the original availability-tuple ordering and dataset SHA-256,
+while a separate external event-ID merge retains exact duplicate detection. Every operator run has
+an explicit wall-time budget and coarse progress evidence. Timeout removes scratch runs, writes no
+research result, and executes no trial.
+
 ## Validation
 
 - Use chronological rolling or expanding walk-forward validation.

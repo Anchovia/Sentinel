@@ -2,16 +2,23 @@
 
 import os
 import shutil
+import struct
 from collections import defaultdict
+from collections.abc import Callable, Iterator
+from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
+from heapq import merge
 from pathlib import Path
-from typing import Annotated, Literal, cast
+from tempfile import TemporaryDirectory
+from time import monotonic
+from typing import Annotated, BinaryIO, Literal, cast
 from uuid import UUID, uuid4
 
 import orjson
 import pyarrow as pa  # type: ignore[import-untyped]
+import pyarrow.compute as pc  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -46,6 +53,10 @@ RAW_EVENT_SCHEMA = pa.schema(
     },
 )
 
+_RESEARCH_IDENTITY = struct.Struct(">QQ16sQ16s32s")
+_RESEARCH_EVENT_ID_SIZE = 16
+_UNIX_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+
 
 class RawFileManifest(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -75,6 +86,20 @@ class RawFileManifest(BaseModel):
 
 class RawDataIntegrityError(ValueError):
     """A raw file, manifest, or row failed immutable lineage validation."""
+
+
+class RawResearchInventoryTimeout(TimeoutError):
+    """The bounded offline inventory scan exceeded its explicit wall-time budget."""
+
+
+@dataclass(frozen=True, slots=True)
+class RawResearchInventoryProgress:
+    """Coarse progress evidence for a potentially large offline fingerprint scan."""
+
+    phase: Literal["scan", "event-id-check", "dataset-hash"]
+    completed_units: int
+    total_units: int
+    selected_event_count: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -735,6 +760,193 @@ def require_raw_storage_capacity(root: Path, policy: RawStoragePolicy) -> int:
     return free_bytes
 
 
+def _require_inventory_deadline(started_at: float, maximum_elapsed_seconds: float | None) -> None:
+    if maximum_elapsed_seconds is not None and monotonic() - started_at > maximum_elapsed_seconds:
+        raise RawResearchInventoryTimeout(
+            f"research inventory exceeded {maximum_elapsed_seconds:g} seconds"
+        )
+
+
+def _selected_research_batch(
+    batch: pa.RecordBatch,
+    *,
+    event_type: str,
+    maximum_exchange_timestamp_utc: datetime | None,
+    maximum_received_at_utc: datetime | None,
+    exclude_marked_duplicates: bool,
+    exclude_quality_flagged_events: bool,
+) -> pa.Table:
+    table = pa.Table.from_batches([batch])
+    event_type_matches = pc.equal(table["event_type"], event_type)
+    if not bool(pc.all(event_type_matches).as_py()):
+        raise RawDataIntegrityError("raw event type disagrees with its manifest")
+    mask = event_type_matches
+    if maximum_exchange_timestamp_utc is not None:
+        mask = pc.and_(
+            mask,
+            pc.less_equal(table["exchange_timestamp"], maximum_exchange_timestamp_utc),
+        )
+    if maximum_received_at_utc is not None:
+        mask = pc.and_(
+            mask,
+            pc.less_equal(table["received_at_utc"], maximum_received_at_utc),
+        )
+    if exclude_marked_duplicates:
+        mask = pc.and_(mask, pc.invert(table["is_duplicate"]))
+    if exclude_quality_flagged_events:
+        mask = pc.and_(mask, pc.equal(pc.list_value_length(table["quality_flags"]), 0))
+    selected = table.filter(mask)
+    if selected.num_rows == 0:
+        return selected
+    if not bool(pc.all(pc.starts_with(selected["market"], "KRW-")).as_py()):
+        raise RawDataIntegrityError("research selection contains a non-KRW market")
+    payload_hashes_valid = pc.match_substring_regex(selected["raw_payload_hash"], "^[a-f0-9]{64}$")
+    if not bool(pc.all(payload_hashes_valid).as_py()):
+        raise RawDataIntegrityError("raw payload hash is malformed")
+    return selected
+
+
+def _identity_record(
+    received_microseconds: int,
+    received_monotonic_ns: int,
+    connection_id: str,
+    local_sequence: int,
+    event_id: str,
+    payload_hash: str,
+) -> bytes:
+    try:
+        return _RESEARCH_IDENTITY.pack(
+            received_microseconds,
+            received_monotonic_ns,
+            UUID(connection_id).bytes,
+            local_sequence,
+            UUID(event_id).bytes,
+            bytes.fromhex(payload_hash),
+        )
+    except (OverflowError, ValueError, struct.error) as exc:
+        raise RawDataIntegrityError("raw research identity is malformed") from exc
+
+
+def _write_research_runs(
+    selected: pa.Table,
+    identity_path: Path,
+    event_id_path: Path,
+) -> None:
+    columns = (
+        pc.cast(selected["received_at_utc"], pa.int64()).to_pylist(),
+        selected["received_monotonic_ns"].to_pylist(),
+        selected["connection_id"].to_pylist(),
+        selected["local_sequence"].to_pylist(),
+        selected["event_id"].to_pylist(),
+        selected["raw_payload_hash"].to_pylist(),
+    )
+    identities = sorted(_identity_record(*values) for values in zip(*columns, strict=True))
+    identity_path.write_bytes(b"".join(identities))
+    event_ids = sorted(identity[40:56] for identity in identities)
+    event_id_path.write_bytes(b"".join(event_ids))
+
+
+def _iter_fixed_records(stream: BinaryIO, record_size: int) -> Iterator[bytes]:
+    while record := stream.read(record_size):
+        if len(record) != record_size:
+            raise RawDataIntegrityError("research scratch run is truncated")
+        yield record
+
+
+def _merge_event_id_runs(
+    paths: list[Path],
+    *,
+    selected_event_count: int,
+    started_at: float,
+    maximum_elapsed_seconds: float | None,
+    progress: Callable[[RawResearchInventoryProgress], None] | None,
+) -> None:
+    previous: bytes | None = None
+    processed = 0
+    next_checkpoint = 100_000
+    with ExitStack() as stack:
+        streams = tuple(stack.enter_context(path.open("rb")) for path in paths)
+        records = merge(
+            *(_iter_fixed_records(stream, _RESEARCH_EVENT_ID_SIZE) for stream in streams)
+        )
+        for record in records:
+            if record == previous:
+                raise RawDataIntegrityError("duplicate event identity in research selection")
+            previous = record
+            processed += 1
+            if processed >= next_checkpoint:
+                _require_inventory_deadline(started_at, maximum_elapsed_seconds)
+                next_checkpoint += 100_000
+                if progress is not None and processed % 1_000_000 == 0:
+                    progress(
+                        RawResearchInventoryProgress(
+                            phase="event-id-check",
+                            completed_units=processed,
+                            total_units=selected_event_count,
+                            selected_event_count=selected_event_count,
+                        )
+                    )
+    if processed != selected_event_count:
+        raise RawDataIntegrityError("research event-id run count does not reconcile")
+
+
+def _merge_identity_runs(
+    paths: list[Path],
+    *,
+    selected_event_count: int,
+    started_at: float,
+    maximum_elapsed_seconds: float | None,
+    progress: Callable[[RawResearchInventoryProgress], None] | None,
+) -> str:
+    digest = sha256()
+    processed = 0
+    next_checkpoint = 100_000
+    with ExitStack() as stack:
+        streams = tuple(stack.enter_context(path.open("rb")) for path in paths)
+        records = merge(
+            *(_iter_fixed_records(stream, _RESEARCH_IDENTITY.size) for stream in streams)
+        )
+        for record in records:
+            (
+                received_microseconds,
+                received_monotonic_ns,
+                connection_id,
+                local_sequence,
+                event_id,
+                payload_hash,
+            ) = _RESEARCH_IDENTITY.unpack(record)
+            received_at = _UNIX_EPOCH + timedelta(microseconds=received_microseconds)
+            digest.update(
+                "|".join(
+                    (
+                        received_at.isoformat(),
+                        str(received_monotonic_ns),
+                        str(UUID(bytes=connection_id)),
+                        str(local_sequence),
+                        str(UUID(bytes=event_id)),
+                        payload_hash.hex(),
+                    )
+                ).encode()
+            )
+            digest.update(b"\n")
+            processed += 1
+            if processed >= next_checkpoint:
+                _require_inventory_deadline(started_at, maximum_elapsed_seconds)
+                next_checkpoint += 100_000
+                if progress is not None and processed % 1_000_000 == 0:
+                    progress(
+                        RawResearchInventoryProgress(
+                            phase="dataset-hash",
+                            completed_units=processed,
+                            total_units=selected_event_count,
+                            selected_event_count=selected_event_count,
+                        )
+                    )
+    if processed != selected_event_count:
+        raise RawDataIntegrityError("research identity run count does not reconcile")
+    return digest.hexdigest()
+
+
 def scan_raw_event_research_inventory(
     root: Path,
     *,
@@ -742,19 +954,24 @@ def scan_raw_event_research_inventory(
     maximum_received_at_utc: datetime | None = None,
     exclude_marked_duplicates: bool = False,
     exclude_quality_flagged_events: bool = False,
+    scratch_root: Path | None = None,
+    maximum_elapsed_seconds: float | None = None,
+    progress: Callable[[RawResearchInventoryProgress], None] | None = None,
 ) -> RawEventResearchInventory:
-    """Verify and fingerprint detailed public rows without decoding payloads into events."""
+    """Verify and externally fingerprint detailed public rows with bounded memory."""
 
     for cutoff in (maximum_exchange_timestamp_utc, maximum_received_at_utc):
         if cutoff is not None and (
             cutoff.tzinfo is None or cutoff.utcoffset() != UTC.utcoffset(cutoff)
         ):
             raise ValueError("research inventory cutoffs must be UTC-aware")
+    if maximum_elapsed_seconds is not None and maximum_elapsed_seconds <= 0:
+        raise ValueError("research inventory wall-time budget must be positive")
 
-    identities: list[tuple[datetime, int, str, int, str, str]] = []
-    seen_event_ids: set[str] = set()
+    started_at = monotonic()
     counts: dict[str, dict[str, object]] = {}
     selected_files = 0
+    selected_events = 0
     columns = (
         "event_id",
         "event_type",
@@ -778,98 +995,114 @@ def scan_raw_event_research_inventory(
         ).hexdigest()
         manifest_digest.update(f"{record.manifest.data_file}|{manifest_sha256}\n".encode())
 
-    for record in active_records:
-        manifest = record.manifest
-        if manifest.event_type not in {"trade", "orderbook"}:
-            continue
-        try:
-            checksum_valid = verify_manifest_checksum(root, manifest)
-        except ValueError as exc:
-            raise RawDataIntegrityError(f"unsafe raw manifest path: {manifest.data_file}") from exc
-        if not checksum_valid:
-            raise RawDataIntegrityError(f"raw checksum mismatch: {manifest.data_file}")
-        parquet_file = pq.ParquetFile(root / manifest.data_file)
-        metadata = parquet_file.schema_arrow.metadata or {}
-        if (
-            metadata.get(b"quantforge_schema_version")
-            != str(manifest.event_schema_version).encode()
-        ):
-            raise RawDataIntegrityError(f"raw schema version mismatch: {manifest.data_file}")
-        if parquet_file.metadata.num_rows != manifest.row_count:
-            raise RawDataIntegrityError(f"raw row count mismatch: {manifest.data_file}")
+    detailed_records = tuple(
+        record for record in active_records if record.manifest.event_type in {"trade", "orderbook"}
+    )
+    selected_scratch_root = scratch_root or root.parent
+    selected_scratch_root.mkdir(parents=True, exist_ok=True)
+    identity_paths: list[Path] = []
+    event_id_paths: list[Path] = []
+    run_number = 0
+    with TemporaryDirectory(prefix=".quantforge-research-", dir=selected_scratch_root) as temporary:
+        temporary_root = Path(temporary)
+        for file_number, record in enumerate(detailed_records, start=1):
+            _require_inventory_deadline(started_at, maximum_elapsed_seconds)
+            manifest = record.manifest
+            try:
+                checksum_valid = verify_manifest_checksum(root, manifest)
+            except ValueError as exc:
+                raise RawDataIntegrityError(
+                    f"unsafe raw manifest path: {manifest.data_file}"
+                ) from exc
+            if not checksum_valid:
+                raise RawDataIntegrityError(f"raw checksum mismatch: {manifest.data_file}")
+            parquet_file = pq.ParquetFile(root / manifest.data_file)
+            metadata = parquet_file.schema_arrow.metadata or {}
+            if (
+                metadata.get(b"quantforge_schema_version")
+                != str(manifest.event_schema_version).encode()
+            ):
+                raise RawDataIntegrityError(f"raw schema version mismatch: {manifest.data_file}")
+            if parquet_file.metadata.num_rows != manifest.row_count:
+                raise RawDataIntegrityError(f"raw row count mismatch: {manifest.data_file}")
 
-        file_selected = False
-        for batch in parquet_file.iter_batches(batch_size=65_536, columns=columns):
-            for row in batch.to_pylist():
-                event_type = row["event_type"]
-                if event_type != manifest.event_type:
-                    raise RawDataIntegrityError("raw event type disagrees with its manifest")
-                exchange_timestamp = cast(datetime, row["exchange_timestamp"])
-                if (
-                    maximum_exchange_timestamp_utc is not None
-                    and exchange_timestamp > maximum_exchange_timestamp_utc
-                ):
+            file_selected = False
+            for batch in parquet_file.iter_batches(batch_size=65_536, columns=columns):
+                _require_inventory_deadline(started_at, maximum_elapsed_seconds)
+                selected = _selected_research_batch(
+                    batch,
+                    event_type=manifest.event_type,
+                    maximum_exchange_timestamp_utc=maximum_exchange_timestamp_utc,
+                    maximum_received_at_utc=maximum_received_at_utc,
+                    exclude_marked_duplicates=exclude_marked_duplicates,
+                    exclude_quality_flagged_events=exclude_quality_flagged_events,
+                )
+                if selected.num_rows == 0:
                     continue
-                received_at = cast(datetime, row["received_at_utc"])
-                if maximum_received_at_utc is not None and received_at > maximum_received_at_utc:
-                    continue
-                if exclude_marked_duplicates and cast(bool, row["is_duplicate"]):
-                    continue
-                if exclude_quality_flagged_events and cast(list[str], row["quality_flags"]):
-                    continue
-                event_id = cast(str, row["event_id"])
-                if event_id in seen_event_ids:
-                    raise RawDataIntegrityError("duplicate event identity in research selection")
-                seen_event_ids.add(event_id)
-                market = cast(str, row["market"])
-                if not market.startswith("KRW-"):
-                    raise RawDataIntegrityError("research selection contains a non-KRW market")
-                received_monotonic_ns = cast(int, row["received_monotonic_ns"])
-                connection_id = cast(str, row["connection_id"])
-                local_sequence = cast(int, row["local_sequence"])
-                payload_hash = cast(str, row["raw_payload_hash"])
-                if len(payload_hash) != 64:
-                    raise RawDataIntegrityError("raw payload hash is malformed")
-                identities.append(
-                    (
-                        received_at,
-                        received_monotonic_ns,
-                        connection_id,
-                        local_sequence,
-                        event_id,
-                        payload_hash,
+                run_number += 1
+                identity_path = temporary_root / f"identity-{run_number:06d}.bin"
+                event_id_path = temporary_root / f"event-id-{run_number:06d}.bin"
+                _write_research_runs(selected, identity_path, event_id_path)
+                identity_paths.append(identity_path)
+                event_id_paths.append(event_id_path)
+                selected_events += selected.num_rows
+                file_selected = True
+
+                summary = (
+                    selected.select(["market", "received_at_utc"])
+                    .group_by("market")
+                    .aggregate(
+                        [
+                            ("received_at_utc", "count"),
+                            ("received_at_utc", "min"),
+                            ("received_at_utc", "max"),
+                        ]
                     )
                 )
-                market_counts = counts.setdefault(
-                    market,
-                    {
-                        "trade": 0,
-                        "orderbook": 0,
-                        "first": received_at,
-                        "last": received_at,
-                    },
+                for row in summary.to_pylist():
+                    market = cast(str, row["market"])
+                    first = cast(datetime, row["received_at_utc_min"])
+                    last = cast(datetime, row["received_at_utc_max"])
+                    market_counts = counts.setdefault(
+                        market,
+                        {
+                            "trade": 0,
+                            "orderbook": 0,
+                            "first": first,
+                            "last": last,
+                        },
+                    )
+                    market_counts[manifest.event_type] = cast(
+                        int, market_counts[manifest.event_type]
+                    ) + cast(int, row["received_at_utc_count"])
+                    market_counts["first"] = min(cast(datetime, market_counts["first"]), first)
+                    market_counts["last"] = max(cast(datetime, market_counts["last"]), last)
+            selected_files += int(file_selected)
+            if progress is not None:
+                progress(
+                    RawResearchInventoryProgress(
+                        phase="scan",
+                        completed_units=file_number,
+                        total_units=len(detailed_records),
+                        selected_event_count=selected_events,
+                    )
                 )
-                market_counts[event_type] = cast(int, market_counts[event_type]) + 1
-                market_counts["first"] = min(cast(datetime, market_counts["first"]), received_at)
-                market_counts["last"] = max(cast(datetime, market_counts["last"]), received_at)
-                file_selected = True
-        selected_files += int(file_selected)
 
-    digest = sha256()
-    for identity in sorted(identities):
-        digest.update(
-            "|".join(
-                (
-                    identity[0].isoformat(),
-                    str(identity[1]),
-                    identity[2],
-                    str(identity[3]),
-                    identity[4],
-                    identity[5],
-                )
-            ).encode()
+        _merge_event_id_runs(
+            event_id_paths,
+            selected_event_count=selected_events,
+            started_at=started_at,
+            maximum_elapsed_seconds=maximum_elapsed_seconds,
+            progress=progress,
         )
-        digest.update(b"\n")
+        dataset_hash = _merge_identity_runs(
+            identity_paths,
+            selected_event_count=selected_events,
+            started_at=started_at,
+            maximum_elapsed_seconds=maximum_elapsed_seconds,
+            progress=progress,
+        )
+
     markets = tuple(
         RawEventMarketInventory(
             market=market,
@@ -881,14 +1114,14 @@ def scan_raw_event_research_inventory(
         for market, values in sorted(counts.items())
     )
     return RawEventResearchInventory(
-        dataset_hash=digest.hexdigest(),
+        dataset_hash=dataset_hash,
         manifest_set_sha256=manifest_digest.hexdigest(),
         maximum_exchange_timestamp_utc=maximum_exchange_timestamp_utc,
         maximum_received_at_utc=maximum_received_at_utc,
         exclude_marked_duplicates=exclude_marked_duplicates,
         exclude_quality_flagged_events=exclude_quality_flagged_events,
         selected_file_count=selected_files,
-        selected_event_count=len(identities),
+        selected_event_count=selected_events,
         markets=markets,
     )
 

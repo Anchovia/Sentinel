@@ -79,6 +79,16 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   both UTC cutoffs. ADR-028 records this rule.
 - No trial or final holdout has been run. Next bind the eligible 24-hour retained rows to the exact
   committed source revision and write one open `v2` preregistration record before any computation.
+- Do not restore the original row-wise fingerprint implementation. Its first full clean scan was
+  stopped after 118 minutes and roughly 1.77GB of Python identity state without producing a result.
+- The replacement uses bounded Arrow batches and ephemeral fixed-width identity/event-ID runs. Its
+  external merges preserve the legacy tuple hash and exact duplicate failure, report coarse progress,
+  clean scratch on every exit, and honor an explicit wall-time budget.
+- The five-file 25,000-row benchmark produced the same hash before and after optimization while
+  improving from 30.900 to 0.936 seconds. Run the fixed 24-hour fingerprint only after committing
+  this implementation, with the 900-second cap; a timeout is a valid no-result outcome.
+- Validation passes Ruff/format across 245 files, mypy across 117 source files, 391 tests at 85.67%
+  coverage, 524-file Secret scanning, and the dependency audit with no known vulnerabilities.
 
 ## Six-hour operations-audit stabilization
 

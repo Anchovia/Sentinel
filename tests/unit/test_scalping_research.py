@@ -1,10 +1,12 @@
 from datetime import timedelta
+from hashlib import sha256
 from pathlib import Path
 
 import orjson
 import pytest
 
 from factories import BASE_TIME, make_orderbook_event, make_trade_event
+from quantforge.domain import EventEnvelope
 from quantforge.research.scalping import (
     ScalpingBacktestEngine,
     ScalpingResearchDecision,
@@ -17,14 +19,46 @@ from quantforge.research.scalping import (
 )
 from quantforge.storage import (
     ParquetRawEventWriter,
+    RawDataIntegrityError,
     RawEventMarketInventory,
     RawEventResearchInventory,
+    RawResearchInventoryTimeout,
     read_raw_events,
     scan_raw_event_research_inventory,
 )
 
 ROOT = Path(__file__).parents[2]
 PLAN_PATH = ROOT / "research" / "experiments" / "2026-08-24-scalping-challenger-v1.json"
+
+
+def _legacy_dataset_hash(events: list[EventEnvelope]) -> str:
+    identities = sorted(
+        (
+            event.received_at_utc,
+            event.received_monotonic_ns,
+            str(event.connection_id),
+            event.local_sequence,
+            str(event.event_id),
+            event.raw_payload_hash,
+        )
+        for event in events
+    )
+    digest = sha256()
+    for identity in identities:
+        digest.update(
+            "|".join(
+                (
+                    identity[0].isoformat(),
+                    str(identity[1]),
+                    identity[2],
+                    str(identity[3]),
+                    identity[4],
+                    identity[5],
+                )
+            ).encode()
+        )
+        digest.update(b"\n")
+    return digest.hexdigest()
 
 
 def _inventory(*, eligible_markets: int) -> RawEventResearchInventory:
@@ -210,6 +244,63 @@ def test_inventory_and_reader_apply_registered_clean_row_filters(tmp_path: Path)
     assert inventory.exclude_quality_flagged_events is True
     assert inventory.selected_event_count == 1
     assert tuple(event.local_sequence for event in events) == (1,)
+
+
+def test_external_inventory_hash_matches_legacy_global_tuple_order(tmp_path: Path) -> None:
+    raw_root = tmp_path / "raw"
+    scratch_root = tmp_path / "scratch"
+    events = [
+        make_trade_event(sequence=10, exchange_offset_ms=800, received_offset_ms=800),
+        make_orderbook_event(sequence=2, received_offset_ms=100, connection=2),
+        make_trade_event(sequence=3, exchange_offset_ms=100, received_offset_ms=100),
+        make_orderbook_event(sequence=1, received_offset_ms=0),
+    ]
+    writer = ParquetRawEventWriter(raw_root, max_rows=1)
+    for event in reversed(events):
+        writer.append(event)
+    writer.close()
+
+    inventory = scan_raw_event_research_inventory(raw_root, scratch_root=scratch_root)
+
+    assert inventory.dataset_hash == _legacy_dataset_hash(events)
+    assert inventory.selected_event_count == len(events)
+    assert list(scratch_root.iterdir()) == []
+
+
+def test_external_inventory_detects_duplicate_ids_across_runs(tmp_path: Path) -> None:
+    raw_root = tmp_path / "raw"
+    event = make_trade_event(sequence=1, exchange_offset_ms=100, received_offset_ms=100)
+    duplicate = event.model_copy(
+        update={
+            "received_at_utc": event.received_at_utc + timedelta(milliseconds=1),
+            "received_monotonic_ns": 2,
+            "local_sequence": 2,
+        }
+    )
+    writer = ParquetRawEventWriter(raw_root, max_rows=1)
+    writer.append(event)
+    writer.append(duplicate)
+    writer.close()
+
+    with pytest.raises(RawDataIntegrityError, match="duplicate event identity"):
+        scan_raw_event_research_inventory(raw_root, scratch_root=tmp_path / "scratch")
+
+
+def test_external_inventory_timeout_cleans_scratch_runs(tmp_path: Path) -> None:
+    raw_root = tmp_path / "raw"
+    scratch_root = tmp_path / "scratch"
+    writer = ParquetRawEventWriter(raw_root, max_rows=1)
+    writer.append(make_trade_event(sequence=1, exchange_offset_ms=100, received_offset_ms=100))
+    writer.close()
+
+    with pytest.raises(RawResearchInventoryTimeout, match="exceeded"):
+        scan_raw_event_research_inventory(
+            raw_root,
+            scratch_root=scratch_root,
+            maximum_elapsed_seconds=1e-12,
+        )
+
+    assert list(scratch_root.iterdir()) == []
 
 
 def test_blocked_result_and_ledger_retain_no_trial_outcome(tmp_path: Path) -> None:

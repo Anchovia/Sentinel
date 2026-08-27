@@ -151,7 +151,9 @@ Phase 11.6 adds three closed research contracts:
   per-market trade/orderbook counts plus first/last availability time. It records both applied UTC
   cutoffs and the exact scanned manifest-set hash; the receive bound excludes later-arriving old
   exchange events, while fixed clean-row flags reproduce the 24-hour eligibility evidence.
-  Compaction does not change the row identity hash.
+  Compaction does not change the row identity hash. Bounded Arrow batches spill fixed-width sorted
+  identities and event IDs to ephemeral runs; two k-way merges reproduce the original tuple hash
+  and exact duplicate check without retaining every Python row object in memory.
 - `scalping-backtest-1` binds plan/code/data/execution hashes to one market/rule/cost/fold replay and
   stores signals, orders, fills, closed trades, gross/net PnL, all execution costs, turnover,
   drawdown, win rate, holding time, exact portfolio state, and false-only network/order capability.
