@@ -149,7 +149,9 @@ All notable changes are recorded here. The project follows semantic versioning o
 - A 30-day raw retention ceiling, 50GiB active-data cap, 20GiB free-space fail-closed stop, and
   `paper-runtime-5`/Korean-monitor lifecycle evidence for compaction, pruning, reclaimed space, and
   actual filesystem capacity.
-- A 60-second Compose stop grace period for bounded queue flush and clean paper checkpoint closure.
+- A finite 300-second Compose stop grace period for bounded queue flush, final full-store
+  maintenance, and clean paper checkpoint closure, plus a 180-second health-check start period for
+  retained-manifest verification.
 - A committed short-horizon experiment plan fixing three public-microstructure hypotheses, causal
   availability, entry/exit thresholds, base/stress costs, data minimums, chronological folds,
   multiplicity control, and a sealed final holdout before trial execution.
@@ -183,10 +185,16 @@ All notable changes are recorded here. The project follows semantic versioning o
 - `paper-runtime-7`, `work-ops-3`, and `operations-dashboard-2` timing evidence separating session
   maximum positive ingress latency, newest signed ingress latency, and the newest exchange-ahead
   proxy without claiming an independent host NTP measurement.
+- Validated 24-hour collection evidence with 14,475,141 retained rows and fifteen independently
+  scanned clean markets meeting the preregistered duration/trade/orderbook minimums; the report does
+  not authorize an experiment, model, paper order, or live action.
 - Actual Compose restart evidence with verified clean terminal transitions and one retained prior
   missing-terminal interruption: an earlier image exited code 1 without a Docker kill event and was
   automatically restarted after 40.046 seconds. The final session has prior `CLEAN_STOP`, healthy
   public observation, and every paper, private, authenticated, and real-order capability closed.
+- Post-rollout maintenance evidence that the version-7 runtime compacted 207 source files, reclaimed
+  2,929,931 bytes, retained 14,705,609 checksum-verified rows, and drained the bounded queue while
+  remaining healthy with zero restart, OOM, parser, reconnect, or overflow events.
 
 ### Fixed
 
@@ -203,6 +211,11 @@ All notable changes are recorded here. The project follows semantic versioning o
 - Require the six-hour scheduled operations prompt to use the complete `automation-report-1`
   fixture shape, validate its same-stem JSON manifest, avoid fixed-drive assumptions, and treat
   denied optional host/Docker access as unknown rather than an incident by itself.
+- Prevent planned replacement from being killed during full-store shutdown maintenance by extending
+  the bounded Compose stop budget from 60 to 300 seconds. The reproduced version-7 stop completed in
+  about 67 seconds with equal accepted/committed counts and a clean recovery checkpoint.
+- Prevent a false transient Docker `unhealthy` state while a large retained store is verified at
+  startup by extending only the health-check start period from 30 to 180 seconds.
 
 ### Security
 

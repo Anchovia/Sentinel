@@ -36,8 +36,18 @@ the results through `paper-runtime-5` and the local monitor. Completed retiremen
 every heartbeat and after maintenance. If free space is below 20GiB, stop the public paper runtime
 fail-closed instead of accepting more data.
 
-Grant the Compose service a 60-second stop grace period so a normal recreate can close the public
-socket, drain the bounded storage queue, and persist a clean recovery checkpoint before termination.
+Grant the Compose service a 300-second stop grace period so a normal recreate can close the public
+socket, drain the bounded storage queue, complete the final full-store maintenance/index pass, and
+persist a clean recovery checkpoint before termination. The original 60-second budget became
+insufficient once retained storage reached 1.7GB and 362 active files: a 2026-08-27 planned stop
+finished writing 14,518,628 checksum-valid rows but was killed before it could write the terminal
+runtime and continuity records. The longer bound remains finite and lets Docker fail closed if the
+shutdown path genuinely hangs.
+
+Allow a 180-second health-check start period for the same full-store startup verification. At the
+2026-08-27 retained size, initialization took about two minutes before the new public socket became
+healthy; the prior 30-second period produced a false transient `unhealthy` state without a process
+failure. Normal steady-state health cadence and failure thresholds remain unchanged.
 
 ## Migration
 

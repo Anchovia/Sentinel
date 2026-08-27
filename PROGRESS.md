@@ -16,6 +16,35 @@
   24-hour data verification (`gpt-5.6-terra`); both run as separate local Codex tasks
 - Automatic merge/deploy/model promotion/live activation: unavailable
 
+## 24-hour collection evidence and version-7 rollout
+
+- Captured and validated the report-only 24-hour evidence at
+  `reports/work/model-health/2026/08/27/20260827T083445Z-model-health.{md,json}`. The uninterrupted
+  session had run for 111,564.697 seconds, accepted 12,315,603 public messages, retained 14,475,141
+  checksum-indexed rows, and kept WebSocket gaps, stale gaps, reconnects, parser errors, and queue
+  overflows at zero.
+- An independent retained-Parquet scan found 9,120,687 clean nonduplicate detailed rows. Fifteen
+  KRW markets each exceeded 24 hours plus the registered 20,000-trade and 20,000-orderbook minimums.
+  This is sufficient to preregister a new experiment, but it does not authorize the existing plan,
+  use a final holdout, approve a model, or enable even paper orders.
+- The first planned replacement exposed a real operations defect: with 1.7GB/362 active files, the
+  60-second Compose stop budget expired after data flush but before terminal maintenance and
+  continuity records. Docker recorded exit 137 and the next session truthfully retained
+  `UNEXPECTED_INTERRUPTION`; the stored index still verified 14,518,628 rows, all 362 files, and zero
+  checksum failures.
+- Increased the finite stop grace period to 300 seconds and health-check start period to 180 seconds,
+  with repository safety tests, runbook guidance, and an ADR-020 amendment. A version-7 verification
+  stop completed in about 67 seconds with exit 0, `accepted=committed=29,249`, queue depth zero,
+  `clean_shutdown=true`, and 377/377 verified files.
+- The final image `a50531c4b6e1` is `paper-runtime-7`/`work-ops-3`, `RUNNING`, Docker healthy, and
+  mounted to the same `C:/Sentinel/data/paper` path. It restored 14,547,877 rows with
+  `previous_session_outcome=CLEAN_STOP`, `VERIFIED_CLEAN` recovery, fresh public events, and no
+  restart, OOM, authentication, private-network, paper-order, or live-order capability.
+- A post-rollout monitor crossed the configured 15-minute maintenance cycle. It compacted 207 source
+  files, reclaimed 2,929,931 bytes, reduced the active set to 251 verified files, and preserved
+  14,705,609 rows; the queue returned to zero while collection continued. Docker remained healthy
+  with restart/OOM/parser/reconnect/overflow counts zero.
+
 ## Six-hour operations-audit stabilization
 
 - Reviewed the first unattended six-hour report against the exact runtime exports, retained raw
@@ -41,11 +70,11 @@
   recorded as unknown rather than treated as an incident by itself.
 - ADR-027 records the timing and scheduled-evidence contract. Model, risk, paper-order,
   authentication, private-network, and live gates remain unchanged and closed.
-- Keep the currently healthy pre-change container running through the 12/24-hour continuity
-  checkpoints. Rebuilding and recreating it now would reset the strict session horizon; roll out the
-  version-7 image only after the 24-hour evidence is captured, using the normal clean-stop path.
+- The pre-change container was retained through the 24-hour checkpoint, then replaced with the
+  version-7 image after preserving the exact report-only evidence. The new session intentionally
+  starts fresh 6-hour/12-hour continuity horizons.
 - Full repository validation passes: Ruff and format across 238 files, mypy across 117 source files,
-  385 tests at 85.70% branch coverage, 407-file Secret scanning, `pip-audit` with no known
+  385 tests at 85.70% branch coverage, 499-file Secret scanning, `pip-audit` with no known
   vulnerabilities, the canonical automation manifest boundary, and the combined Compose config.
 
 ## Runtime stabilization after Phase 11.10
@@ -409,11 +438,19 @@ ruff: PASS — all checks passed
 format check: PASS — 238 files formatted
 mypy: PASS — 117 source files, no issues
 pytest: PASS — 385 tests, 85.70% branch coverage
-secret scan: PASS — 407 text files checked
+secret scan: PASS — 499 text files checked
 dependency audit: PASS — no known vulnerabilities
 Compose config: PASS — base + paper overlays
 automation report fixture: PASS — schema and write boundary validated
-container build: PASS — quantforge-paper-runtime:latest 601f99523d68
+container build: PASS — quantforge-paper-runtime:latest a50531c4b6e1
+24-hour report: PASS_WITH_LIMITATIONS — 14,475,141 indexed rows; 15 clean markets meet the registered
+  duration/trade/orderbook minimum; no current experiment authorization or order capability
+version-7 rollout: PASS — paper-runtime-7/work-ops-3 RUNNING/healthy; prior CLEAN_STOP;
+  VERIFIED_CLEAN; 14,547,877 retained rows at restart; mounted path unchanged
+bounded shutdown: PASS — about 67 seconds; exit 0; accepted=committed=29,249; queue zero; clean
+  checkpoint; 377/377 verified files; stop/start health budgets 300s/180s
+version-7 maintenance: PASS — 15-minute cycle compacted 207 source files, reclaimed 2,929,931 bytes,
+  retained 14,705,609 rows in 251 verified files, drained the queue, and kept restart/OOM/error zero
 continuity restart: PASS_WITH_RETAINED_INCIDENT — VERIFIED/ACTIVE; prior CLEAN_STOP; 4 sessions,
   2 clean stops, 0 failed stops, 1 earlier missing-terminal interruption/40.046s downtime, 0 observed
   WebSocket/stale gaps/reconnects, exchange completeness false; final image remained healthy beyond
@@ -449,12 +486,12 @@ model approval/paper-order gate/proposals/risk approvals/paper orders/fills/auth
   real/live capability all false or 0
 actual/private/test orders: NONE
 scheduled filesystem access: PASS — recurring six-hour local audit and one-time 24-hour verification
-active; first six-hour Markdown report reviewed, JSON manifest invalid and prompt corrected
+active; the first invalid six-hour JSON is retained and two later unattended reports validated
 ```
 
 ## Known constraints
 
-- `NOT_READY` is the correct operational result. There is no sustained representative paper history,
+- `NOT_READY` is the correct operational result. There is no representative strategy paper history,
   authenticated order-test evidence, calibrated production costs, production-grade encrypted off-
   host restore, reviewed live adapter/order network, multi-operator drills, or bound release/risk/
   model/operator approvals.
@@ -466,8 +503,8 @@ active; first six-hour Markdown report reviewed, JSON manifest invalid and promp
   must create a Secret-free bundle with reproducible hashes; absent evidence stays absent.
 - The portable Phase 8 catalog remains unregistered, while two explicitly owner-approved host-local
   Codex tasks are active. Their execution still depends on this host and desktop app. The first
-  six-hour report's invalid manifest is retained as failed audit evidence; the corrected prompt must
-  pass its next scheduled run before automation reliability is claimed. Standard performance/model/
+  six-hour report's invalid manifest is retained as failed audit evidence; the corrected prompt has
+  since produced two validator-clean unattended reports. Standard performance/model/
   incident files still report unavailable or insufficient evidence rather than representative
   results.
 - The Windows host lacks `uv` and `make` on PATH, so exact Make targets were not run in this phase;

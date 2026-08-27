@@ -78,7 +78,8 @@ def test_paper_runtime_container_has_no_credentials_or_order_gates() -> None:
     assert service["environment"]["QF_UPBIT_ACCESS_KEY"] == ""
     assert service["environment"]["QF_UPBIT_SECRET_KEY"] == ""
     assert "no-new-privileges:true" in service["security_opt"]
-    assert service["stop_grace_period"] == "60s"
+    assert service["healthcheck"]["start_period"] == "180s"
+    assert service["stop_grace_period"] == "300s"
     paper_mounts = [
         volume
         for volume in service["volumes"]

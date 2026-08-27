@@ -7,7 +7,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 
 ## Current state
 
-- Date: 2026-08-26 KST
+- Date: 2026-08-27 KST
 - Completed phases: 0–10; Phase 11.1–11.10 checkpoints complete
 - Current checkpoint: durable continuity plus storage-acceptance, local-clock, and audit-evidence
   stabilization
@@ -38,6 +38,30 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 11.6 preregistration: `4cb419c chore: 단타 전략 실험 사전등록`
 - Phase 11.6 implementation: `0e3040b feat: 단타 전략 연구 기반 구축`
 
+## 24-hour evidence and version-7 rollout
+
+- The validated report-only evidence is
+  `reports/work/model-health/2026/08/27/20260827T083445Z-model-health.{md,json}`. Its exact session
+  exceeded 30 hours, retained 14,475,141 indexed rows, and had no locally observed WebSocket/stale
+  gaps, reconnects, parser errors, or queue overflows. An independent clean detailed-row scan found
+  fifteen markets above the registered 24-hour/20,000-trade/20,000-orderbook minimum.
+- The first planned stop exhausted the original 60-second Compose budget and exited 137 before the
+  terminal lifecycle records, although the durable store verified all 14,518,628 rows in 362 files
+  with zero checksum failures. The next continuity record correctly calls that prior session
+  `UNEXPECTED_INTERRUPTION`; do not relabel or remove that incident evidence.
+- ADR-020, Compose, the runbook, and repository safety tests now use a bounded 300-second stop grace
+  period and 180-second health-check start period. The reproduced version-7 stop took about 67
+  seconds and completed with Docker exit 0, equal 29,249 accepted/committed rows, queue depth zero,
+  a clean checkpoint, and 377/377 verified files.
+- The final container uses image `a50531c4b6e1`, exports `paper-runtime-7` and `work-ops-3`, and is
+  healthy on the unchanged `C:/Sentinel/data/paper` mount. It reports prior `CLEAN_STOP`, recovery
+  `VERIFIED_CLEAN`, fresh public events, 14,547,877 retained rows, and no authentication, private
+  network, paper-order, unknown-order, or live-order capability.
+- The post-rollout monitor crossed one 15-minute maintenance cycle. Compaction superseded 207 source
+  files, reclaimed 2,929,931 bytes, preserved 14,705,609 rows in 251 verified files, and drained the
+  queue while collection continued. Docker finished healthy with restart/OOM/parser/reconnect/
+  overflow counts zero.
+
 ## Six-hour operations-audit stabilization
 
 - The first unattended report correctly observed a healthy public paper runtime and strict six-hour
@@ -57,12 +81,11 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   access them, while fresh verified runtime exports remain usable for their supported claims.
 - ADR-027 records the decision. Targeted supervisor and automation validation passes 39 tests. Full
   validation passes 385 tests at 85.70% branch coverage, Ruff/format across 238 files, mypy across
-  117 source files, 407-file Secret scanning, dependency audit, manifest boundary, and Compose
-  config. Only the intentionally deferred runtime replacement remains.
-- Do not recreate the healthy current container before the 24-hour checkpoint solely to expose the
-  corrected fields. The active audit prompts understand the legacy version-2 ambiguity. After the
-  checkpoint, use the normal 60-second clean-stop Compose replacement and verify version-7 exports,
-  `CLEAN_STOP`, restart/OOM zero, and continued keyless paper-only safety.
+  117 source files, 499-file Secret scanning, dependency audit, manifest boundary, and Compose
+  config. The 24-hour evidence and version-7 runtime replacement are now complete.
+- The 24-hour checkpoint was preserved before replacement. The active audit prompts can now consume
+  the version-3 operations export; current 6-hour/12-hour continuity readiness is intentionally false
+  because the final version-7 session started a new strict horizon.
 
 ## Stabilization after Phase 11.10
 
@@ -213,8 +236,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - `paper-runtime-5` enforces and reports 30-day retention, 50GiB maximum active raw data, a 20GiB
   free-space fail-closed stop, 15-minute maintenance, compacted/deleted files, reclaimed bytes, and
   actual filesystem free space. ADR-001 through ADR-027 record consequential choices.
-- Compose grants the paper runtime a 60-second stop grace period. The final signal stop persisted a
-  clean checkpoint and the next run reported `VERIFIED_CLEAN` before resuming full coverage.
+- Compose grants the paper runtime a 300-second stop grace period and a 180-second health-check start
+  period. The reproduced signal stop persisted a clean checkpoint and the final run reported
+  `VERIFIED_CLEAN` before resuming full coverage.
 
 ## Latest validation
 
@@ -223,10 +247,17 @@ Python 3.13.15; no dependency added by the operations audit stabilization
 ruff + format: PASS (238 files)
 mypy: PASS (117 source files)
 pytest: PASS (385 tests, 85.70% branch coverage)
-Secret scan: PASS (407 text files)
+Secret scan: PASS (499 text files)
 pip-audit: PASS (no known vulnerabilities)
 Automation report fixture: PASS (schema and write boundary)
 Compose config: PASS (base + paper overlays)
+24-hour report: PASS_WITH_LIMITATIONS; 14,475,141 indexed rows, 15 clean minimum-qualified markets
+Version-7 rollout: PASS; image a50531c4b6e1, paper-runtime-7/work-ops-3, healthy, prior CLEAN_STOP,
+VERIFIED_CLEAN, 14,547,877 retained rows, no authentication/private/paper/live order capability
+Shutdown bound: PASS; about 67 seconds, Docker exit 0, accepted=committed=29,249, queue depth zero,
+clean checkpoint, 377/377 verified files; Compose stop/start health budgets 300s/180s
+Version-7 maintenance: PASS; 207 source files compacted, 2,929,931 bytes reclaimed, 14,705,609 rows
+in 251 verified files, queue drained, Docker healthy with restart/OOM/parser/reconnect/overflow zero
 Runtime acceptance regression: PASS; original downstream exception preserved, accepted=committed=1
 Wall-clock regression: PASS; monotonic continuation, quality flag retained, affected frame HOLD
 Clock-stabilized image: PASS (quantforge-paper-runtime:latest, 3f6728165257)
@@ -269,12 +300,12 @@ Model approval, paper-order gate, proposals, risk approvals, paper orders/fills,
 authentication/private/real/live capability all false or zero
 Actual/private/test orders: none
 Scheduled filesystem access: recurring six-hour local audit and one-time 24-hour verification active;
-first six-hour Markdown report reviewed, JSON manifest invalid and prompt corrected
+first invalid six-hour JSON retained; two later unattended manifests validated successfully
 ```
 
 ## Important constraints
 
-- `NOT_READY` is intentional and truthful. There is no sustained paper/production-quality evidence,
+- `NOT_READY` is intentional and truthful. There is no representative strategy paper performance,
   authenticated order-test, live adapter/network review, production recovery, operator drills, or
   release/risk/model/operator approval bundle.
 - Complete/conditional readiness fixtures are synthetic classifier tests, not market or approval
@@ -283,7 +314,7 @@ first six-hour Markdown report reviewed, JSON manifest invalid and prompt correc
   must remain Secret-free, reproducible, and independently reviewed.
 - The portable schedule catalog remains unregistered, while two explicitly owner-approved local
   Codex tasks are active. The first six-hour report's invalid manifest is retained as failed audit
-  evidence; the corrected prompt must pass its next run before automation reliability is claimed.
+  evidence; the corrected prompt has since produced two validator-clean unattended reports.
   Representative strategy performance, incident-store integration, and model drift remain
   unavailable. Scheduled execution depends on the computer and desktop app.
 - No authenticated exchange client, credential provider, cancellation/order endpoint, order-capable

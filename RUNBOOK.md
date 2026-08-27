@@ -187,11 +187,17 @@ the actual host root from the Docker mount or reviewed local Compose override; n
 letter. The Korean monitor shows the same four operator-level values: continuous uptime,
 prior-session outcome, locally observed gap count, and strict 6-hour/12-hour result.
 
-For a planned restart, use Compose stop/restart so the 60-second grace period can write
+For a planned restart, use Compose stop/restart so the 300-second grace period can drain the
+bounded queue, finish storage maintenance, and write
 `SESSION_STOPPED`. After the new container is healthy, require `previous_session_outcome=CLEAN_STOP`,
 `continuity_integrity=VERIFIED`, fresh public events, and no order capability. An active prior lease
 becomes `UNEXPECTED_INTERRUPTION` on the next start. Preserve and investigate that evidence; never
 rewrite the ledger or call a missing terminal record a clean stop.
+
+The paper service has a 180-second health-check start period because startup verifies the retained
+manifest set before opening the public socket. A large local store can legitimately remain
+`STARTING` during that bounded window; after it expires, treat a persistent unhealthy state as an
+incident rather than bypassing the check.
 
 `DEGRADED` means the lease or hash chain did not verify. Public paper observation can remain active,
 but both continuity results must stay false. Preserve the affected files and investigate from a
