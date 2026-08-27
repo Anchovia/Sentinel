@@ -49,3 +49,7 @@ final holdout, approve a model, enable paper orders, access authentication, or c
 - A new experiment can be fingerprinted reproducibly before any planned trial is executed.
 - Large inputs no longer require one Python tuple and set entry per selected row. Temporary runs are
   recoverable scratch only and are removed on normal success, handled failure, or timeout.
+- The first eligible application is `qf-scalp-20260827-v2`: 9,157,974 selected rows, 15 eligible
+  markets, dataset hash `4002405439cbe4afbedf64ea90a84be486640754a0a2de12a4d726760dae8fd6`,
+  and one registration-only ledger record. This records the planned search space but does not count
+  as a trial, decision, holdout access, or model approval.

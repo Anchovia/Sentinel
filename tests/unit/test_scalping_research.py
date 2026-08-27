@@ -7,6 +7,13 @@ import pytest
 
 from factories import BASE_TIME, make_orderbook_event, make_trade_event
 from quantforge.domain import EventEnvelope
+from quantforge.research import (
+    ExperimentLedger,
+    ExperimentLedgerSnapshot,
+    ExperimentRegistration,
+    SplitRole,
+    new_experiment_id,
+)
 from quantforge.research.scalping import (
     ScalpingBacktestEngine,
     ScalpingResearchDecision,
@@ -29,6 +36,9 @@ from quantforge.storage import (
 
 ROOT = Path(__file__).parents[2]
 PLAN_PATH = ROOT / "research" / "experiments" / "2026-08-24-scalping-challenger-v1.json"
+V2_PLAN_PATH = ROOT / "research" / "experiments" / "2026-08-27-scalping-challenger-v2.json"
+V2_LEDGER_PATH = V2_PLAN_PATH.with_suffix(".ledger.json")
+V2_DATASET_HASH = "4002405439cbe4afbedf64ea90a84be486640754a0a2de12a4d726760dae8fd6"
 
 
 def _legacy_dataset_hash(events: list[EventEnvelope]) -> str:
@@ -141,6 +151,63 @@ def test_plan_is_closed_preregistered_trial_space() -> None:
     assert plan.safety.real_orders_executed is False
     assert plan.dataset_selection.maximum_received_at_utc is None
     assert len(plan.digest) == 64
+
+
+def test_v2_plan_and_registration_ledger_are_exact_and_trial_free() -> None:
+    plan = load_scalping_experiment_plan(V2_PLAN_PATH)
+    snapshot = ExperimentLedgerSnapshot.model_validate(orjson.loads(V2_LEDGER_PATH.read_bytes()))
+    registration = ExperimentRegistration(
+        experiment_id=new_experiment_id(
+            plan.experiment_id,
+            V2_DATASET_HASH,
+            plan.registered_at_utc,
+        ),
+        hypothesis_id="+".join(plan.hypothesis_ids),
+        created_at_utc=plan.registered_at_utc,
+        researcher=plan.researcher,
+        code_version=plan.source_revision,
+        dataset_hash=V2_DATASET_HASH,
+        feature_set=plan.feature_and_entry_rules.feature_contract,
+        label_version="cost-inclusive-round-trip-v1",
+        model_family="preregistered-deterministic-rules",
+        hyperparameter_space=(
+            ("cost_scenario", tuple(sorted(plan.cost_scenarios))),
+            (
+                "fold",
+                tuple(str(index + 1) for index in range(plan.validation.walk_forward_folds)),
+            ),
+            ("hypothesis", plan.hypothesis_ids),
+        ),
+        planned_metrics=(
+            "adverse_selection_cost",
+            "average_holding_seconds",
+            "fees",
+            "gross_pnl",
+            "maximum_drawdown",
+            "net_pnl",
+            "slippage_cost",
+            "spread_cost",
+            "turnover",
+            "win_rate",
+        ),
+        planned_splits=(SplitRole.VALIDATION, SplitRole.TEST, SplitRole.FINAL_HOLDOUT),
+        planned_cost_model=f"conservative_l2 base and stress; plan_sha256={plan.digest}",
+        final_holdout_planned=True,
+    )
+    ledger = ExperimentLedger()
+    ledger.preregister(registration)
+    ledger.verify()
+
+    assert snapshot == ledger.snapshot()
+    assert len(snapshot.records) == 1
+    assert snapshot.records[0].record_type.value == "registration"
+    assert plan.validation.planned_trial_count == 18
+    assert plan.dataset_selection.maximum_exchange_timestamp_utc == (
+        plan.dataset_selection.maximum_received_at_utc
+    )
+    assert plan.dataset_selection.exclude_marked_duplicates is True
+    assert plan.dataset_selection.exclude_quality_flagged_events is True
+    assert plan.dataset_selection.final_holdout_access is False
 
 
 def test_plan_rejects_receive_cutoff_after_registration() -> None:

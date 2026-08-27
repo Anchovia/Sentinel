@@ -161,6 +161,9 @@ All notable changes are recorded here. The project follows semantic versioning o
   loading, matching the clean-row basis of the 24-hour eligibility evidence without deleting data.
 - Bounded-memory external research fingerprinting with exact legacy-hash equivalence, cross-run
   duplicate detection, coarse progress, scratch cleanup, and a fail-closed wall-time budget.
+- A new hash-chained `qf-scalp-20260827-v2` preregistration binding 9,157,974 clean fixed-cutoff
+  detailed rows, 15 eligible markets, the exact committed source and manifest lineage, and the
+  closed 18-trial search space before execution; its ledger contains no trial or holdout access.
 - A checksummed detailed-event inventory plus deterministic long-only research engine that routes
   entries, profit/stop/time exits, latency, partial/non-fills, and all cost attribution through the
   conservative L2 paper broker and exact Decimal ledger.

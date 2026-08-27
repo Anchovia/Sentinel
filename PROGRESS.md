@@ -72,11 +72,19 @@
   are covered by tests. A 25,000-row/five-file benchmark retained hash
   `def61b40829c66084f2586594047ba439f63259fae7f841b0f27618caff241ab` and improved from 30.900 to
   0.936 seconds (26,697.8 rows/second), about 33 times faster.
-- Full validation passes: Ruff and format across 245 files, mypy across 117 source files, 391 tests
-  at 85.67% coverage, 524-file Secret scanning, and `pip-audit` with no known vulnerabilities.
-- ADR-028 records the dataset-selection decision. Next commit this implementation, run the fixed
-  24-hour fingerprint under the hard timeout, then create an open `v2` registration only if the
-  result independently meets the preregistered minimum.
+- Full validation passes: Ruff and format across 239 files, mypy across 117 source files, 392 tests
+  at 85.67% coverage, 527-file Secret scanning, and `pip-audit` with no known vulnerabilities.
+- The committed fixed-cutoff scan completed in 451.509 seconds under the 900-second limit. It
+  selected 9,157,974 clean detailed rows from 147 files, produced dataset hash
+  `4002405439cbe4afbedf64ea90a84be486640754a0a2de12a4d726760dae8fd6`, and found 15 eligible
+  markets: BTC, DRV, ETH, EUL, FLUID, GAS, META2, ONG, ONT, PROM, SOL, STX, TRUMP, USDT, and XRP.
+- Registered `qf-scalp-20260827-v2` against committed source `7b8bdf0`, both fixed UTC cutoffs,
+  manifest-set hash `4131726837a64d74fc47dad9dab330e5025cb070d2afcc1fda8cd36e35a0271c`, and the exact dataset
+  hash. Its hash-chained ledger contains one registration record and no trial, decision, or holdout
+  access. The 18-trial search space is now closed before execution; final holdout remains sealed.
+- ADR-028 records the dataset-selection decision. The next research task is a bounded chronological
+  trial runner that consumes this registration without widening its parameters or opening the final
+  holdout.
 
 ## Six-hour operations-audit stabilization
 
