@@ -30,6 +30,12 @@ a sealed 20-percent final holdout in the committed plan. Missing data produces a
 ledger with zero trials. Public book flow is named `snapshot_derived_ofi` and is never treated as
 individual-order or exact queue evidence.
 
+Every new growing-feed registration fixes both the maximum exchange timestamp and maximum local
+receive timestamp. Inventory selection applies both bounds before identity checks, so an old
+exchange event that arrives after registration cannot silently enter a later reconstruction. Older
+plans without the additive receive bound remain readable and immutable; they are not retrofitted or
+used as authority for a new dataset.
+
 ## Validation
 
 - Use chronological rolling or expanding walk-forward validation.

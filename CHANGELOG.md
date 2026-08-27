@@ -155,6 +155,8 @@ All notable changes are recorded here. The project follows semantic versioning o
 - A committed short-horizon experiment plan fixing three public-microstructure hypotheses, causal
   availability, entry/exit thresholds, base/stress costs, data minimums, chronological folds,
   multiplicity control, and a sealed final holdout before trial execution.
+- A backward-readable dual-cutoff research selection contract that binds both exchange and local
+  receive time, preventing later-arriving old events from changing a growing-feed preregistration.
 - A checksummed detailed-event inventory plus deterministic long-only research engine that routes
   entries, profit/stop/time exits, latency, partial/non-fills, and all cost attribution through the
   conservative L2 paper broker and exact Decimal ledger.

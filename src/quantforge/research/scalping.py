@@ -90,15 +90,18 @@ class DatasetSelectionPlan(_FrozenModel):
     storage_label: str = Field(min_length=1)
     manifest_set_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     maximum_exchange_timestamp_utc: datetime
+    maximum_received_at_utc: datetime | None = None
     availability_order: str = Field(min_length=1)
     market_scope: str = Field(min_length=1)
     final_holdout_fraction: Decimal = Field(gt=0, lt=1)
     final_holdout_access: Literal[False]
 
-    @field_validator("maximum_exchange_timestamp_utc")
+    @field_validator("maximum_exchange_timestamp_utc", "maximum_received_at_utc")
     @classmethod
-    def require_utc(cls, value: datetime) -> datetime:
-        if value.tzinfo is None or value.utcoffset() != UTC.utcoffset(value):
+    def require_utc(cls, value: datetime | None) -> datetime | None:
+        if value is not None and (
+            value.tzinfo is None or value.utcoffset() != UTC.utcoffset(value)
+        ):
             raise ValueError("dataset cutoff must be UTC-aware")
         return value
 
@@ -244,6 +247,9 @@ class ScalpingExperimentPlan(_FrozenModel):
         )
         if self.validation.planned_trial_count != planned:
             raise ValueError("planned trial count does not match the declared search space")
+        receive_cutoff = self.dataset_selection.maximum_received_at_utc
+        if receive_cutoff is not None and receive_cutoff > self.registered_at_utc:
+            raise ValueError("dataset receive cutoff cannot follow experiment registration")
         return self
 
     @property

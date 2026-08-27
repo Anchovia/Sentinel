@@ -2,6 +2,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import orjson
+import pytest
 
 from factories import BASE_TIME, make_orderbook_event, make_trade_event
 from quantforge.research.scalping import (
@@ -103,7 +104,16 @@ def test_plan_is_closed_preregistered_trial_space() -> None:
     assert plan.dataset_selection.final_holdout_access is False
     assert plan.decision_rules.automatic_promotion is False
     assert plan.safety.real_orders_executed is False
+    assert plan.dataset_selection.maximum_received_at_utc is None
     assert len(plan.digest) == 64
+
+
+def test_plan_rejects_receive_cutoff_after_registration() -> None:
+    payload = orjson.loads(PLAN_PATH.read_bytes())
+    payload["dataset_selection"]["maximum_received_at_utc"] = "2099-01-01T00:00:00Z"
+
+    with pytest.raises(ValueError, match="receive cutoff cannot follow"):
+        type(load_scalping_experiment_plan(PLAN_PATH)).model_validate(payload)
 
 
 def test_data_sufficiency_requires_three_full_markets() -> None:
@@ -140,6 +150,26 @@ def test_inventory_scan_is_content_addressed_and_honors_cutoff(tmp_path: Path) -
     assert first.selected_event_count == 2
     assert first.markets[0].trade_events == 1
     assert first.markets[0].orderbook_events == 1
+
+
+def test_inventory_scan_excludes_late_arrival_before_duplicate_checks(tmp_path: Path) -> None:
+    writer = ParquetRawEventWriter(tmp_path, max_rows=10)
+    writer.append(make_trade_event(sequence=1, exchange_offset_ms=100, received_offset_ms=100))
+    writer.append(make_trade_event(sequence=2, exchange_offset_ms=50, received_offset_ms=300))
+    writer.close()
+
+    exchange_cutoff = BASE_TIME + timedelta(milliseconds=150)
+    receive_cutoff = BASE_TIME + timedelta(milliseconds=200)
+    inventory = scan_raw_event_research_inventory(
+        tmp_path,
+        maximum_exchange_timestamp_utc=exchange_cutoff,
+        maximum_received_at_utc=receive_cutoff,
+    )
+
+    assert inventory.maximum_exchange_timestamp_utc == exchange_cutoff
+    assert inventory.maximum_received_at_utc == receive_cutoff
+    assert inventory.selected_event_count == 1
+    assert inventory.markets[0].trade_events == 1
 
 
 def test_blocked_result_and_ledger_retain_no_trial_outcome(tmp_path: Path) -> None:

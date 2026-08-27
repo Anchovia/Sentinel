@@ -62,6 +62,18 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   queue while collection continued. Docker finished healthy with restart/OOM/parser/reconnect/
   overflow counts zero.
 
+## Short-horizon research preregistration preparation
+
+- Keep the existing `H-SCALP-001` through `H-SCALP-003` hypotheses and the immutable blocked `v1`
+  result. Do not duplicate the hypotheses or mutate the old D-drive/cutoff evidence.
+- New growing-feed plans can fix `maximum_received_at_utc` in addition to the exchange timestamp.
+  The inventory filters both bounds before duplicate checks, so rows received after registration
+  cannot enter through an older exchange timestamp.
+- The extension remains backward-readable for the historical plan, but every new plan must carry
+  both UTC cutoffs. ADR-028 records this rule.
+- No trial or final holdout has been run. Next bind the eligible 24-hour retained rows to the exact
+  committed source revision and write one open `v2` preregistration record before any computation.
+
 ## Six-hour operations-audit stabilization
 
 - The first unattended report correctly observed a healthy public paper runtime and strict six-hour

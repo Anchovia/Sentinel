@@ -13,7 +13,7 @@ from uuid import UUID, uuid4
 import orjson
 import pyarrow as pa  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from quantforge.domain import EventEnvelope, EventType
 from quantforge.exchange.upbit.schemas import decode_json_object
@@ -159,9 +159,19 @@ class RawEventResearchInventory(BaseModel):
     schema_version: Literal["raw-event-research-inventory-1"] = "raw-event-research-inventory-1"
     dataset_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     maximum_exchange_timestamp_utc: datetime | None = None
+    maximum_received_at_utc: datetime | None = None
     selected_file_count: Annotated[int, Field(ge=0)]
     selected_event_count: Annotated[int, Field(ge=0)]
     markets: tuple[RawEventMarketInventory, ...]
+
+    @field_validator("maximum_exchange_timestamp_utc", "maximum_received_at_utc")
+    @classmethod
+    def require_utc_cutoff(cls, value: datetime | None) -> datetime | None:
+        if value is not None and (
+            value.tzinfo is None or value.utcoffset() != UTC.utcoffset(value)
+        ):
+            raise ValueError("raw research inventory cutoffs must be UTC-aware")
+        return value
 
     @model_validator(mode="after")
     def validate_market_order(self) -> "RawEventResearchInventory":
@@ -726,15 +736,15 @@ def scan_raw_event_research_inventory(
     root: Path,
     *,
     maximum_exchange_timestamp_utc: datetime | None = None,
+    maximum_received_at_utc: datetime | None = None,
 ) -> RawEventResearchInventory:
     """Verify and fingerprint detailed public rows without decoding payloads into events."""
 
-    if maximum_exchange_timestamp_utc is not None and (
-        maximum_exchange_timestamp_utc.tzinfo is None
-        or maximum_exchange_timestamp_utc.utcoffset()
-        != UTC.utcoffset(maximum_exchange_timestamp_utc)
-    ):
-        raise ValueError("research inventory cutoff must be UTC-aware")
+    for cutoff in (maximum_exchange_timestamp_utc, maximum_received_at_utc):
+        if cutoff is not None and (
+            cutoff.tzinfo is None or cutoff.utcoffset() != UTC.utcoffset(cutoff)
+        ):
+            raise ValueError("research inventory cutoffs must be UTC-aware")
 
     identities: list[tuple[datetime, int, str, int, str, str]] = []
     seen_event_ids: set[str] = set()
@@ -783,6 +793,9 @@ def scan_raw_event_research_inventory(
                     and exchange_timestamp > maximum_exchange_timestamp_utc
                 ):
                     continue
+                received_at = cast(datetime, row["received_at_utc"])
+                if maximum_received_at_utc is not None and received_at > maximum_received_at_utc:
+                    continue
                 event_id = cast(str, row["event_id"])
                 if event_id in seen_event_ids:
                     raise RawDataIntegrityError("duplicate event identity in research selection")
@@ -790,7 +803,6 @@ def scan_raw_event_research_inventory(
                 market = cast(str, row["market"])
                 if not market.startswith("KRW-"):
                     raise RawDataIntegrityError("research selection contains a non-KRW market")
-                received_at = cast(datetime, row["received_at_utc"])
                 received_monotonic_ns = cast(int, row["received_monotonic_ns"])
                 connection_id = cast(str, row["connection_id"])
                 local_sequence = cast(int, row["local_sequence"])
@@ -850,6 +862,7 @@ def scan_raw_event_research_inventory(
     return RawEventResearchInventory(
         dataset_hash=digest.hexdigest(),
         maximum_exchange_timestamp_utc=maximum_exchange_timestamp_utc,
+        maximum_received_at_utc=maximum_received_at_utc,
         selected_file_count=selected_files,
         selected_event_count=len(identities),
         markets=markets,

@@ -45,6 +45,19 @@
   14,705,609 rows; the queue returned to zero while collection continued. Docker remained healthy
   with restart/OOM/parser/reconnect/overflow counts zero.
 
+## Short-horizon research preregistration preparation
+
+- Preserved the original three hypothesis identifiers and immutable `v1` blocked experiment instead
+  of duplicating hypotheses or rewriting its historical D-drive cutoff.
+- Added an optional UTC receive-time cutoff to the backward-readable experiment plan and research
+  inventory. New growing-feed selections apply both exchange and receive bounds before duplicate
+  checks, preventing a later-arriving old exchange event from changing the selected row set.
+- Added regression coverage for old-plan compatibility, registration-time ordering, deterministic
+  dual-cutoff scans, and late-arrival exclusion. No trial, backtest, final-holdout access, model
+  approval, paper order, authenticated call, or live action occurred.
+- ADR-028 records the dataset-selection decision. The next step is to commit this contract, bind the
+  24-hour eligible rows to that exact source revision, and create an open `v2` preregistration ledger.
+
 ## Six-hour operations-audit stabilization
 
 - Reviewed the first unattended six-hour report against the exact runtime exports, retained raw

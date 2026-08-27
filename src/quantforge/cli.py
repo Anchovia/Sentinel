@@ -805,6 +805,7 @@ def assess_scalping_research(
     inventory = scan_raw_event_research_inventory(
         input_root,
         maximum_exchange_timestamp_utc=(plan.dataset_selection.maximum_exchange_timestamp_utc),
+        maximum_received_at_utc=plan.dataset_selection.maximum_received_at_utc,
     )
     sufficiency = evaluate_scalping_data_sufficiency(plan, inventory)
     if sufficiency.meets_requirements:
