@@ -88,6 +88,11 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Do not execute v2. Its immutable registration ledger omitted median closed-trade return,
   closed-trade count, and non-fill count even though the plan requires them. The new preflight
   detects this before rescanning and returns `BLOCKED`; v2 remains retained with zero trials.
+- `research/experiments/2026-08-27-scalping-challenger-v3.json` is the metric-complete replacement.
+  It binds runner revision `a2e2593`, the unchanged fixed-cutoff dataset, all thirteen emitted
+  metrics, plan digest `453f6e913ccb9d2e4c7df28d1e44edd250b336e89c6b6f3d66fb032bb5e29516`,
+  and registration chain hash `cbb48e99cf40acaa7598e048ae434652f20a2751a942cf8ae9610c0813db696d`.
+  Its ledger contains only the registration; no trial, decision, or holdout access exists.
 - Do not restore the original row-wise fingerprint implementation. Its first full clean scan was
   stopped after 118 minutes and roughly 1.77GB of Python identity state without producing a result.
 - The replacement uses bounded Arrow batches and ephemeral fixed-width identity/event-ID runs. Its
@@ -102,8 +107,8 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - The bounded runner is implemented but has not executed a market trial. It creates three
   deterministic purged/embargoed windows, fixes all 18 UUIDs and work limits, executes only the next
   registered trial, compares identical-input neutral baselines, and atomically retains failures.
-- Next commit the runner, make a metric-complete replacement registration bound to its exact commit,
-  then create and commit the execution plan before running work unit 1/18. Keep final holdout sealed.
+- Next create and commit the v3 execution plan before running work unit 1/18. Keep final holdout
+  sealed.
 
 ## Six-hour operations-audit stabilization
 

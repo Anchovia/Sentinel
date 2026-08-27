@@ -1,0 +1,17 @@
+{
+  "chain_hash": "cbb48e99cf40acaa7598e048ae434652f20a2751a942cf8ae9610c0813db696d",
+  "records": [
+    {
+      "experiment_id": "4f1b0494-87b8-538d-80eb-ae70d8d0b9f4",
+      "payload_json": "{\"code_version\":\"a2e2593f9d2c598a5f7e1051e5f85cf8e770b264\",\"created_at_utc\":\"2026-08-27T13:49:10.193382Z\",\"dataset_hash\":\"4002405439cbe4afbedf64ea90a84be486640754a0a2de12a4d726760dae8fd6\",\"experiment_id\":\"4f1b0494-87b8-538d-80eb-ae70d8d0b9f4\",\"feature_set\":\"realtime-feature-frame-1\",\"final_holdout_planned\":true,\"hyperparameter_space\":[[\"cost_scenario\",[\"base\",\"stress\"]],[\"fold\",[\"1\",\"2\",\"3\"]],[\"hypothesis\",[\"H-SCALP-001\",\"H-SCALP-002\",\"H-SCALP-003\"]]],\"hypothesis_id\":\"H-SCALP-001+H-SCALP-002+H-SCALP-003\",\"label_version\":\"cost-inclusive-round-trip-v1\",\"model_family\":\"preregistered-deterministic-rules\",\"planned_cost_model\":\"conservative_l2 base and stress; plan_sha256=453f6e913ccb9d2e4c7df28d1e44edd250b336e89c6b6f3d66fb032bb5e29516\",\"planned_metrics\":[\"adverse_selection_cost\",\"average_holding_seconds\",\"closed_trade_count\",\"fees\",\"gross_pnl\",\"maximum_drawdown\",\"median_closed_trade_net_return_bps\",\"net_pnl\",\"non_fill_order_count\",\"slippage_cost\",\"spread_cost\",\"turnover\",\"win_rate\"],\"planned_splits\":[\"validation\",\"test\",\"final_holdout\"],\"researcher\":\"codex-interactive\",\"status\":\"preregistered\"}",
+      "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "record_hash": "cbb48e99cf40acaa7598e048ae434652f20a2751a942cf8ae9610c0813db696d",
+      "record_id": "ad472b7b-91fa-58e5-b57e-9f62b3bc7ca8",
+      "record_type": "registration",
+      "recorded_at_utc": "2026-08-27T13:49:10.193382Z",
+      "sequence": 1,
+      "trial_id": null
+    }
+  ],
+  "schema_version": 1
+}

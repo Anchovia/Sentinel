@@ -27,12 +27,15 @@ from quantforge.research.scalping_trials import (
     ScalpingWalkForwardWindow,
     create_scalping_trial_execution_plan,
     run_next_scalping_trial,
+    validate_scalping_trial_registration_seed,
 )
 from quantforge.storage import RawEventMarketInventory, RawEventResearchInventory
 
 ROOT = Path(__file__).parents[2]
 V2_PLAN_PATH = ROOT / "research" / "experiments" / "2026-08-27-scalping-challenger-v2.json"
 V2_LEDGER_PATH = V2_PLAN_PATH.with_suffix(".ledger.json")
+V3_PLAN_PATH = V2_PLAN_PATH.with_name("2026-08-27-scalping-challenger-v3.json")
+V3_LEDGER_PATH = V3_PLAN_PATH.with_suffix(".ledger.json")
 DATASET_HASH = "a" * 64
 MANIFEST_HASH = "b" * 64
 SOURCE_REVISION = "2" * 40
@@ -240,6 +243,18 @@ def test_execution_plan_rejects_incomplete_v2_metric_registration() -> None:
             source_revision=SOURCE_REVISION,
             created_at_utc=plan.registered_at_utc + timedelta(minutes=1),
         )
+
+
+def test_v3_registration_is_metric_complete_and_bound_to_runner_revision() -> None:
+    plan = load_scalping_experiment_plan(V3_PLAN_PATH)
+    registration = read_experiment_ledger(V3_LEDGER_PATH)
+
+    payload = validate_scalping_trial_registration_seed(plan, registration)
+
+    assert plan.source_revision == "a2e2593f9d2c598a5f7e1051e5f85cf8e770b264"
+    assert plan.digest == "453f6e913ccb9d2e4c7df28d1e44edd250b336e89c6b6f3d66fb032bb5e29516"
+    assert payload.planned_metrics == PLANNED_METRICS
+    assert len(registration.records) == 1
 
 
 def test_runner_records_one_trial_at_a_time_with_neutral_baseline(tmp_path: Path) -> None:

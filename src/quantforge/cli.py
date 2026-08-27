@@ -109,8 +109,10 @@ DEFAULT_AUTOMATION_ALLOWLIST = Path("automation/write-allowlist.yaml")
 DEFAULT_READINESS_POLICY = Path("configs/readiness.default.yaml")
 DEFAULT_PAPER_RUNTIME_SNAPSHOT = Path("runtime_exports/ops/paper-runtime.json")
 DEFAULT_SCALPING_PLAN = Path("research/experiments/2026-08-24-scalping-challenger-v1.json")
-DEFAULT_SCALPING_V2_PLAN = Path("research/experiments/2026-08-27-scalping-challenger-v2.json")
-DEFAULT_SCALPING_V2_LEDGER = DEFAULT_SCALPING_V2_PLAN.with_suffix(".ledger.json")
+DEFAULT_SCALPING_CURRENT_PLAN = Path(
+    "research/experiments/2026-08-27-scalping-challenger-v3.json"
+)
+DEFAULT_SCALPING_CURRENT_LEDGER = DEFAULT_SCALPING_CURRENT_PLAN.with_suffix(".ledger.json")
 DEFAULT_CODEX_RESEARCH_OUTPUT = Path("reports/codex/research")
 
 
@@ -945,11 +947,11 @@ def plan_scalping_trials(
     plan_path: Annotated[
         Path,
         typer.Option(help="Committed scalping experiment plan"),
-    ] = DEFAULT_SCALPING_V2_PLAN,
+    ] = DEFAULT_SCALPING_CURRENT_PLAN,
     registration_ledger_path: Annotated[
         Path,
         typer.Option(help="Committed registration-only experiment ledger"),
-    ] = DEFAULT_SCALPING_V2_LEDGER,
+    ] = DEFAULT_SCALPING_CURRENT_LEDGER,
     input_root: Annotated[
         Path,
         typer.Option(help="Checksummed public raw Parquet root"),
@@ -1078,11 +1080,11 @@ def run_next_scalping_trial_command(
     plan_path: Annotated[
         Path,
         typer.Option(help="Committed scalping experiment plan"),
-    ] = DEFAULT_SCALPING_V2_PLAN,
+    ] = DEFAULT_SCALPING_CURRENT_PLAN,
     registration_ledger_path: Annotated[
         Path,
         typer.Option(help="Committed registration-only experiment ledger"),
-    ] = DEFAULT_SCALPING_V2_LEDGER,
+    ] = DEFAULT_SCALPING_CURRENT_LEDGER,
     input_root: Annotated[
         Path,
         typer.Option(help="Checksummed public raw Parquet root"),

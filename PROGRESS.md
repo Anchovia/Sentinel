@@ -90,9 +90,13 @@
 - Preflight found that the immutable v2 ledger omitted the plan's median closed-trade return,
   closed-trade count, and non-fill count. It now blocks before any inventory scan or trial rather
   than silently changing metrics. V2 still has one registration record and zero trials.
-- ADR-028 records selection; ADR-029 records bounded execution. Next commit this runner, create a new
-  metric-complete registration bound to that exact revision, and only then generate the 18-cell
-  execution plan. No actual trial has run.
+- Registered metric-complete `qf-scalp-20260827-v3` against runner revision `a2e2593`, unchanged
+  dataset hash and cutoffs, plan digest `453f6e913ccb9d2e4c7df28d1e44edd250b336e89c6b6f3d66fb032bb5e29516`,
+  and ledger chain hash `cbb48e99cf40acaa7598e048ae434652f20a2751a942cf8ae9610c0813db696d`.
+  The ledger has one registration record, all thirteen runner-emitted metrics, and no trial,
+  decision, or holdout access.
+- ADR-028 records selection; ADR-029 records bounded execution. Next generate and commit the exact
+  18-cell execution plan before running work unit 1/18. No actual trial has run.
 
 ## Six-hour operations-audit stabilization
 
