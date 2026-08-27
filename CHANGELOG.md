@@ -172,6 +172,8 @@ All notable changes are recorded here. The project follows semantic versioning o
 - A metric-complete `qf-scalp-20260827-v3` replacement registration bound to the committed bounded
   runner, unchanged fixed-cutoff dataset, all thirteen emitted metrics, and a registration-only
   hash chain with no trial or holdout access.
+- An immutable v3 execution plan sealing 15 eligible markets, three chronological non-holdout
+  windows, all 18 validation/test work-unit UUIDs, and the fixed event/time limits before execution.
 - A checksummed detailed-event inventory plus deterministic long-only research engine that routes
   entries, profit/stop/time exits, latency, partial/non-fills, and all cost attribution through the
   conservative L2 paper broker and exact Decimal ledger.

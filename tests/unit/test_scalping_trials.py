@@ -26,6 +26,7 @@ from quantforge.research.scalping_trials import (
     ScalpingTrialExecutionPlan,
     ScalpingWalkForwardWindow,
     create_scalping_trial_execution_plan,
+    load_scalping_trial_execution_plan,
     run_next_scalping_trial,
     validate_scalping_trial_registration_seed,
 )
@@ -36,6 +37,7 @@ V2_PLAN_PATH = ROOT / "research" / "experiments" / "2026-08-27-scalping-challeng
 V2_LEDGER_PATH = V2_PLAN_PATH.with_suffix(".ledger.json")
 V3_PLAN_PATH = V2_PLAN_PATH.with_name("2026-08-27-scalping-challenger-v3.json")
 V3_LEDGER_PATH = V3_PLAN_PATH.with_suffix(".ledger.json")
+V3_EXECUTION_PATH = V3_PLAN_PATH.with_suffix(".execution.json")
 DATASET_HASH = "a" * 64
 MANIFEST_HASH = "b" * 64
 SOURCE_REVISION = "2" * 40
@@ -255,6 +257,26 @@ def test_v3_registration_is_metric_complete_and_bound_to_runner_revision() -> No
     assert plan.digest == "453f6e913ccb9d2e4c7df28d1e44edd250b336e89c6b6f3d66fb032bb5e29516"
     assert payload.planned_metrics == PLANNED_METRICS
     assert len(registration.records) == 1
+
+
+def test_committed_v3_execution_plan_seals_exact_non_holdout_work_units() -> None:
+    plan = load_scalping_experiment_plan(V3_PLAN_PATH)
+    registration = read_experiment_ledger(V3_LEDGER_PATH)
+    execution = load_scalping_trial_execution_plan(V3_EXECUTION_PATH)
+
+    assert execution.digest == "c692a59d9704a0a8e9fd4ccd587a3f4c0d6a2a7a42ef85f0e3e6b5a24ca3122a"
+    assert execution.experiment_plan_sha256 == plan.digest
+    assert execution.registration_record_hash == registration.records[0].record_hash
+    assert execution.source_revision == plan.source_revision
+    assert len(execution.eligible_markets) == 15
+    assert len(execution.trials) == 18
+    assert sum(trial.split_role is SplitRole.VALIDATION for trial in execution.trials) == 12
+    assert sum(trial.split_role is SplitRole.TEST for trial in execution.trials) == 6
+    assert all(
+        window.evaluation_end_utc < execution.final_holdout_start_utc
+        for window in execution.windows
+    )
+    assert execution.final_holdout_access is False
 
 
 def test_runner_records_one_trial_at_a_time_with_neutral_baseline(tmp_path: Path) -> None:

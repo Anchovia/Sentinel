@@ -72,8 +72,8 @@
   are covered by tests. A 25,000-row/five-file benchmark retained hash
   `def61b40829c66084f2586594047ba439f63259fae7f841b0f27618caff241ab` and improved from 30.900 to
   0.936 seconds (26,697.8 rows/second), about 33 times faster.
-- Full validation passes: Ruff and format across 242 files, mypy across 118 source files, 399 tests
-  at 85.07% coverage, 537-file Secret scanning, and the unchanged dependency set's prior
+- Full validation passes: Ruff and format across 242 files, mypy across 118 source files, 401 tests
+  at 85.08% coverage, 542-file Secret scanning, and the unchanged dependency set's prior
   `pip-audit` with no known vulnerabilities.
 - The committed fixed-cutoff scan completed in 451.509 seconds under the 900-second limit. It
   selected 9,157,974 clean detailed rows from 147 files, produced dataset hash
@@ -95,8 +95,12 @@
   and ledger chain hash `cbb48e99cf40acaa7598e048ae434652f20a2751a942cf8ae9610c0813db696d`.
   The ledger has one registration record, all thirteen runner-emitted metrics, and no trial,
   decision, or holdout access.
-- ADR-028 records selection; ADR-029 records bounded execution. Next generate and commit the exact
-  18-cell execution plan before running work unit 1/18. No actual trial has run.
+- Revalidated all 9,157,974 selected events and obtained the same fixed dataset hash. The immutable
+  v3 execution plan has digest `c692a59d9704a0a8e9fd4ccd587a3f4c0d6a2a7a42ef85f0e3e6b5a24ca3122a`,
+  15 eligible markets, 12 validation and six test work units across three windows, and a sealed
+  final-holdout boundary. No actual trial has run.
+- ADR-028 records selection; ADR-029 records bounded execution. The next research action is work
+  unit 1/18 through the one-unit command; keep the final holdout sealed.
 
 ## Six-hour operations-audit stabilization
 

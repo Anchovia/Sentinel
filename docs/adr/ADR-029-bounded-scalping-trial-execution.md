@@ -52,7 +52,7 @@ change, paper-order gate, or live action.
 - Memory is bounded by one market window rather than the complete dataset, and one command performs
   at most one of eighteen registered work units.
 - V2 remains valid evidence of a blocked execution contract with zero trials. Its v3 replacement
-  preregisters the complete metric list against exact runner revision `a2e2593`; an immutable
-  execution plan is still required before any work unit can run.
+  preregisters the complete metric list against exact runner revision `a2e2593`; the immutable
+  execution plan now seals all eighteen work units under digest `c692a59d9704a0a8e9fd4ccd587a3f4c0d6a2a7a42ef85f0e3e6b5a24ca3122a`.
 - The final holdout remains sealed. Opening it still requires a separate reviewed one-shot path and
   is deliberately absent from this runner.

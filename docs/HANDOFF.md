@@ -101,14 +101,17 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - The five-file 25,000-row benchmark produced the same hash before and after optimization while
   improving from 30.900 to 0.936 seconds. Keep the 900-second cap on future fingerprints; a timeout
   remains a valid no-result outcome.
-- Validation passes Ruff/format across 242 files, mypy across 118 source files, 399 tests at 85.07%
-  coverage, 537-file Secret scanning, and the unchanged dependency set's prior audit with no known
+- Validation passes Ruff/format across 242 files, mypy across 118 source files, 401 tests at 85.08%
+  coverage, 542-file Secret scanning, and the unchanged dependency set's prior audit with no known
   vulnerabilities.
 - The bounded runner is implemented but has not executed a market trial. It creates three
   deterministic purged/embargoed windows, fixes all 18 UUIDs and work limits, executes only the next
   registered trial, compares identical-input neutral baselines, and atomically retains failures.
-- Next create and commit the v3 execution plan before running work unit 1/18. Keep final holdout
-  sealed.
+- `research/experiments/2026-08-27-scalping-challenger-v3.execution.json` revalidated the exact
+  9,157,974-row hash and seals 15 markets, three windows, 12 validation/six test work units, and
+  digest `c692a59d9704a0a8e9fd4ccd587a3f4c0d6a2a7a42ef85f0e3e6b5a24ca3122a`.
+- Next run only work unit 1/18 through `run-next-scalping-trial`. Keep the final holdout sealed and
+  retain any null or failure result without retrying its trial ID.
 
 ## Six-hour operations-audit stabilization
 

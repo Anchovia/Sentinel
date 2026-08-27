@@ -1,0 +1,233 @@
+{
+  "authentication_used": false,
+  "automatic_promotion": false,
+  "champion_available": false,
+  "created_at_utc": "2026-08-27T14:00:58.195566Z",
+  "dataset_hash": "4002405439cbe4afbedf64ea90a84be486640754a0a2de12a4d726760dae8fd6",
+  "eligible_markets": [
+    "KRW-BTC",
+    "KRW-DRV",
+    "KRW-ETH",
+    "KRW-EUL",
+    "KRW-FLUID",
+    "KRW-GAS",
+    "KRW-META2",
+    "KRW-ONG",
+    "KRW-ONT",
+    "KRW-PROM",
+    "KRW-SOL",
+    "KRW-STX",
+    "KRW-TRUMP",
+    "KRW-USDT",
+    "KRW-XRP"
+  ],
+  "experiment_id": "4f1b0494-87b8-538d-80eb-ae70d8d0b9f4",
+  "experiment_name": "qf-scalp-20260827-v3",
+  "experiment_plan_sha256": "453f6e913ccb9d2e4c7df28d1e44edd250b336e89c6b6f3d66fb032bb5e29516",
+  "final_holdout_access": false,
+  "final_holdout_start_utc": "2026-08-27T02:41:18.740538Z",
+  "live_submission_allowed": false,
+  "maximum_elapsed_seconds_per_trial": 900.0,
+  "maximum_events_per_market": 500000,
+  "maximum_total_events_per_trial": 3000000,
+  "observed_manifest_set_sha256": "cab17bcc58d73bb2bbbad3b52f8fc88e8833e41abe0e956b6676629ab4b9519f",
+  "order_network_used": false,
+  "private_network_used": false,
+  "real_orders_executed": false,
+  "registered_manifest_set_sha256": "4131726837a64d74fc47dad9dab330e5025cb070d2afcc1fda8cd36e35a0271c",
+  "registration_record_hash": "cbb48e99cf40acaa7598e048ae434652f20a2751a942cf8ae9610c0813db696d",
+  "schema_version": "scalping-trial-execution-plan-1",
+  "selection_end_utc": "2026-08-27T08:27:27.791520Z",
+  "selection_start_utc": "2026-08-26T03:36:42.536611Z",
+  "source_revision": "a2e2593f9d2c598a5f7e1051e5f85cf8e770b264",
+  "trials": [
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-001",
+      "partition_hash": "9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482",
+      "rule": "trade_continuation",
+      "split_role": "validation",
+      "trial_id": "ae365d90-c6c8-5cf4-a9d7-e39b237e1f1d"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-001",
+      "partition_hash": "1d722844d029e5715a24a3855a85617aee7af853a6e2dbf7ae6c3b57c017d854",
+      "rule": "trade_continuation",
+      "split_role": "validation",
+      "trial_id": "72366e67-b0dc-5192-a2e2-2a6e4883373b"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-001",
+      "partition_hash": "7a0117108ba460c62f545ada13257694670c091d91f340e565c6289a60d01cf5",
+      "rule": "trade_continuation",
+      "split_role": "test",
+      "trial_id": "8b5e5a22-0273-5040-aabf-af608e91b86f"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-001",
+      "partition_hash": "9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482",
+      "rule": "trade_continuation",
+      "split_role": "validation",
+      "trial_id": "74e7de17-e6af-5193-a7b7-9f799dcdff54"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-001",
+      "partition_hash": "1d722844d029e5715a24a3855a85617aee7af853a6e2dbf7ae6c3b57c017d854",
+      "rule": "trade_continuation",
+      "split_role": "validation",
+      "trial_id": "5b554d82-4299-5ccd-aeea-80119afb3687"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-001",
+      "partition_hash": "7a0117108ba460c62f545ada13257694670c091d91f340e565c6289a60d01cf5",
+      "rule": "trade_continuation",
+      "split_role": "test",
+      "trial_id": "044f5995-db6a-5bfb-8de1-216f59a84b49"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-002",
+      "partition_hash": "9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482",
+      "rule": "snapshot_book_pressure",
+      "split_role": "validation",
+      "trial_id": "788478f1-5148-5f37-8602-3c813ee6dd5d"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-002",
+      "partition_hash": "1d722844d029e5715a24a3855a85617aee7af853a6e2dbf7ae6c3b57c017d854",
+      "rule": "snapshot_book_pressure",
+      "split_role": "validation",
+      "trial_id": "7b677dd1-a4aa-537d-86d1-c0050ee532fd"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-002",
+      "partition_hash": "7a0117108ba460c62f545ada13257694670c091d91f340e565c6289a60d01cf5",
+      "rule": "snapshot_book_pressure",
+      "split_role": "test",
+      "trial_id": "b3e21476-cd45-51ba-8119-34092f369c5c"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-002",
+      "partition_hash": "9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482",
+      "rule": "snapshot_book_pressure",
+      "split_role": "validation",
+      "trial_id": "fa0702ad-7b66-54af-a4c4-b23e9372fa3b"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-002",
+      "partition_hash": "1d722844d029e5715a24a3855a85617aee7af853a6e2dbf7ae6c3b57c017d854",
+      "rule": "snapshot_book_pressure",
+      "split_role": "validation",
+      "trial_id": "1adfd457-e99c-5745-9fd0-088e6f99ca95"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-002",
+      "partition_hash": "7a0117108ba460c62f545ada13257694670c091d91f340e565c6289a60d01cf5",
+      "rule": "snapshot_book_pressure",
+      "split_role": "test",
+      "trial_id": "651b92d0-b997-52f3-851c-8afc3b65c57f"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-003",
+      "partition_hash": "9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482",
+      "rule": "confirmed_continuation",
+      "split_role": "validation",
+      "trial_id": "d590ea4c-11f4-5a46-ab88-15d481204bad"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-003",
+      "partition_hash": "1d722844d029e5715a24a3855a85617aee7af853a6e2dbf7ae6c3b57c017d854",
+      "rule": "confirmed_continuation",
+      "split_role": "validation",
+      "trial_id": "f2229274-0b19-501d-986b-74182f0d7d13"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-003",
+      "partition_hash": "7a0117108ba460c62f545ada13257694670c091d91f340e565c6289a60d01cf5",
+      "rule": "confirmed_continuation",
+      "split_role": "test",
+      "trial_id": "f48f88b3-b044-50d3-ad04-45f2230b59ef"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-003",
+      "partition_hash": "9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482",
+      "rule": "confirmed_continuation",
+      "split_role": "validation",
+      "trial_id": "b232b779-e5ff-5c62-9e4a-d5f872867b62"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-003",
+      "partition_hash": "1d722844d029e5715a24a3855a85617aee7af853a6e2dbf7ae6c3b57c017d854",
+      "rule": "confirmed_continuation",
+      "split_role": "validation",
+      "trial_id": "1b295eb8-a8b7-5897-8489-c335b782da40"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-003",
+      "partition_hash": "7a0117108ba460c62f545ada13257694670c091d91f340e565c6289a60d01cf5",
+      "rule": "confirmed_continuation",
+      "split_role": "test",
+      "trial_id": "cdf61368-e51d-5cc1-b8d9-bd2135e32e3b"
+    }
+  ],
+  "windows": [
+    {
+      "entry_start_utc": "2026-08-26T09:23:21.587592Z",
+      "evaluation_end_utc": "2026-08-26T15:08:30.638573Z",
+      "fold_id": "1",
+      "partition_hash": "9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482",
+      "split_role": "validation",
+      "warmup_start_utc": "2026-08-26T09:23:06.587592Z"
+    },
+    {
+      "entry_start_utc": "2026-08-26T15:09:30.638573Z",
+      "evaluation_end_utc": "2026-08-26T20:54:39.689554Z",
+      "fold_id": "2",
+      "partition_hash": "1d722844d029e5715a24a3855a85617aee7af853a6e2dbf7ae6c3b57c017d854",
+      "split_role": "validation",
+      "warmup_start_utc": "2026-08-26T15:09:15.638573Z"
+    },
+    {
+      "entry_start_utc": "2026-08-26T20:55:39.689554Z",
+      "evaluation_end_utc": "2026-08-27T02:40:48.740535Z",
+      "fold_id": "3",
+      "partition_hash": "7a0117108ba460c62f545ada13257694670c091d91f340e565c6289a60d01cf5",
+      "split_role": "test",
+      "warmup_start_utc": "2026-08-26T20:55:24.689554Z"
+    }
+  ]
+}
