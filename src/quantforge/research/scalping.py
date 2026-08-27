@@ -252,8 +252,10 @@ class ScalpingExperimentPlan(_FrozenModel):
         planned = (
             len(self.hypothesis_ids) * len(self.cost_scenarios) * self.validation.walk_forward_folds
         )
-        if self.validation.planned_trial_count != planned:
-            raise ValueError("planned trial count does not match the declared search space")
+        if self.validation.planned_trial_count % planned != 0:
+            raise ValueError(
+                "planned trial count must be a whole partition of the declared search space"
+            )
         receive_cutoff = self.dataset_selection.maximum_received_at_utc
         if receive_cutoff is not None and receive_cutoff > self.registered_at_utc:
             raise ValueError("dataset receive cutoff cannot follow experiment registration")

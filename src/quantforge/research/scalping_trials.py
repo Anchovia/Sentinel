@@ -9,7 +9,7 @@ from hashlib import sha256
 from pathlib import Path
 from statistics import median
 from time import monotonic
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 from uuid import UUID, uuid4
 
 import orjson
@@ -96,6 +96,7 @@ class ScalpingTrialSpecification(_FrozenModel):
     fold_id: str = Field(pattern=r"^[1-9][0-9]*$")
     split_role: Literal[SplitRole.VALIDATION, SplitRole.TEST]
     partition_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    market: str | None = Field(default=None, pattern=r"^KRW-[A-Z0-9]+$")
 
     @model_validator(mode="after")
     def validate_hypothesis_rule(self) -> "ScalpingTrialSpecification":
@@ -105,7 +106,10 @@ class ScalpingTrialSpecification(_FrozenModel):
 
 
 class ScalpingTrialExecutionPlan(_FrozenModel):
-    schema_version: Literal["scalping-trial-execution-plan-1"] = "scalping-trial-execution-plan-1"
+    schema_version: Literal[
+        "scalping-trial-execution-plan-1",
+        "scalping-trial-execution-plan-2",
+    ] = "scalping-trial-execution-plan-1"
     experiment_id: UUID
     experiment_name: str
     experiment_plan_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
@@ -157,8 +161,23 @@ class ScalpingTrialExecutionPlan(_FrozenModel):
         if folds != tuple(str(index + 1) for index in range(len(self.windows))):
             raise ValueError("walk-forward folds must be contiguous and ordered")
         window_by_fold = {window.fold_id: window for window in self.windows}
+        market_partitioned = self.schema_version == "scalping-trial-execution-plan-2"
+        if market_partitioned and any(trial.market is None for trial in self.trials):
+            raise ValueError("market-partitioned trials must name exactly one market")
+        if not market_partitioned and any(trial.market is not None for trial in self.trials):
+            raise ValueError("legacy global trials cannot name a market partition")
+        if market_partitioned and (
+            self.maximum_total_events_per_trial != self.maximum_events_per_market
+        ):
+            raise ValueError("one-market trials require matching per-market and total-event limits")
+        if any(
+            trial.market is not None and trial.market not in self.eligible_markets
+            for trial in self.trials
+        ):
+            raise ValueError("trial market is outside the registered eligible-market scope")
         combinations = tuple(
-            (trial.hypothesis_id, trial.cost_scenario, trial.fold_id) for trial in self.trials
+            (trial.hypothesis_id, trial.cost_scenario, trial.fold_id, trial.market)
+            for trial in self.trials
         )
         if len(combinations) != len(set(combinations)):
             raise ValueError("trial combinations must be unique")
@@ -180,7 +199,10 @@ class ScalpingTrialExecutionPlan(_FrozenModel):
 
     @property
     def digest(self) -> str:
-        payload = orjson.dumps(self.model_dump(mode="json"), option=orjson.OPT_SORT_KEYS)
+        payload = orjson.dumps(
+            self.model_dump(mode="json", exclude_none=True),
+            option=orjson.OPT_SORT_KEYS,
+        )
         return sha256(payload).hexdigest()
 
 
@@ -289,10 +311,10 @@ def create_scalping_trial_execution_plan(
     source_revision: str,
     created_at_utc: datetime,
     maximum_events_per_market: int = 500_000,
-    maximum_total_events_per_trial: int = 3_000_000,
+    maximum_total_events_per_trial: int | None = None,
     maximum_elapsed_seconds_per_trial: float = 900.0,
 ) -> ScalpingTrialExecutionPlan:
-    """Close the exact 18-trial execution space without reading holdout event content."""
+    """Close the exact preregistered trial space without reading holdout event content."""
 
     registration = validate_scalping_trial_registration_seed(plan, registration_snapshot)
     expected_experiment_id = registration.experiment_id
@@ -309,6 +331,11 @@ def create_scalping_trial_execution_plan(
 
     inventory_by_market = {item.market: item for item in inventory.markets}
     eligible_markets = tuple(sorted(sufficiency.eligible_markets))
+    registered_markets = _registered_market_partitions(registration)
+    if registered_markets is not None and eligible_markets != registered_markets:
+        raise ScalpingResearchError(
+            "eligible markets differ from the preregistered market partitions"
+        )
     selection_start = max(
         inventory_by_market[market].first_received_at_utc for market in eligible_markets
     )
@@ -371,31 +398,46 @@ def create_scalping_trial_execution_plan(
             )
         )
 
-    trials = tuple(
-        ScalpingTrialSpecification(
-            trial_id=deterministic_execution_id(
-                "scalping-trial",
-                expected_experiment_id,
-                hypothesis_id,
-                cost_scenario,
-                window.fold_id,
-                window.partition_hash,
-            ),
-            hypothesis_id=hypothesis_id,
-            rule=_HYPOTHESIS_RULES[hypothesis_id],
-            cost_scenario=cost_scenario,
-            fold_id=window.fold_id,
-            split_role=window.split_role,
-            partition_hash=window.partition_hash,
+    if registered_markets is None:
+        trials = tuple(
+            _trial_specification(
+                experiment_id=expected_experiment_id,
+                hypothesis_id=hypothesis_id,
+                cost_scenario=cost_scenario,
+                window=window,
+                market=None,
+            )
+            for hypothesis_id in plan.hypothesis_ids
+            for cost_scenario in sorted(plan.cost_scenarios)
+            for window in windows
         )
-        for hypothesis_id in plan.hypothesis_ids
-        for cost_scenario in sorted(plan.cost_scenarios)
-        for window in windows
-    )
+    else:
+        trials = tuple(
+            _trial_specification(
+                experiment_id=expected_experiment_id,
+                hypothesis_id=hypothesis_id,
+                cost_scenario=cost_scenario,
+                window=window,
+                market=market,
+            )
+            for hypothesis_id in plan.hypothesis_ids
+            for cost_scenario in sorted(plan.cost_scenarios)
+            for window in windows
+            for market in registered_markets
+        )
     if len(trials) != plan.validation.planned_trial_count:
         raise ScalpingResearchError("execution trial count differs from preregistration")
     registered_manifest = plan.dataset_selection.manifest_set_sha256
+    if maximum_total_events_per_trial is None:
+        maximum_total_events_per_trial = (
+            maximum_events_per_market if registered_markets is not None else 3_000_000
+        )
     return ScalpingTrialExecutionPlan(
+        schema_version=(
+            "scalping-trial-execution-plan-2"
+            if registered_markets is not None
+            else "scalping-trial-execution-plan-1"
+        ),
         experiment_id=expected_experiment_id,
         experiment_name=plan.experiment_id,
         experiment_plan_sha256=plan.digest,
@@ -437,7 +479,7 @@ def validate_scalping_trial_registration_seed(
         plan.registered_at_utc,
     )
     registration = ledger.registration_for(expected_experiment_id)
-    expected_parameters = (
+    base_parameters: tuple[tuple[str, tuple[str, ...]], ...] = (
         ("cost_scenario", tuple(sorted(plan.cost_scenarios))),
         (
             "fold",
@@ -445,6 +487,25 @@ def validate_scalping_trial_registration_seed(
         ),
         ("hypothesis", plan.hypothesis_ids),
     )
+    base_trial_count = (
+        len(plan.hypothesis_ids) * len(plan.cost_scenarios) * plan.validation.walk_forward_folds
+    )
+    partition_count = plan.validation.planned_trial_count // base_trial_count
+    if partition_count == 1:
+        expected_parameters: tuple[tuple[str, tuple[str, ...]], ...] = base_parameters
+    else:
+        parameter_map = dict(registration.hyperparameter_space)
+        registered_markets = parameter_map.get("market")
+        if (
+            registered_markets is None
+            or len(registered_markets) != partition_count
+            or registered_markets != tuple(sorted(set(registered_markets)))
+            or any(not market.startswith("KRW-") for market in registered_markets)
+        ):
+            raise ScalpingResearchError(
+                "registered market partitions do not match the planned trial count"
+            )
+        expected_parameters = (*base_parameters, ("market", registered_markets))
     expected_splits = (SplitRole.VALIDATION, SplitRole.TEST, SplitRole.FINAL_HOLDOUT)
     if registration.feature_set != plan.feature_and_entry_rules.feature_contract:
         raise ScalpingResearchError("registered feature contract does not match the plan")
@@ -465,7 +526,7 @@ def write_scalping_trial_execution_plan(
 ) -> Path:
     payload = (
         orjson.dumps(
-            plan.model_dump(mode="json"),
+            plan.model_dump(mode="json", exclude_none=True),
             option=orjson.OPT_INDENT_2 | orjson.OPT_SORT_KEYS,
         )
         + b"\n"
@@ -539,7 +600,12 @@ def run_next_scalping_trial(
         candidate_results: list[ScalpingBacktestResult] = []
         baseline_results: list[ScalpingBacktestResult] = []
         input_event_count = 0
-        for market in execution_plan.eligible_markets:
+        trial_markets = (
+            execution_plan.eligible_markets
+            if specification.market is None
+            else (specification.market,)
+        )
+        for market in trial_markets:
             events = tuple(
                 event_loader(
                     market,
@@ -597,7 +663,7 @@ def run_next_scalping_trial(
             cost_scenario=specification.cost_scenario,
             fold_id=specification.fold_id,
             split_role=specification.split_role,
-            markets=execution_plan.eligible_markets,
+            markets=trial_markets,
             input_event_count=input_event_count,
             candidate_results=tuple(candidate_results),
             neutral_baseline_results=tuple(baseline_results),
@@ -693,6 +759,9 @@ def _validate_execution_plan(
         raise ScalpingResearchError("execution plan uses a different experiment identifier")
     if registration.dataset_hash != execution_plan.dataset_hash:
         raise ScalpingResearchError("execution dataset hash differs from registration")
+    registered_markets = _registered_market_partitions(registration)
+    if registered_markets is not None and registered_markets != execution_plan.eligible_markets:
+        raise ScalpingResearchError("execution markets differ from registration")
 
 
 def _raw_event_loader(
@@ -823,10 +892,58 @@ def _trial_metrics(aggregate: ScalpingTrialAggregate) -> tuple[tuple[str, float]
 def _trial_hyperparameters(
     specification: ScalpingTrialSpecification,
 ) -> tuple[tuple[str, str], ...]:
-    return (
+    parameters = (
         ("cost_scenario", specification.cost_scenario),
         ("fold", specification.fold_id),
         ("hypothesis", specification.hypothesis_id),
+    )
+    if specification.market is None:
+        return parameters
+    return (*parameters, ("market", specification.market))
+
+
+def _registered_market_partitions(
+    registration: ExperimentRegistration,
+) -> tuple[str, ...] | None:
+    return dict(registration.hyperparameter_space).get("market")
+
+
+def _trial_specification(
+    *,
+    experiment_id: UUID,
+    hypothesis_id: str,
+    cost_scenario: str,
+    window: ScalpingWalkForwardWindow,
+    market: str | None,
+) -> ScalpingTrialSpecification:
+    if market is None:
+        trial_id = deterministic_execution_id(
+            "scalping-trial",
+            experiment_id,
+            hypothesis_id,
+            cost_scenario,
+            window.fold_id,
+            window.partition_hash,
+        )
+    else:
+        trial_id = deterministic_execution_id(
+            "scalping-trial",
+            experiment_id,
+            hypothesis_id,
+            cost_scenario,
+            window.fold_id,
+            window.partition_hash,
+            market,
+        )
+    return ScalpingTrialSpecification(
+        trial_id=trial_id,
+        hypothesis_id=hypothesis_id,
+        rule=_HYPOTHESIS_RULES[hypothesis_id],
+        cost_scenario=cast(Literal["base", "stress"], cost_scenario),
+        fold_id=window.fold_id,
+        split_role=window.split_role,
+        partition_hash=window.partition_hash,
+        market=market,
     )
 
 

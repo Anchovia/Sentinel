@@ -963,7 +963,7 @@ def plan_scalping_trials(
         typer.Option(min=1.0, help="Fail-closed inventory wall-time budget"),
     ] = 900.0,
 ) -> None:
-    """Fingerprint data and close all 18 non-holdout trial work units."""
+    """Fingerprint data and close every preregistered non-holdout work unit."""
 
     plan = load_scalping_experiment_plan(plan_path)
     registration_snapshot = read_experiment_ledger(registration_ledger_path)

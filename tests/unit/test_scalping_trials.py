@@ -29,6 +29,7 @@ from quantforge.research.scalping_trials import (
     load_scalping_trial_execution_plan,
     run_next_scalping_trial,
     validate_scalping_trial_registration_seed,
+    write_scalping_trial_execution_plan,
 )
 from quantforge.storage import RawEventMarketInventory, RawEventResearchInventory
 
@@ -107,7 +108,18 @@ def _registration_snapshot(
     inventory: RawEventResearchInventory,
     *,
     planned_metrics: tuple[str, ...] = PLANNED_METRICS,
+    market_partitioned: bool = False,
 ) -> ExperimentLedgerSnapshot:
+    hyperparameter_space = (
+        ("cost_scenario", ("base", "stress")),
+        ("fold", ("1", "2", "3")),
+        ("hypothesis", plan.hypothesis_ids),
+    )
+    if market_partitioned:
+        hyperparameter_space = (
+            *hyperparameter_space,
+            ("market", tuple(item.market for item in inventory.markets)),
+        )
     registration = ExperimentRegistration(
         experiment_id=new_experiment_id(
             plan.experiment_id,
@@ -122,11 +134,7 @@ def _registration_snapshot(
         feature_set=plan.feature_and_entry_rules.feature_contract,
         label_version="cost-inclusive-round-trip-v1",
         model_family="preregistered-deterministic-rules",
-        hyperparameter_space=(
-            ("cost_scenario", ("base", "stress")),
-            ("fold", ("1", "2", "3")),
-            ("hypothesis", plan.hypothesis_ids),
-        ),
+        hyperparameter_space=hyperparameter_space,
         planned_metrics=planned_metrics,
         planned_splits=(SplitRole.VALIDATION, SplitRole.TEST, SplitRole.FINAL_HOLDOUT),
         planned_cost_model=f"conservative_l2 base and stress; plan_sha256={plan.digest}",
@@ -153,6 +161,29 @@ def _execution_fixture() -> tuple[
         created_at_utc=plan.registered_at_utc + timedelta(minutes=1),
         maximum_events_per_market=100,
         maximum_total_events_per_trial=300,
+        maximum_elapsed_seconds_per_trial=30,
+    )
+    return plan, registration, execution
+
+
+def _market_partitioned_execution_fixture() -> tuple[
+    ScalpingExperimentPlan,
+    ExperimentLedgerSnapshot,
+    ScalpingTrialExecutionPlan,
+]:
+    plan = _plan()
+    plan = plan.model_copy(
+        update={"validation": plan.validation.model_copy(update={"planned_trial_count": 54})}
+    )
+    inventory = _inventory(plan)
+    registration = _registration_snapshot(plan, inventory, market_partitioned=True)
+    execution = create_scalping_trial_execution_plan(
+        plan,
+        registration,
+        inventory,
+        source_revision=SOURCE_REVISION,
+        created_at_utc=plan.registered_at_utc + timedelta(minutes=1),
+        maximum_events_per_market=100,
         maximum_elapsed_seconds_per_trial=30,
     )
     return plan, registration, execution
@@ -213,6 +244,48 @@ def test_execution_plan_closes_exact_non_holdout_trial_space() -> None:
     assert execution.final_holdout_access is False
 
 
+def test_market_partitioned_plan_closes_one_market_per_work_unit() -> None:
+    _, _, execution = _market_partitioned_execution_fixture()
+
+    assert execution.schema_version == "scalping-trial-execution-plan-2"
+    assert len(execution.trials) == 54
+    assert len({trial.trial_id for trial in execution.trials}) == 54
+    assert sum(trial.split_role is SplitRole.VALIDATION for trial in execution.trials) == 36
+    assert sum(trial.split_role is SplitRole.TEST for trial in execution.trials) == 18
+    assert {trial.market for trial in execution.trials} == set(execution.eligible_markets)
+    assert execution.maximum_total_events_per_trial == 100
+
+
+def test_market_partitioned_runner_checkpoints_exactly_one_market(tmp_path: Path) -> None:
+    plan, registration, execution = _market_partitioned_execution_fixture()
+    loaded_markets: list[str] = []
+
+    def record_loader(
+        market: str,
+        window: ScalpingWalkForwardWindow,
+        maximum_events: int,
+        maximum_elapsed_seconds: float,
+    ) -> tuple[EventEnvelope, ...]:
+        loaded_markets.append(market)
+        return _event_loader(market, window, maximum_events, maximum_elapsed_seconds)
+
+    outcome = run_next_scalping_trial(
+        plan,
+        execution,
+        registration,
+        working_ledger_path=tmp_path / "ledger.json",
+        artifact_root=tmp_path / "artifacts",
+        event_loader=record_loader,
+    )
+
+    assert outcome.trial.status is TrialStatus.SUCCEEDED
+    assert loaded_markets == [execution.trials[0].market]
+    assert outcome.trial.hyperparameters[-1] == ("market", execution.trials[0].market)
+    assert outcome.artifact_path is not None
+    artifact = orjson.loads(outcome.artifact_path.read_bytes())
+    assert artifact["markets"] == loaded_markets
+
+
 def test_execution_plan_rejects_incomplete_v2_metric_registration() -> None:
     plan = load_scalping_experiment_plan(V2_PLAN_PATH)
     inventory = RawEventResearchInventory(
@@ -259,7 +332,9 @@ def test_v3_registration_is_metric_complete_and_bound_to_runner_revision() -> No
     assert len(registration.records) == 1
 
 
-def test_committed_v3_execution_plan_seals_exact_non_holdout_work_units() -> None:
+def test_committed_v3_execution_plan_seals_exact_non_holdout_work_units(
+    tmp_path: Path,
+) -> None:
     plan = load_scalping_experiment_plan(V3_PLAN_PATH)
     registration = read_experiment_ledger(V3_LEDGER_PATH)
     execution = load_scalping_trial_execution_plan(V3_EXECUTION_PATH)
@@ -277,6 +352,9 @@ def test_committed_v3_execution_plan_seals_exact_non_holdout_work_units() -> Non
         for window in execution.windows
     )
     assert execution.final_holdout_access is False
+    repeated_path = tmp_path / V3_EXECUTION_PATH.name
+    write_scalping_trial_execution_plan(execution, repeated_path)
+    assert repeated_path.read_bytes() == V3_EXECUTION_PATH.read_bytes()
 
 
 def test_runner_records_one_trial_at_a_time_with_neutral_baseline(tmp_path: Path) -> None:

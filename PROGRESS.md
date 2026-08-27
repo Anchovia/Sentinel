@@ -113,6 +113,15 @@
   consumed ID. Before work unit 3/18, review whether the registered 900-second budget can complete
   the 15-market atomic trial; if not, retain v3 as failed and preregister a smaller resumable v4
   execution unit. Keep the final holdout sealed.
+- The review confirmed that v3's global unit is the wrong atomic boundary, without interpreting its
+  timeout as strategy evidence. Added the backward-compatible version-2 execution contract: market
+  becomes a preregistered ledger parameter, the fixed search becomes 270 deterministic one-market
+  checkpoints, and each unit is capped at 500,000 total events. Existing v3 execution bytes retain
+  their digest. ADR-030 records the decision; v4 registration and execution-plan sealing must bind
+  the exact committed runner before any new computation.
+- Runner validation passes Ruff/format across 243 files, mypy across 118 source files, 403 tests
+  split into 402 dedicated-worktree tests plus the primary-checkout boundary test at 85.01%
+  coverage, 350-file Secret scanning, and `pip-audit` with no known vulnerabilities.
 
 ## Six-hour operations-audit stabilization
 

@@ -160,6 +160,10 @@ Phase 11.6 adds three closed research contracts:
 - `scalping-trial-execution-plan-1` binds a registration record and exact runner revision to sorted
   eligible markets, three purged/embargoed validation/test windows, 18 deterministic trial UUIDs,
   the sealed holdout boundary, and per-market/total-event/wall-time limits.
+- `scalping-trial-execution-plan-2` preserves version-1 reads while adding exactly one registered
+  market to each trial specification. The fixed 15-market scope expands the same 18 logical cells
+  into 270 deterministic checkpoint units, each capped at 500,000 total events and carrying market
+  in its ledger hyperparameters; it does not authorize performance-based market selection.
 - `scalping-trial-artifact-1` retains identical-input candidate and always-neutral market results,
   exact Decimal aggregate costs/PnL/drawdown, trade and non-fill counts, median trade return, null
   metrics, unavailable-champion evidence, and false-only holdout/network/order state.

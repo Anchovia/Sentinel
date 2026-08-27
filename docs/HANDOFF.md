@@ -7,7 +7,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 
 ## Current state
 
-- Date: 2026-08-27 KST
+- Date: 2026-08-28 KST
 - Completed phases: 0–10; Phase 11.1–11.10 checkpoints complete
 - Current checkpoint: durable continuity plus storage-acceptance, local-clock, and audit-evidence
   stabilization
@@ -123,6 +123,14 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Do not retry work units 1 or 2. Pause before unit 3/18 and review whether v3's fixed 900-second
   budget can complete its 15-market atomic unit. If it cannot, retain v3 as failed and preregister
   a smaller resumable v4 unit rather than changing v3 in place. Keep the final holdout sealed.
+- ADR-030 resolves that review by introducing a backward-compatible market-partitioned execution
+  contract. A new v4 registration must explicitly bind all fifteen markets, producing 270
+  deterministic one-market checkpoints with a 500,000-event total cap per unit. The runner retains
+  v3's exact digest, never retries its failures, and cannot select markets from observed results.
+  Commit the runner first, then bind that exact revision in the registration-only v4 ledger and
+  immutable execution plan before any trial.
+- Runner validation passes Ruff/format, strict mypy, all 403 tests (the primary-checkout boundary
+  test was run in its required checkout), 85.01% coverage, Secret scanning, and dependency audit.
 
 ## Six-hour operations-audit stabilization
 

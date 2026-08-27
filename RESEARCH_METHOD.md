@@ -55,6 +55,14 @@ time, compares the candidate and always-neutral baseline on identical events/cos
 retains success, null, or failure before advancing. Completed trials must remain a prefix of the
 registered order. The runner has no final-holdout role.
 
+If a registered global work unit cannot finish within its immutable wall-time budget, it is retained
+as failed evidence and is not retried or enlarged. A new registration may instead use
+`scalping-trial-execution-plan-2`, where market is an explicit preregistered hyperparameter. The
+three hypotheses, two costs, three folds, and fixed fifteen markets then close 270 one-market work
+units. They preserve the global market scope for predetermined aggregation and cannot select or
+discard markets from observed performance. Each version-2 unit has one 500,000-event total cap and
+the final holdout remains unavailable.
+
 The execution preflight requires the ledger metric set to cover the plan, including median closed-
 trade net return, closed-trade count, and non-fill count. An incomplete registration is blocked
 before inventory scanning and is superseded by a new immutable registration rather than edited.
