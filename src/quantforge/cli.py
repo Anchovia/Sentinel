@@ -46,12 +46,21 @@ from quantforge.readiness import (
     write_readiness_report,
 )
 from quantforge.replay import ReplayEngine, VirtualClock
+from quantforge.research import TrialStatus, read_experiment_ledger
 from quantforge.research.scalping import (
+    ScalpingResearchError,
     blocked_experiment_ledger,
     create_blocked_scalping_report,
     evaluate_scalping_data_sufficiency,
     load_scalping_experiment_plan,
     write_scalping_research_bundle,
+)
+from quantforge.research.scalping_trials import (
+    create_scalping_trial_execution_plan,
+    load_scalping_trial_execution_plan,
+    run_next_scalping_trial,
+    validate_scalping_trial_registration_seed,
+    write_scalping_trial_execution_plan,
 )
 from quantforge.runtime import (
     PAPER_RECOVERY_CONFIRMATION,
@@ -100,6 +109,8 @@ DEFAULT_AUTOMATION_ALLOWLIST = Path("automation/write-allowlist.yaml")
 DEFAULT_READINESS_POLICY = Path("configs/readiness.default.yaml")
 DEFAULT_PAPER_RUNTIME_SNAPSHOT = Path("runtime_exports/ops/paper-runtime.json")
 DEFAULT_SCALPING_PLAN = Path("research/experiments/2026-08-24-scalping-challenger-v1.json")
+DEFAULT_SCALPING_V2_PLAN = Path("research/experiments/2026-08-27-scalping-challenger-v2.json")
+DEFAULT_SCALPING_V2_LEDGER = DEFAULT_SCALPING_V2_PLAN.with_suffix(".ledger.json")
 DEFAULT_CODEX_RESEARCH_OUTPUT = Path("reports/codex/research")
 
 
@@ -919,6 +930,205 @@ def assess_scalping_research(
             sort_keys=True,
         )
     )
+
+
+@app.command("plan-scalping-trials")
+def plan_scalping_trials(
+    source_revision: Annotated[
+        str,
+        typer.Option(help="Exact committed bounded-runner revision"),
+    ],
+    output_path: Annotated[
+        Path,
+        typer.Option(help="New immutable preregistered trial execution plan"),
+    ],
+    plan_path: Annotated[
+        Path,
+        typer.Option(help="Committed scalping experiment plan"),
+    ] = DEFAULT_SCALPING_V2_PLAN,
+    registration_ledger_path: Annotated[
+        Path,
+        typer.Option(help="Committed registration-only experiment ledger"),
+    ] = DEFAULT_SCALPING_V2_LEDGER,
+    input_root: Annotated[
+        Path,
+        typer.Option(help="Checksummed public raw Parquet root"),
+    ] = DEFAULT_PAPER_RAW_OUTPUT,
+    scratch_root: Annotated[
+        Path | None,
+        typer.Option(help="Temporary external-sort root; runs are removed on exit"),
+    ] = None,
+    maximum_elapsed_seconds: Annotated[
+        float,
+        typer.Option(min=1.0, help="Fail-closed inventory wall-time budget"),
+    ] = 900.0,
+) -> None:
+    """Fingerprint data and close all 18 non-holdout trial work units."""
+
+    plan = load_scalping_experiment_plan(plan_path)
+    registration_snapshot = read_experiment_ledger(registration_ledger_path)
+    try:
+        validate_scalping_trial_registration_seed(plan, registration_snapshot)
+    except (ScalpingResearchError, ValueError) as exc:
+        typer.echo(
+            json.dumps(
+                {
+                    "status": "BLOCKED",
+                    "reason": str(exc),
+                    "inventory_scanned": False,
+                    "execution_plan_written": False,
+                    "trial_count": 0,
+                    "final_holdout_used": False,
+                    "authentication_used": False,
+                    "order_network_used": False,
+                    "real_orders_executed": False,
+                },
+                sort_keys=True,
+            ),
+            err=True,
+        )
+        raise typer.Exit(code=2) from exc
+
+    def report_progress(item: RawResearchInventoryProgress) -> None:
+        if (
+            item.phase == "scan"
+            and item.completed_units not in {1, item.total_units}
+            and item.completed_units % 10 != 0
+        ):
+            return
+        typer.echo(
+            json.dumps(
+                {
+                    "phase": item.phase,
+                    "completed_units": item.completed_units,
+                    "total_units": item.total_units,
+                    "selected_event_count": item.selected_event_count,
+                },
+                sort_keys=True,
+            ),
+            err=True,
+        )
+
+    try:
+        inventory = scan_raw_event_research_inventory(
+            input_root,
+            maximum_exchange_timestamp_utc=(plan.dataset_selection.maximum_exchange_timestamp_utc),
+            maximum_received_at_utc=plan.dataset_selection.maximum_received_at_utc,
+            exclude_marked_duplicates=plan.dataset_selection.exclude_marked_duplicates,
+            exclude_quality_flagged_events=(plan.dataset_selection.exclude_quality_flagged_events),
+            scratch_root=scratch_root,
+            maximum_elapsed_seconds=maximum_elapsed_seconds,
+            progress=report_progress,
+        )
+        execution_plan = create_scalping_trial_execution_plan(
+            plan,
+            registration_snapshot,
+            inventory,
+            source_revision=source_revision,
+            created_at_utc=datetime.now(UTC),
+        )
+        write_scalping_trial_execution_plan(execution_plan, output_path)
+    except (RawResearchInventoryTimeout, ScalpingResearchError, ValueError) as exc:
+        typer.echo(
+            json.dumps(
+                {
+                    "status": "BLOCKED",
+                    "reason": str(exc),
+                    "execution_plan_written": False,
+                    "trial_count": 0,
+                    "final_holdout_used": False,
+                    "authentication_used": False,
+                    "order_network_used": False,
+                    "real_orders_executed": False,
+                },
+                sort_keys=True,
+            ),
+            err=True,
+        )
+        raise typer.Exit(code=2) from exc
+    typer.echo(
+        json.dumps(
+            {
+                "status": "PREREGISTERED",
+                "execution_plan": str(output_path.resolve()),
+                "execution_plan_sha256": execution_plan.digest,
+                "dataset_hash": execution_plan.dataset_hash,
+                "eligible_markets": list(execution_plan.eligible_markets),
+                "planned_trial_count": len(execution_plan.trials),
+                "final_holdout_used": False,
+                "authentication_used": False,
+                "order_network_used": False,
+                "real_orders_executed": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("run-next-scalping-trial")
+def run_next_scalping_trial_command(
+    execution_plan_path: Annotated[
+        Path,
+        typer.Option(help="Committed immutable trial execution plan"),
+    ],
+    working_ledger_path: Annotated[
+        Path,
+        typer.Option(help="Durable Codex report ledger; never the registration seed"),
+    ],
+    plan_path: Annotated[
+        Path,
+        typer.Option(help="Committed scalping experiment plan"),
+    ] = DEFAULT_SCALPING_V2_PLAN,
+    registration_ledger_path: Annotated[
+        Path,
+        typer.Option(help="Committed registration-only experiment ledger"),
+    ] = DEFAULT_SCALPING_V2_LEDGER,
+    input_root: Annotated[
+        Path,
+        typer.Option(help="Checksummed public raw Parquet root"),
+    ] = DEFAULT_PAPER_RAW_OUTPUT,
+    artifact_root: Annotated[
+        Path,
+        typer.Option(help="Codex research trial artifact root"),
+    ] = DEFAULT_CODEX_RESEARCH_OUTPUT,
+) -> None:
+    """Run exactly one next registered validation/test work unit and checkpoint it."""
+
+    if working_ledger_path.resolve() == registration_ledger_path.resolve():
+        raise typer.BadParameter("working ledger must not overwrite the registration seed")
+    plan = load_scalping_experiment_plan(plan_path)
+    execution_plan = load_scalping_trial_execution_plan(execution_plan_path)
+    registration_snapshot = read_experiment_ledger(registration_ledger_path)
+    outcome = run_next_scalping_trial(
+        plan,
+        execution_plan,
+        registration_snapshot,
+        working_ledger_path=working_ledger_path,
+        artifact_root=artifact_root,
+        input_root=input_root,
+    )
+    typer.echo(
+        json.dumps(
+            {
+                "status": outcome.trial.status,
+                "trial_id": str(outcome.trial.trial_id),
+                "failure_reason": outcome.trial.failure_reason,
+                "artifact": str(outcome.artifact_path.resolve())
+                if outcome.artifact_path is not None
+                else None,
+                "ledger": str(outcome.ledger_path.resolve()),
+                "completed_trial_count": outcome.completed_trial_count,
+                "planned_trial_count": outcome.planned_trial_count,
+                "final_holdout_used": False,
+                "authentication_used": False,
+                "order_network_used": False,
+                "real_orders_executed": False,
+            },
+            sort_keys=True,
+        )
+    )
+    if outcome.trial.status is TrialStatus.FAILED:
+        raise typer.Exit(code=2)
 
 
 @app.command("export-operations")

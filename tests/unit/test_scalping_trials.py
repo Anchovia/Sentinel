@@ -1,0 +1,326 @@
+from datetime import timedelta
+from pathlib import Path
+
+import orjson
+import pytest
+from pydantic import ValidationError
+
+from factories import BASE_TIME, make_orderbook_event, make_trade_event
+from quantforge.domain import EventEnvelope
+from quantforge.research import (
+    ExperimentLedger,
+    ExperimentLedgerSnapshot,
+    ExperimentRegistration,
+    SplitRole,
+    TrialStatus,
+    new_experiment_id,
+    read_experiment_ledger,
+)
+from quantforge.research.scalping import (
+    ScalpingExperimentPlan,
+    ScalpingResearchError,
+    ScalpingTrialLimitError,
+    load_scalping_experiment_plan,
+)
+from quantforge.research.scalping_trials import (
+    ScalpingTrialExecutionPlan,
+    ScalpingWalkForwardWindow,
+    create_scalping_trial_execution_plan,
+    run_next_scalping_trial,
+)
+from quantforge.storage import RawEventMarketInventory, RawEventResearchInventory
+
+ROOT = Path(__file__).parents[2]
+V2_PLAN_PATH = ROOT / "research" / "experiments" / "2026-08-27-scalping-challenger-v2.json"
+V2_LEDGER_PATH = V2_PLAN_PATH.with_suffix(".ledger.json")
+DATASET_HASH = "a" * 64
+MANIFEST_HASH = "b" * 64
+SOURCE_REVISION = "2" * 40
+PLANNED_METRICS = (
+    "adverse_selection_cost",
+    "average_holding_seconds",
+    "closed_trade_count",
+    "fees",
+    "gross_pnl",
+    "maximum_drawdown",
+    "median_closed_trade_net_return_bps",
+    "net_pnl",
+    "non_fill_order_count",
+    "slippage_cost",
+    "spread_cost",
+    "turnover",
+    "win_rate",
+)
+
+
+def _plan() -> ScalpingExperimentPlan:
+    original = load_scalping_experiment_plan(V2_PLAN_PATH)
+    cutoff = BASE_TIME + timedelta(hours=24)
+    selection = original.dataset_selection.model_copy(
+        update={
+            "manifest_set_sha256": MANIFEST_HASH,
+            "maximum_exchange_timestamp_utc": cutoff,
+            "maximum_received_at_utc": cutoff,
+        }
+    )
+    return original.model_copy(
+        update={
+            "experiment_id": "qf-scalp-test-v3",
+            "registered_at_utc": cutoff + timedelta(minutes=1),
+            "source_revision": "1" * 40,
+            "dataset_selection": selection,
+        }
+    )
+
+
+def _inventory(plan: ScalpingExperimentPlan) -> RawEventResearchInventory:
+    markets = tuple(
+        RawEventMarketInventory(
+            market=f"KRW-T{index}",
+            trade_events=20_000,
+            orderbook_events=20_000,
+            first_received_at_utc=BASE_TIME,
+            last_received_at_utc=BASE_TIME + timedelta(hours=24),
+        )
+        for index in range(3)
+    )
+    return RawEventResearchInventory(
+        dataset_hash=DATASET_HASH,
+        manifest_set_sha256=MANIFEST_HASH,
+        maximum_exchange_timestamp_utc=(plan.dataset_selection.maximum_exchange_timestamp_utc),
+        maximum_received_at_utc=plan.dataset_selection.maximum_received_at_utc,
+        exclude_marked_duplicates=True,
+        exclude_quality_flagged_events=True,
+        selected_file_count=6,
+        selected_event_count=120_000,
+        markets=markets,
+    )
+
+
+def _registration_snapshot(
+    plan: ScalpingExperimentPlan,
+    inventory: RawEventResearchInventory,
+    *,
+    planned_metrics: tuple[str, ...] = PLANNED_METRICS,
+) -> ExperimentLedgerSnapshot:
+    registration = ExperimentRegistration(
+        experiment_id=new_experiment_id(
+            plan.experiment_id,
+            inventory.dataset_hash,
+            plan.registered_at_utc,
+        ),
+        hypothesis_id="+".join(plan.hypothesis_ids),
+        created_at_utc=plan.registered_at_utc,
+        researcher=plan.researcher,
+        code_version=plan.source_revision,
+        dataset_hash=inventory.dataset_hash,
+        feature_set=plan.feature_and_entry_rules.feature_contract,
+        label_version="cost-inclusive-round-trip-v1",
+        model_family="preregistered-deterministic-rules",
+        hyperparameter_space=(
+            ("cost_scenario", ("base", "stress")),
+            ("fold", ("1", "2", "3")),
+            ("hypothesis", plan.hypothesis_ids),
+        ),
+        planned_metrics=planned_metrics,
+        planned_splits=(SplitRole.VALIDATION, SplitRole.TEST, SplitRole.FINAL_HOLDOUT),
+        planned_cost_model=f"conservative_l2 base and stress; plan_sha256={plan.digest}",
+        final_holdout_planned=True,
+    )
+    ledger = ExperimentLedger()
+    ledger.preregister(registration)
+    return ledger.snapshot()
+
+
+def _execution_fixture() -> tuple[
+    ScalpingExperimentPlan,
+    ExperimentLedgerSnapshot,
+    ScalpingTrialExecutionPlan,
+]:
+    plan = _plan()
+    inventory = _inventory(plan)
+    registration = _registration_snapshot(plan, inventory)
+    execution = create_scalping_trial_execution_plan(
+        plan,
+        registration,
+        inventory,
+        source_revision=SOURCE_REVISION,
+        created_at_utc=plan.registered_at_utc + timedelta(minutes=1),
+        maximum_events_per_market=100,
+        maximum_total_events_per_trial=300,
+        maximum_elapsed_seconds_per_trial=30,
+    )
+    return plan, registration, execution
+
+
+def _event_loader(
+    market: str,
+    window: ScalpingWalkForwardWindow,
+    maximum_events: int,
+    maximum_elapsed_seconds: float,
+) -> tuple[EventEnvelope, ...]:
+    assert maximum_events == 100
+    assert maximum_elapsed_seconds > 0
+    events = (
+        make_orderbook_event(sequence=1, received_offset_ms=0, market=market),
+        make_trade_event(
+            sequence=2,
+            exchange_offset_ms=100,
+            received_offset_ms=100,
+            market=market,
+        ),
+        make_orderbook_event(sequence=3, received_offset_ms=200, market=market),
+    )
+    offset = window.entry_start_utc - BASE_TIME
+    return tuple(
+        event.model_copy(
+            update={
+                "exchange_timestamp": event.exchange_timestamp + offset,
+                "received_at_utc": event.received_at_utc + offset,
+            }
+        )
+        for event in events
+    )
+
+
+def test_execution_plan_closes_exact_non_holdout_trial_space() -> None:
+    plan, registration, execution = _execution_fixture()
+    repeated = create_scalping_trial_execution_plan(
+        plan,
+        registration,
+        _inventory(plan),
+        source_revision=SOURCE_REVISION,
+        created_at_utc=plan.registered_at_utc + timedelta(minutes=1),
+        maximum_events_per_market=100,
+        maximum_total_events_per_trial=300,
+        maximum_elapsed_seconds_per_trial=30,
+    )
+
+    assert execution == repeated
+    assert len(execution.trials) == 18
+    assert len({trial.trial_id for trial in execution.trials}) == 18
+    assert sum(trial.split_role is SplitRole.VALIDATION for trial in execution.trials) == 12
+    assert sum(trial.split_role is SplitRole.TEST for trial in execution.trials) == 6
+    assert all(
+        window.evaluation_end_utc < execution.final_holdout_start_utc
+        for window in execution.windows
+    )
+    assert execution.final_holdout_access is False
+
+
+def test_execution_plan_rejects_incomplete_v2_metric_registration() -> None:
+    plan = load_scalping_experiment_plan(V2_PLAN_PATH)
+    inventory = RawEventResearchInventory(
+        dataset_hash="4002405439cbe4afbedf64ea90a84be486640754a0a2de12a4d726760dae8fd6",
+        manifest_set_sha256=plan.dataset_selection.manifest_set_sha256,
+        maximum_exchange_timestamp_utc=plan.dataset_selection.maximum_exchange_timestamp_utc,
+        maximum_received_at_utc=plan.dataset_selection.maximum_received_at_utc,
+        exclude_marked_duplicates=True,
+        exclude_quality_flagged_events=True,
+        selected_file_count=6,
+        selected_event_count=120_000,
+        markets=tuple(
+            RawEventMarketInventory(
+                market=f"KRW-T{index}",
+                trade_events=20_000,
+                orderbook_events=20_000,
+                first_received_at_utc=BASE_TIME,
+                last_received_at_utc=BASE_TIME + timedelta(hours=24),
+            )
+            for index in range(3)
+        ),
+    )
+    registration = ExperimentLedgerSnapshot.model_validate_json(V2_LEDGER_PATH.read_bytes())
+
+    with pytest.raises(ScalpingResearchError, match="metrics"):
+        create_scalping_trial_execution_plan(
+            plan,
+            registration,
+            inventory,
+            source_revision=SOURCE_REVISION,
+            created_at_utc=plan.registered_at_utc + timedelta(minutes=1),
+        )
+
+
+def test_runner_records_one_trial_at_a_time_with_neutral_baseline(tmp_path: Path) -> None:
+    plan, registration, execution = _execution_fixture()
+    working_ledger = tmp_path / "ledger.json"
+    artifact_root = tmp_path / "artifacts"
+
+    first = run_next_scalping_trial(
+        plan,
+        execution,
+        registration,
+        working_ledger_path=working_ledger,
+        artifact_root=artifact_root,
+        event_loader=_event_loader,
+    )
+    second = run_next_scalping_trial(
+        plan,
+        execution,
+        registration,
+        working_ledger_path=working_ledger,
+        artifact_root=artifact_root,
+        event_loader=_event_loader,
+    )
+    snapshot = read_experiment_ledger(working_ledger)
+    assert first.artifact_path is not None
+    first_artifact = orjson.loads(first.artifact_path.read_bytes())
+
+    assert first.trial.status is TrialStatus.SUCCEEDED
+    assert second.trial.status is TrialStatus.SUCCEEDED
+    assert first.trial.trial_id != second.trial.trial_id
+    assert len(snapshot.records) == 3
+    assert first_artifact["final_holdout_used"] is False
+    assert first_artifact["champion_comparison_performed"] is False
+    assert all(
+        result["rule"] == "always_neutral" for result in first_artifact["neutral_baseline_results"]
+    )
+    assert first.completed_trial_count == 1
+    assert second.completed_trial_count == 2
+
+
+def test_runner_retains_failed_trial_and_advances_without_retry(tmp_path: Path) -> None:
+    plan, registration, execution = _execution_fixture()
+    working_ledger = tmp_path / "failed-ledger.json"
+
+    def fail_loader(
+        market: str,
+        window: ScalpingWalkForwardWindow,
+        maximum_events: int,
+        maximum_elapsed_seconds: float,
+    ) -> tuple[EventEnvelope, ...]:
+        del market, window, maximum_events, maximum_elapsed_seconds
+        raise ScalpingTrialLimitError("synthetic bounded failure")
+
+    failed = run_next_scalping_trial(
+        plan,
+        execution,
+        registration,
+        working_ledger_path=working_ledger,
+        artifact_root=tmp_path / "artifacts",
+        event_loader=fail_loader,
+    )
+    recovered = run_next_scalping_trial(
+        plan,
+        execution,
+        registration,
+        working_ledger_path=working_ledger,
+        artifact_root=tmp_path / "artifacts",
+        event_loader=_event_loader,
+    )
+
+    assert failed.trial.status is TrialStatus.FAILED
+    assert "synthetic bounded failure" in (failed.trial.failure_reason or "")
+    assert failed.artifact_path is None
+    assert recovered.trial.trial_id != failed.trial.trial_id
+    assert recovered.completed_trial_count == 2
+
+
+def test_execution_contract_rejects_any_final_holdout_trial() -> None:
+    _, _, execution = _execution_fixture()
+    payload = execution.model_dump(mode="json")
+    payload["trials"][0]["split_role"] = "final_holdout"
+
+    with pytest.raises(ValidationError):
+        ScalpingTrialExecutionPlan.model_validate(payload)

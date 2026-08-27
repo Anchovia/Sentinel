@@ -164,6 +164,11 @@ All notable changes are recorded here. The project follows semantic versioning o
 - A new hash-chained `qf-scalp-20260827-v2` preregistration binding 9,157,974 clean fixed-cutoff
   detailed rows, 15 eligible markets, the exact committed source and manifest lineage, and the
   closed 18-trial search space before execution; its ledger contains no trial or holdout access.
+- A bounded, resumable scalping trial runner with deterministic three-fold execution plans, exact
+  18-trial ordering, Arrow-filtered event/time limits, identical-input neutral baselines, atomic
+  artifacts, hash-chain ledger resume, permanent failed/null retention, and no final-holdout role.
+- Fail-fast registration validation that blocks v2 before rescanning because its ledger omitted
+  required primary/trade/non-fill metrics; v2 remains immutable with zero executed trials.
 - A checksummed detailed-event inventory plus deterministic long-only research engine that routes
   entries, profit/stop/time exits, latency, partial/non-fills, and all cost attribution through the
   conservative L2 paper broker and exact Decimal ledger.

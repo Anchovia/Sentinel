@@ -21,6 +21,7 @@ from quantforge.research.experiments import (
     TrialResult,
     TrialStatus,
     new_experiment_id,
+    read_experiment_ledger,
     write_experiment_ledger,
 )
 from quantforge.research.splits import (
@@ -57,5 +58,6 @@ __all__ = [
     "build_forward_labels",
     "chronological_four_way_split",
     "new_experiment_id",
+    "read_experiment_ledger",
     "write_experiment_ledger",
 ]

@@ -8,6 +8,7 @@ from decimal import ROUND_DOWN, Decimal
 from enum import StrEnum
 from hashlib import sha256
 from pathlib import Path
+from time import monotonic
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
@@ -57,6 +58,10 @@ TERMINAL_STATUSES = frozenset(
 
 class ScalpingResearchError(ValueError):
     """Raised when a plan or trial would violate its preregistered boundary."""
+
+
+class ScalpingTrialLimitError(RuntimeError):
+    """Raised when one preregistered trial exceeds an operational work bound."""
 
 
 class ScalpingRule(StrEnum):
@@ -427,9 +432,30 @@ class ScalpingBacktestEngine:
         self.code_version = code_version
         self.entry_start_utc = entry_start_utc
 
-    def run(self, events: Sequence[EventEnvelope]) -> ScalpingBacktestResult:
+    def run(
+        self,
+        events: Sequence[EventEnvelope],
+        *,
+        maximum_events: int | None = None,
+        maximum_elapsed_seconds: float | None = None,
+    ) -> ScalpingBacktestResult:
         if not events or any(event.market != self.market for event in events):
             raise ScalpingResearchError("trial requires nonempty single-market events")
+        if maximum_events is not None and maximum_events < 1:
+            raise ValueError("trial event limit must be positive")
+        if maximum_elapsed_seconds is not None and maximum_elapsed_seconds <= 0:
+            raise ValueError("trial wall-time limit must be positive")
+        if maximum_events is not None and len(events) > maximum_events:
+            raise ScalpingTrialLimitError(f"trial input exceeds the {maximum_events} event limit")
+        started_at = monotonic()
+
+        def require_deadline() -> None:
+            if (
+                maximum_elapsed_seconds is not None
+                and monotonic() - started_at > maximum_elapsed_seconds
+            ):
+                raise ScalpingTrialLimitError(f"trial exceeded {maximum_elapsed_seconds:g} seconds")
+
         policy = self.plan.cost_scenarios[self.cost_scenario].execution_policy()
         broker = PaperBroker(policy)
         ledger = PortfolioLedger(market=self.market, initial_cash="1000000")
@@ -445,6 +471,7 @@ class ScalpingBacktestEngine:
         maximum_drawdown_ratio = Decimal(0)
         cooldown_until: datetime | None = None
         ordered_end = max(event.received_at_utc for event in events)
+        processed_events = 0
 
         def apply_updates(updates: Sequence[PaperExecutionUpdate]) -> None:
             nonlocal open_trade, cooldown_until
@@ -592,7 +619,11 @@ class ScalpingBacktestEngine:
                 exit_reasons[submitted.order.order_id] = ScalpingExitReason(reason)
 
         def handle(item: EventEnvelope | DataGap, clock: VirtualClock) -> bytes:
-            nonlocal last_mark, peak_equity, maximum_drawdown, maximum_drawdown_ratio
+            nonlocal last_mark, peak_equity, maximum_drawdown
+            nonlocal maximum_drawdown_ratio, processed_events
+            processed_events += 1
+            if processed_events % 1_024 == 0:
+                require_deadline()
             now = clock.now
             if isinstance(item, DataGap):
                 apply_updates(broker.on_item(item, now=now))
@@ -637,7 +668,9 @@ class ScalpingBacktestEngine:
                 return self.rule.value.encode()
             return b"hold"
 
+        require_deadline()
         replay = ReplayEngine().run(events, handle)
+        require_deadline()
         apply_updates(broker.close(closed_at=replay.ended_at_utc))
         if last_mark is None:
             raise ScalpingResearchError("trial has no price-bearing event")

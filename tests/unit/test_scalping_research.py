@@ -28,6 +28,8 @@ from quantforge.storage import (
     ParquetRawEventWriter,
     RawDataIntegrityError,
     RawEventMarketInventory,
+    RawEventReadLimitError,
+    RawEventReadTimeout,
     RawEventResearchInventory,
     RawResearchInventoryTimeout,
     read_raw_events,
@@ -311,6 +313,18 @@ def test_inventory_and_reader_apply_registered_clean_row_filters(tmp_path: Path)
     assert inventory.exclude_quality_flagged_events is True
     assert inventory.selected_event_count == 1
     assert tuple(event.local_sequence for event in events) == (1,)
+
+
+def test_raw_event_reader_enforces_event_and_wall_time_bounds(tmp_path: Path) -> None:
+    writer = ParquetRawEventWriter(tmp_path, max_rows=10)
+    writer.append(make_orderbook_event(sequence=1, received_offset_ms=0))
+    writer.append(make_trade_event(sequence=2, exchange_offset_ms=100, received_offset_ms=100))
+    writer.close()
+
+    with pytest.raises(RawEventReadLimitError, match="event limit"):
+        read_raw_events(tmp_path, maximum_events=1)
+    with pytest.raises(RawEventReadTimeout, match="exceeded"):
+        read_raw_events(tmp_path, maximum_elapsed_seconds=1e-12)
 
 
 def test_external_inventory_hash_matches_legacy_global_tuple_order(tmp_path: Path) -> None:

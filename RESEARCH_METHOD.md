@@ -47,6 +47,18 @@ while a separate external event-ID merge retains exact duplicate detection. Ever
 an explicit wall-time budget and coarse progress evidence. Timeout removes scratch runs, writes no
 research result, and executes no trial.
 
+Eligible short-horizon computation is split again before execution. A committed
+`scalping-trial-execution-plan-1` binds the exact runner revision, registration record, dataset,
+eligible markets, chronological partition hashes, all 18 trial UUIDs, and event/time limits. One
+command may execute only the next unrecorded validation/test trial. It loads one market window at a
+time, compares the candidate and always-neutral baseline on identical events/costs, and atomically
+retains success, null, or failure before advancing. Completed trials must remain a prefix of the
+registered order. The runner has no final-holdout role.
+
+The execution preflight requires the ledger metric set to cover the plan, including median closed-
+trade net return, closed-trade count, and non-fill count. An incomplete registration is blocked
+before inventory scanning and is superseded by a new immutable registration rather than edited.
+
 ## Validation
 
 - Use chronological rolling or expanding walk-forward validation.

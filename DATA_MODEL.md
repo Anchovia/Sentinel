@@ -157,6 +157,12 @@ Phase 11.6 adds three closed research contracts:
 - `scalping-backtest-1` binds plan/code/data/execution hashes to one market/rule/cost/fold replay and
   stores signals, orders, fills, closed trades, gross/net PnL, all execution costs, turnover,
   drawdown, win rate, holding time, exact portfolio state, and false-only network/order capability.
+- `scalping-trial-execution-plan-1` binds a registration record and exact runner revision to sorted
+  eligible markets, three purged/embargoed validation/test windows, 18 deterministic trial UUIDs,
+  the sealed holdout boundary, and per-market/total-event/wall-time limits.
+- `scalping-trial-artifact-1` retains identical-input candidate and always-neutral market results,
+  exact Decimal aggregate costs/PnL/drawdown, trade and non-fill counts, median trade return, null
+  metrics, unavailable-champion evidence, and false-only holdout/network/order state.
 
 `scalping-research-report-1` combines the inventory, sample gate, retained trial cells, final
 decision, `final_holdout_used=false`, human-review requirement, and false-only safety state. A

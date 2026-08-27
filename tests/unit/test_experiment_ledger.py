@@ -16,6 +16,7 @@ from quantforge.research import (
     TrialResult,
     TrialStatus,
     new_experiment_id,
+    read_experiment_ledger,
     write_experiment_ledger,
 )
 
@@ -133,9 +134,12 @@ def test_ledger_hash_chain_and_atomic_snapshot(tmp_path: Path) -> None:
     snapshot = ledger.snapshot()
     path = write_experiment_ledger(snapshot, tmp_path / "experiments.json")
     parsed = orjson.loads(path.read_bytes())
+    loaded = read_experiment_ledger(path)
+    restored = ExperimentLedger.from_snapshot(loaded)
 
     assert parsed["chain_hash"] == snapshot.chain_hash
     assert len(parsed["records"]) == 2
+    assert restored.snapshot() == snapshot
     assert not list(tmp_path.glob("*.tmp"))
 
     ledger._records[0] = ledger._records[0].model_copy(update={"payload_json": "{}"})

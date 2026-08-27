@@ -218,6 +218,37 @@ class ExperimentLedger:
     def records(self) -> tuple[ExperimentLedgerRecord, ...]:
         return tuple(self._records)
 
+    @classmethod
+    def from_snapshot(cls, snapshot: ExperimentLedgerSnapshot) -> "ExperimentLedger":
+        """Rebuild a mutable ledger only from a fully verified immutable snapshot."""
+
+        previous_hash = ZERO_HASH
+        for sequence, record in enumerate(snapshot.records, start=1):
+            if record.sequence != sequence or record.previous_hash != previous_hash:
+                raise ExperimentLedgerError("experiment ledger sequence is invalid")
+            expected = _record_hash(record.model_dump(exclude={"record_hash"}))
+            if record.record_hash != expected:
+                raise ExperimentLedgerError("experiment ledger hash is invalid")
+            previous_hash = record.record_hash
+        if snapshot.chain_hash != previous_hash:
+            raise ExperimentLedgerError("experiment ledger snapshot chain hash is invalid")
+
+        ledger = cls()
+        for record in snapshot.records:
+            if record.record_type is ExperimentRecordType.REGISTRATION:
+                ledger.preregister(ExperimentRegistration.model_validate_json(record.payload_json))
+            elif record.record_type is ExperimentRecordType.HOLDOUT_ACCESS:
+                # record_trial reconstructs the paired holdout-access record before its trial.
+                TrialResult.model_validate_json(record.payload_json)
+            elif record.record_type is ExperimentRecordType.TRIAL:
+                ledger.record_trial(TrialResult.model_validate_json(record.payload_json))
+            elif record.record_type is ExperimentRecordType.DECISION:
+                ledger.close(ExperimentSummary.model_validate_json(record.payload_json))
+        ledger.verify()
+        if ledger.snapshot() != snapshot:
+            raise ExperimentLedgerError("experiment ledger snapshot does not replay exactly")
+        return ledger
+
     def preregister(self, registration: ExperimentRegistration) -> ExperimentLedgerRecord:
         if registration.experiment_id in self._registrations:
             raise ExperimentLedgerError("experiment is already registered")
@@ -300,6 +331,12 @@ class ExperimentLedger:
         except KeyError as exc:
             raise ExperimentLedgerError("unknown experiment") from exc
 
+    def registration_for(self, experiment_id: UUID) -> ExperimentRegistration:
+        try:
+            return self._registrations[experiment_id]
+        except KeyError as exc:
+            raise ExperimentLedgerError("unknown experiment") from exc
+
     def snapshot(self) -> ExperimentLedgerSnapshot:
         return ExperimentLedgerSnapshot(
             records=self.records,
@@ -368,6 +405,17 @@ def write_experiment_ledger(snapshot: ExperimentLedgerSnapshot, destination: Pat
     finally:
         temporary.unlink(missing_ok=True)
     return destination
+
+
+def read_experiment_ledger(source: Path) -> ExperimentLedgerSnapshot:
+    """Load and verify a persisted experiment ledger before it can be resumed."""
+
+    try:
+        snapshot = ExperimentLedgerSnapshot.model_validate_json(source.read_bytes())
+    except (OSError, ValueError) as exc:
+        raise ExperimentLedgerError("experiment ledger could not be loaded") from exc
+    ExperimentLedger.from_snapshot(snapshot)
+    return snapshot
 
 
 def _model_digest(model: BaseModel) -> str:

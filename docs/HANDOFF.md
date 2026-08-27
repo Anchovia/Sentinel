@@ -85,6 +85,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   `4131726837a64d74fc47dad9dab330e5025cb070d2afcc1fda8cd36e35a0271c`, both
   `2026-08-27T08:34:45Z` cutoffs, clean-row filters, and committed source `7b8bdf0`. Its adjacent
   ledger has exactly one registration record. No trial, decision, or final-holdout access occurred.
+- Do not execute v2. Its immutable registration ledger omitted median closed-trade return,
+  closed-trade count, and non-fill count even though the plan requires them. The new preflight
+  detects this before rescanning and returns `BLOCKED`; v2 remains retained with zero trials.
 - Do not restore the original row-wise fingerprint implementation. Its first full clean scan was
   stopped after 118 minutes and roughly 1.77GB of Python identity state without producing a result.
 - The replacement uses bounded Arrow batches and ephemeral fixed-width identity/event-ID runs. Its
@@ -93,10 +96,14 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - The five-file 25,000-row benchmark produced the same hash before and after optimization while
   improving from 30.900 to 0.936 seconds. Keep the 900-second cap on future fingerprints; a timeout
   remains a valid no-result outcome.
-- Validation passes Ruff/format across 239 files, mypy across 117 source files, 392 tests at 85.67%
-  coverage, 527-file Secret scanning, and the dependency audit with no known vulnerabilities.
-- Next implement bounded chronological execution for the 18 registered validation/test trials.
-  Preserve every failed or null result and keep the final holdout sealed pending a separate review.
+- Validation passes Ruff/format across 242 files, mypy across 118 source files, 399 tests at 85.07%
+  coverage, 537-file Secret scanning, and the unchanged dependency set's prior audit with no known
+  vulnerabilities.
+- The bounded runner is implemented but has not executed a market trial. It creates three
+  deterministic purged/embargoed windows, fixes all 18 UUIDs and work limits, executes only the next
+  registered trial, compares identical-input neutral baselines, and atomically retains failures.
+- Next commit the runner, make a metric-complete replacement registration bound to its exact commit,
+  then create and commit the execution plan before running work unit 1/18. Keep final holdout sealed.
 
 ## Six-hour operations-audit stabilization
 

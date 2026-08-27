@@ -72,8 +72,9 @@
   are covered by tests. A 25,000-row/five-file benchmark retained hash
   `def61b40829c66084f2586594047ba439f63259fae7f841b0f27618caff241ab` and improved from 30.900 to
   0.936 seconds (26,697.8 rows/second), about 33 times faster.
-- Full validation passes: Ruff and format across 239 files, mypy across 117 source files, 392 tests
-  at 85.67% coverage, 527-file Secret scanning, and `pip-audit` with no known vulnerabilities.
+- Full validation passes: Ruff and format across 242 files, mypy across 118 source files, 399 tests
+  at 85.07% coverage, 537-file Secret scanning, and the unchanged dependency set's prior
+  `pip-audit` with no known vulnerabilities.
 - The committed fixed-cutoff scan completed in 451.509 seconds under the 900-second limit. It
   selected 9,157,974 clean detailed rows from 147 files, produced dataset hash
   `4002405439cbe4afbedf64ea90a84be486640754a0a2de12a4d726760dae8fd6`, and found 15 eligible
@@ -82,9 +83,16 @@
   manifest-set hash `4131726837a64d74fc47dad9dab330e5025cb070d2afcc1fda8cd36e35a0271c`, and the exact dataset
   hash. Its hash-chained ledger contains one registration record and no trial, decision, or holdout
   access. The 18-trial search space is now closed before execution; final holdout remains sealed.
-- ADR-028 records the dataset-selection decision. The next research task is a bounded chronological
-  trial runner that consumes this registration without widening its parameters or opening the final
-  holdout.
+- Implemented a one-work-unit bounded chronological runner: deterministic folds one/two validation
+  and fold three test, 500,000 events per market, 3,000,000 per trial, 900 seconds, Arrow-filtered
+  reads, identical candidate/neutral inputs, atomic artifacts, exact ledger resume, and permanent
+  failed/null retention. The runner cannot represent or access the final holdout.
+- Preflight found that the immutable v2 ledger omitted the plan's median closed-trade return,
+  closed-trade count, and non-fill count. It now blocks before any inventory scan or trial rather
+  than silently changing metrics. V2 still has one registration record and zero trials.
+- ADR-028 records selection; ADR-029 records bounded execution. Next commit this runner, create a new
+  metric-complete registration bound to that exact revision, and only then generate the 18-cell
+  execution plan. No actual trial has run.
 
 ## Six-hour operations-audit stabilization
 

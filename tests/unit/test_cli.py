@@ -25,6 +25,8 @@ SCALPING_PLAN = (
     / "experiments"
     / "2026-08-24-scalping-challenger-v1.json"
 )
+SCALPING_V2_PLAN = SCALPING_PLAN.with_name("2026-08-27-scalping-challenger-v2.json")
+SCALPING_V2_LEDGER = SCALPING_V2_PLAN.with_suffix(".ledger.json")
 
 
 def test_safety_status_json_is_fail_closed() -> None:
@@ -156,6 +158,37 @@ def test_scalping_assessment_retains_insufficient_data_without_trials(tmp_path: 
     assert Path(payload["report"]).is_file()
     assert Path(payload["manifest"]).is_file()
     assert Path(payload["ledger"]).is_file()
+
+
+def test_scalping_trial_planning_fails_before_scan_on_incomplete_registration(
+    tmp_path: Path,
+) -> None:
+    output_path = tmp_path / "execution.json"
+
+    result = runner.invoke(
+        app,
+        [
+            "plan-scalping-trials",
+            "--source-revision",
+            "1" * 40,
+            "--output-path",
+            str(output_path),
+            "--plan-path",
+            str(SCALPING_V2_PLAN),
+            "--registration-ledger-path",
+            str(SCALPING_V2_LEDGER),
+            "--input-root",
+            str(tmp_path / "unused-raw"),
+        ],
+    )
+
+    assert result.exit_code == 2
+    payload = json.loads(result.stderr)
+    assert payload["status"] == "BLOCKED"
+    assert payload["inventory_scanned"] is False
+    assert payload["trial_count"] == 0
+    assert payload["final_holdout_used"] is False
+    assert not output_path.exists()
 
 
 def test_realtime_benchmark_is_verified_hold_only(tmp_path: Path) -> None:

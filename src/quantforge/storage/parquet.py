@@ -92,6 +92,14 @@ class RawResearchInventoryTimeout(TimeoutError):
     """The bounded offline inventory scan exceeded its explicit wall-time budget."""
 
 
+class RawEventReadLimitError(RuntimeError):
+    """A bounded raw-event read exceeded its declared event-count limit."""
+
+
+class RawEventReadTimeout(TimeoutError):
+    """A bounded raw-event read exceeded its declared wall-time limit."""
+
+
 @dataclass(frozen=True, slots=True)
 class RawResearchInventoryProgress:
     """Coarse progress evidence for a potentially large offline fingerprint scan."""
@@ -767,11 +775,18 @@ def _require_inventory_deadline(started_at: float, maximum_elapsed_seconds: floa
         )
 
 
+def _require_read_deadline(started_at: float, maximum_elapsed_seconds: float | None) -> None:
+    if maximum_elapsed_seconds is not None and monotonic() - started_at > maximum_elapsed_seconds:
+        raise RawEventReadTimeout(f"raw event read exceeded {maximum_elapsed_seconds:g} seconds")
+
+
 def _selected_research_batch(
     batch: pa.RecordBatch,
     *,
     event_type: str,
+    markets: frozenset[str] | None,
     maximum_exchange_timestamp_utc: datetime | None,
+    minimum_received_at_utc: datetime | None,
     maximum_received_at_utc: datetime | None,
     exclude_marked_duplicates: bool,
     exclude_quality_flagged_events: bool,
@@ -781,10 +796,20 @@ def _selected_research_batch(
     if not bool(pc.all(event_type_matches).as_py()):
         raise RawDataIntegrityError("raw event type disagrees with its manifest")
     mask = event_type_matches
+    if markets is not None:
+        mask = pc.and_(
+            mask,
+            pc.is_in(table["market"], value_set=pa.array(sorted(markets))),
+        )
     if maximum_exchange_timestamp_utc is not None:
         mask = pc.and_(
             mask,
             pc.less_equal(table["exchange_timestamp"], maximum_exchange_timestamp_utc),
+        )
+    if minimum_received_at_utc is not None:
+        mask = pc.and_(
+            mask,
+            pc.greater_equal(table["received_at_utc"], minimum_received_at_utc),
         )
     if maximum_received_at_utc is not None:
         mask = pc.and_(
@@ -1032,7 +1057,9 @@ def scan_raw_event_research_inventory(
                 selected = _selected_research_batch(
                     batch,
                     event_type=manifest.event_type,
+                    markets=None,
                     maximum_exchange_timestamp_utc=maximum_exchange_timestamp_utc,
+                    minimum_received_at_utc=None,
                     maximum_received_at_utc=maximum_received_at_utc,
                     exclude_marked_duplicates=exclude_marked_duplicates,
                     exclude_quality_flagged_events=exclude_quality_flagged_events,
@@ -1136,6 +1163,8 @@ def read_raw_events(
     maximum_received_at_utc: datetime | None = None,
     exclude_marked_duplicates: bool = False,
     exclude_quality_flagged_events: bool = False,
+    maximum_events: int | None = None,
+    maximum_elapsed_seconds: float | None = None,
 ) -> list[EventEnvelope]:
     """Verify selected manifests/checksums and reconstruct bounded immutable envelopes."""
 
@@ -1162,9 +1191,15 @@ def read_raw_events(
         not event_types or not event_types <= {"ticker", "trade", "orderbook"}
     ):
         raise ValueError("raw event type selection is invalid")
+    if maximum_events is not None and maximum_events < 1:
+        raise ValueError("raw event limit must be positive")
+    if maximum_elapsed_seconds is not None and maximum_elapsed_seconds <= 0:
+        raise ValueError("raw event wall-time limit must be positive")
 
+    started_at = monotonic()
     events: list[EventEnvelope] = []
     for record in _active_manifest_records(root):
+        _require_read_deadline(started_at, maximum_elapsed_seconds)
         manifest = record.manifest
         if event_types is not None and manifest.event_type not in event_types:
             continue
@@ -1182,67 +1217,60 @@ def read_raw_events(
             != str(manifest.event_schema_version).encode()
         ):
             raise RawDataIntegrityError(f"raw schema version mismatch: {manifest.data_file}")
-        table = parquet_file.read()
-        if table.num_rows != manifest.row_count:
+        if parquet_file.metadata.num_rows != manifest.row_count:
             raise RawDataIntegrityError(f"raw row count mismatch: {manifest.data_file}")
-        for row in table.to_pylist():
-            if markets is not None and row["market"] not in markets:
-                continue
-            if event_types is not None and row["event_type"] not in event_types:
-                continue
-            if (
-                maximum_exchange_timestamp_utc is not None
-                and row["exchange_timestamp"] > maximum_exchange_timestamp_utc
-            ):
-                continue
-            if (
-                minimum_received_at_utc is not None
-                and row["received_at_utc"] < minimum_received_at_utc
-            ):
-                continue
-            if (
-                maximum_received_at_utc is not None
-                and row["received_at_utc"] > maximum_received_at_utc
-            ):
-                continue
-            if exclude_marked_duplicates and row["is_duplicate"]:
-                continue
-            if exclude_quality_flagged_events and row["quality_flags"]:
-                continue
-            raw_text = row["raw_payload"]
-            if not isinstance(raw_text, str):
-                raise RawDataIntegrityError("raw payload column must contain text")
-            digest = sha256(raw_text.encode()).hexdigest()
-            if digest != row["raw_payload_hash"]:
-                raise RawDataIntegrityError("raw payload digest does not match its row")
-            try:
-                event = EventEnvelope(
-                    event_id=UUID(row["event_id"]),
-                    event_type=cast(EventType, row["event_type"]),
-                    schema_version=row["schema_version"],
-                    source=row["source"],
-                    market=row["market"],
-                    exchange_timestamp=row["exchange_timestamp"],
-                    received_at_utc=row["received_at_utc"],
-                    received_monotonic_ns=row["received_monotonic_ns"],
-                    connection_id=UUID(row["connection_id"]),
-                    subscription_id=row["subscription_id"],
-                    local_sequence=row["local_sequence"],
-                    raw_payload=decode_json_object(raw_text),
-                    raw_payload_text=raw_text,
-                    raw_payload_hash=digest,
-                    normalization_version=row["normalization_version"],
-                    is_snapshot=row["is_snapshot"],
-                    is_realtime=row["is_realtime"],
-                    is_duplicate=row["is_duplicate"],
-                    quality_flags=tuple(row["quality_flags"]),
+        for batch in parquet_file.iter_batches(batch_size=65_536):
+            _require_read_deadline(started_at, maximum_elapsed_seconds)
+            selected = _selected_research_batch(
+                batch,
+                event_type=manifest.event_type,
+                markets=markets,
+                maximum_exchange_timestamp_utc=maximum_exchange_timestamp_utc,
+                minimum_received_at_utc=minimum_received_at_utc,
+                maximum_received_at_utc=maximum_received_at_utc,
+                exclude_marked_duplicates=exclude_marked_duplicates,
+                exclude_quality_flagged_events=exclude_quality_flagged_events,
+            )
+            if maximum_events is not None and len(events) + selected.num_rows > maximum_events:
+                raise RawEventReadLimitError(
+                    f"raw event selection exceeds the {maximum_events} event limit"
                 )
-            except (TypeError, ValueError) as exc:
-                raise RawDataIntegrityError("raw row failed event-envelope validation") from exc
-            if event.ingress_latency_us != row["ingress_latency_us"]:
-                raise RawDataIntegrityError("raw row ingress latency does not match timestamps")
-            events.append(event)
-    return sorted(
+            for row in selected.to_pylist():
+                raw_text = row["raw_payload"]
+                if not isinstance(raw_text, str):
+                    raise RawDataIntegrityError("raw payload column must contain text")
+                digest = sha256(raw_text.encode()).hexdigest()
+                if digest != row["raw_payload_hash"]:
+                    raise RawDataIntegrityError("raw payload digest does not match its row")
+                try:
+                    event = EventEnvelope(
+                        event_id=UUID(row["event_id"]),
+                        event_type=cast(EventType, row["event_type"]),
+                        schema_version=row["schema_version"],
+                        source=row["source"],
+                        market=row["market"],
+                        exchange_timestamp=row["exchange_timestamp"],
+                        received_at_utc=row["received_at_utc"],
+                        received_monotonic_ns=row["received_monotonic_ns"],
+                        connection_id=UUID(row["connection_id"]),
+                        subscription_id=row["subscription_id"],
+                        local_sequence=row["local_sequence"],
+                        raw_payload=decode_json_object(raw_text),
+                        raw_payload_text=raw_text,
+                        raw_payload_hash=digest,
+                        normalization_version=row["normalization_version"],
+                        is_snapshot=row["is_snapshot"],
+                        is_realtime=row["is_realtime"],
+                        is_duplicate=row["is_duplicate"],
+                        quality_flags=tuple(row["quality_flags"]),
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise RawDataIntegrityError("raw row failed event-envelope validation") from exc
+                if event.ingress_latency_us != row["ingress_latency_us"]:
+                    raise RawDataIntegrityError("raw row ingress latency does not match timestamps")
+                events.append(event)
+    _require_read_deadline(started_at, maximum_elapsed_seconds)
+    ordered = sorted(
         events,
         key=lambda event: (
             event.received_at_utc,
@@ -1252,3 +1280,5 @@ def read_raw_events(
             str(event.event_id),
         ),
     )
+    _require_read_deadline(started_at, maximum_elapsed_seconds)
+    return ordered
