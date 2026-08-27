@@ -157,6 +157,8 @@ All notable changes are recorded here. The project follows semantic versioning o
   multiplicity control, and a sealed final holdout before trial execution.
 - A backward-readable dual-cutoff research selection contract that binds both exchange and local
   receive time, preventing later-arriving old events from changing a growing-feed preregistration.
+- Explicit duplicate-mark and quality-flag exclusion shared by research inventory and raw-event
+  loading, matching the clean-row basis of the 24-hour eligibility evidence without deleting data.
 - A checksummed detailed-event inventory plus deterministic long-only research engine that routes
   entries, profit/stop/time exits, latency, partial/non-fills, and all cost attribution through the
   conservative L2 paper broker and exact Decimal ledger.

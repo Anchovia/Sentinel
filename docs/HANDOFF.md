@@ -72,6 +72,9 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - The scanner also returns the exact active manifest-set hash captured at scan start. Require it to
   equal the new plan's lineage at preregistration; later compaction may change file layout but not a
   correctly preserved selected row hash.
+- The new plan must set both clean-row filters: exclude `is_duplicate=true` and every nonempty
+  `quality_flags` row. Inventory and event loading share these parameters; raw evidence remains
+  retained and unchanged.
 - The extension remains backward-readable for the historical plan, but every new plan must carry
   both UTC cutoffs. ADR-028 records this rule.
 - No trial or final holdout has been run. Next bind the eligible 24-hour retained rows to the exact

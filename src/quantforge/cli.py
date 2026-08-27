@@ -806,6 +806,8 @@ def assess_scalping_research(
         input_root,
         maximum_exchange_timestamp_utc=(plan.dataset_selection.maximum_exchange_timestamp_utc),
         maximum_received_at_utc=plan.dataset_selection.maximum_received_at_utc,
+        exclude_marked_duplicates=plan.dataset_selection.exclude_marked_duplicates,
+        exclude_quality_flagged_events=(plan.dataset_selection.exclude_quality_flagged_events),
     )
     sufficiency = evaluate_scalping_data_sufficiency(plan, inventory)
     if sufficiency.meets_requirements:

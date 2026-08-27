@@ -143,13 +143,15 @@ records reconcile trial/failure/holdout counts. All records form an append-only 
 Phase 11.6 adds three closed research contracts:
 
 - `scalping-experiment-plan-1` fixes the public-data exchange-time cutoff and, for new growing-feed
-  registrations, an additive local receive-time cutoff, plus availability/leakage rules, three
-  hypotheses, feature thresholds, entry/exit lifecycle, two execution-cost scenarios, data
-  minimums, chronological folds, metrics, decision limits, random seed, and false-only safety state.
+  registrations, an additive local receive-time cutoff and explicit marked-duplicate/quality-flag
+  exclusion, plus availability/leakage rules, three hypotheses, feature thresholds, entry/exit
+  lifecycle, two execution-cost scenarios, data minimums, chronological folds, metrics, decision
+  limits, random seed, and false-only safety state.
 - `raw-event-research-inventory-1` hashes selected detailed-event row identities and reports sorted
   per-market trade/orderbook counts plus first/last availability time. It records both applied UTC
   cutoffs and the exact scanned manifest-set hash; the receive bound excludes later-arriving old
-  exchange events. Compaction does not change the row identity hash.
+  exchange events, while fixed clean-row flags reproduce the 24-hour eligibility evidence.
+  Compaction does not change the row identity hash.
 - `scalping-backtest-1` binds plan/code/data/execution hashes to one market/rule/cost/fold replay and
   stores signals, orders, fills, closed trades, gross/net PnL, all execution costs, turnover,
   drawdown, win rate, holding time, exact portfolio state, and false-only network/order capability.

@@ -21,6 +21,10 @@ identity checks, then hashes the selected availability-ordered row identities. I
 exact active manifest-set hash captured at scan start so plan lineage and scanned files can be
 compared without racing a later compaction cycle.
 
+For the new short-horizon experiment, also bind exclusion of rows marked duplicate and rows with
+any nonempty ingestion quality flag. Apply identical options during inventory fingerprinting and raw
+event loading. Retain the excluded rows unchanged in raw storage for diagnostics and audit.
+
 Keep historical plans readable without inventing a receive bound for them. Do not mutate or
 reinterpret the original blocked experiment. A new eligible experiment uses a new identifier, exact
 committed code revision, both UTC cutoffs, manifest-set lineage, and the resulting row-identity hash.
@@ -32,6 +36,7 @@ final holdout, approve a model, enable paper orders, access authentication, or c
 
 - Later-arriving events cannot silently alter a registered growing-feed selection, even when their
   exchange timestamps precede the fixed exchange cutoff.
+- The eligible counts and future replay use the same clean-row rule as the validated 24-hour report.
 - Compaction may change manifest lineage, but not the selected row-identity hash when row content is
   preserved.
 - Existing version-1 artifacts remain valid and immutable; the additive field is required by policy

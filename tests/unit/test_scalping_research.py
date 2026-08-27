@@ -19,6 +19,7 @@ from quantforge.storage import (
     ParquetRawEventWriter,
     RawEventMarketInventory,
     RawEventResearchInventory,
+    read_raw_events,
     scan_raw_event_research_inventory,
 )
 
@@ -172,6 +173,43 @@ def test_inventory_scan_excludes_late_arrival_before_duplicate_checks(tmp_path: 
     assert inventory.maximum_received_at_utc == receive_cutoff
     assert inventory.selected_event_count == 1
     assert inventory.markets[0].trade_events == 1
+
+
+def test_inventory_and_reader_apply_registered_clean_row_filters(tmp_path: Path) -> None:
+    writer = ParquetRawEventWriter(tmp_path, max_rows=10)
+    writer.append(make_trade_event(sequence=1, exchange_offset_ms=100, received_offset_ms=100))
+    writer.append(
+        make_trade_event(
+            sequence=2,
+            exchange_offset_ms=200,
+            received_offset_ms=200,
+        ).model_copy(update={"is_duplicate": True})
+    )
+    writer.append(
+        make_trade_event(
+            sequence=3,
+            exchange_offset_ms=300,
+            received_offset_ms=300,
+        ).model_copy(update={"quality_flags": ("stale_at_ingress",)})
+    )
+    writer.close()
+
+    inventory = scan_raw_event_research_inventory(
+        tmp_path,
+        exclude_marked_duplicates=True,
+        exclude_quality_flagged_events=True,
+    )
+    events = read_raw_events(
+        tmp_path,
+        event_types=frozenset({"trade"}),
+        exclude_marked_duplicates=True,
+        exclude_quality_flagged_events=True,
+    )
+
+    assert inventory.exclude_marked_duplicates is True
+    assert inventory.exclude_quality_flagged_events is True
+    assert inventory.selected_event_count == 1
+    assert tuple(event.local_sequence for event in events) == (1,)
 
 
 def test_blocked_result_and_ledger_retain_no_trial_outcome(tmp_path: Path) -> None:

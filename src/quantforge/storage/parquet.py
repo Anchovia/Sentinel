@@ -161,6 +161,8 @@ class RawEventResearchInventory(BaseModel):
     manifest_set_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     maximum_exchange_timestamp_utc: datetime | None = None
     maximum_received_at_utc: datetime | None = None
+    exclude_marked_duplicates: bool = False
+    exclude_quality_flagged_events: bool = False
     selected_file_count: Annotated[int, Field(ge=0)]
     selected_event_count: Annotated[int, Field(ge=0)]
     markets: tuple[RawEventMarketInventory, ...]
@@ -738,6 +740,8 @@ def scan_raw_event_research_inventory(
     *,
     maximum_exchange_timestamp_utc: datetime | None = None,
     maximum_received_at_utc: datetime | None = None,
+    exclude_marked_duplicates: bool = False,
+    exclude_quality_flagged_events: bool = False,
 ) -> RawEventResearchInventory:
     """Verify and fingerprint detailed public rows without decoding payloads into events."""
 
@@ -761,6 +765,8 @@ def scan_raw_event_research_inventory(
         "connection_id",
         "local_sequence",
         "raw_payload_hash",
+        "is_duplicate",
+        "quality_flags",
     )
     active_records = tuple(
         sorted(_active_manifest_records(root), key=lambda item: item.manifest.data_file)
@@ -806,6 +812,10 @@ def scan_raw_event_research_inventory(
                     continue
                 received_at = cast(datetime, row["received_at_utc"])
                 if maximum_received_at_utc is not None and received_at > maximum_received_at_utc:
+                    continue
+                if exclude_marked_duplicates and cast(bool, row["is_duplicate"]):
+                    continue
+                if exclude_quality_flagged_events and cast(list[str], row["quality_flags"]):
                     continue
                 event_id = cast(str, row["event_id"])
                 if event_id in seen_event_ids:
@@ -875,6 +885,8 @@ def scan_raw_event_research_inventory(
         manifest_set_sha256=manifest_digest.hexdigest(),
         maximum_exchange_timestamp_utc=maximum_exchange_timestamp_utc,
         maximum_received_at_utc=maximum_received_at_utc,
+        exclude_marked_duplicates=exclude_marked_duplicates,
+        exclude_quality_flagged_events=exclude_quality_flagged_events,
         selected_file_count=selected_files,
         selected_event_count=len(identities),
         markets=markets,
@@ -889,6 +901,8 @@ def read_raw_events(
     maximum_exchange_timestamp_utc: datetime | None = None,
     minimum_received_at_utc: datetime | None = None,
     maximum_received_at_utc: datetime | None = None,
+    exclude_marked_duplicates: bool = False,
+    exclude_quality_flagged_events: bool = False,
 ) -> list[EventEnvelope]:
     """Verify selected manifests/checksums and reconstruct bounded immutable envelopes."""
 
@@ -957,6 +971,10 @@ def read_raw_events(
                 maximum_received_at_utc is not None
                 and row["received_at_utc"] > maximum_received_at_utc
             ):
+                continue
+            if exclude_marked_duplicates and row["is_duplicate"]:
+                continue
+            if exclude_quality_flagged_events and row["quality_flags"]:
                 continue
             raw_text = row["raw_payload"]
             if not isinstance(raw_text, str):

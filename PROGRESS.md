@@ -55,6 +55,9 @@
 - Bound each research inventory to the exact active manifest-set hash captured at scan start, so a
   preregistration can prove its plan lineage matched the files used to derive the row hash even when
   later compaction changes the active file layout.
+- Added plan-bound exclusion of marked duplicates and any quality-flagged row to both fingerprinting
+  and raw-event loading. This matches the 9,120,687-row clean scan used by the 24-hour report while
+  retaining every excluded raw row for audit.
 - Added regression coverage for old-plan compatibility, registration-time ordering, deterministic
   dual-cutoff scans, and late-arrival exclusion. No trial, backtest, final-holdout access, model
   approval, paper order, authenticated call, or live action occurred.

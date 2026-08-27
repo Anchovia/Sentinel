@@ -91,6 +91,8 @@ class DatasetSelectionPlan(_FrozenModel):
     manifest_set_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     maximum_exchange_timestamp_utc: datetime
     maximum_received_at_utc: datetime | None = None
+    exclude_marked_duplicates: bool = False
+    exclude_quality_flagged_events: bool = False
     availability_order: str = Field(min_length=1)
     market_scope: str = Field(min_length=1)
     final_holdout_fraction: Decimal = Field(gt=0, lt=1)

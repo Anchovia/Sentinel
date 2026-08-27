@@ -36,6 +36,11 @@ exchange event that arrives after registration cannot silently enter a later rec
 plans without the additive receive bound remain readable and immutable; they are not retrofitted or
 used as authority for a new dataset.
 
+The eligible short-horizon selection also excludes rows already marked duplicate and rows carrying
+any nonempty ingestion quality flag. The experiment plan, inventory, and event reader must bind and
+apply the same filters. Excluded rows remain retained in raw storage as audit evidence; they are not
+deleted or rewritten.
+
 ## Validation
 
 - Use chronological rolling or expanding walk-forward validation.
