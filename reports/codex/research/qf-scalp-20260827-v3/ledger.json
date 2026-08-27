@@ -1,5 +1,5 @@
 {
-  "chain_hash": "3c43e0f84136fcfe178b12f5939e02cafada5ad3f8525a557f16a56d126c8bdb",
+  "chain_hash": "931c7c18a0a6dc45f261f97ffac736350fc11291f176935ba1ae3d755d2e7099",
   "records": [
     {
       "experiment_id": "4f1b0494-87b8-538d-80eb-ae70d8d0b9f4",
@@ -22,6 +22,17 @@
       "recorded_at_utc": "2026-08-27T15:53:51.636435Z",
       "sequence": 2,
       "trial_id": "ae365d90-c6c8-5cf4-a9d7-e39b237e1f1d"
+    },
+    {
+      "experiment_id": "4f1b0494-87b8-538d-80eb-ae70d8d0b9f4",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":null,\"ended_at_utc\":\"2026-08-27T17:25:47.642047Z\",\"experiment_id\":\"4f1b0494-87b8-538d-80eb-ae70d8d0b9f4\",\"failure_reason\":\"RawEventReadTimeout: raw event read exceeded 13.8194 seconds\",\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"base\"],[\"fold\",\"2\"],[\"hypothesis\",\"H-SCALP-001\"]],\"metrics\":[],\"random_seed\":20260824,\"split_hash\":\"1d722844d029e5715a24a3855a85617aee7af853a6e2dbf7ae6c3b57c017d854\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-27T17:10:47.001585Z\",\"status\":\"failed\",\"trial_id\":\"72366e67-b0dc-5192-a2e2-2a6e4883373b\"}",
+      "previous_hash": "3c43e0f84136fcfe178b12f5939e02cafada5ad3f8525a557f16a56d126c8bdb",
+      "record_hash": "931c7c18a0a6dc45f261f97ffac736350fc11291f176935ba1ae3d755d2e7099",
+      "record_id": "dda8ed70-7fb9-509f-a5a9-fabaeb219037",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-27T17:25:47.642047Z",
+      "sequence": 3,
+      "trial_id": "72366e67-b0dc-5192-a2e2-2a6e4883373b"
     }
   ],
   "schema_version": 1
