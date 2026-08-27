@@ -122,6 +122,11 @@
 - Runner validation passes Ruff/format across 243 files, mypy across 118 source files, 403 tests
   split into 402 dedicated-worktree tests plus the primary-checkout boundary test at 85.01%
   coverage, 350-file Secret scanning, and `pip-audit` with no known vulnerabilities.
+- Preregistered `qf-scalp-20260828-v4` against runner revision `2f96729`, unchanged dataset/cutoff/
+  clean-row contracts, plan digest
+  `8d3a5fe1bcd5f22b16c0bc8fc7a93b8e2390581dc37eca068cf96a79b97057ee`, and registration chain
+  `8a1827182eecb96abd9306773ad5cc3c39fc28c3582090895c459ae53ba6678f`. Its one record fixes all
+  fifteen sorted markets and 270 trial cells; it contains no trial, decision, or holdout access.
 
 ## Six-hour operations-audit stabilization
 

@@ -131,6 +131,11 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   immutable execution plan before any trial.
 - Runner validation passes Ruff/format, strict mypy, all 403 tests (the primary-checkout boundary
   test was run in its required checkout), 85.01% coverage, Secret scanning, and dependency audit.
+- `research/experiments/2026-08-28-scalping-challenger-v4.{json,ledger.json}` is the new immutable
+  registration pair. It binds source `2f96729`, plan digest `8d3a5fe1bcd5f22b16c0bc8fc7a93b8e2390581dc37eca068cf96a79b97057ee`,
+  registration chain `8a1827182eecb96abd9306773ad5cc3c39fc28c3582090895c459ae53ba6678f`,
+  fifteen sorted markets, 270 cells, and no trial/decision/holdout access. Seal its execution plan
+  before running the first cell.
 
 ## Six-hour operations-audit stabilization
 

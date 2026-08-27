@@ -177,6 +177,9 @@ All notable changes are recorded here. The project follows semantic versioning o
 - A backward-compatible market-partitioned scalping execution contract that turns the fixed
   15-market scope into 270 one-market checkpoint units, retains exact v3 plan hashes, and keeps
   retries, performance-based market selection, final-holdout access, orders, and promotion absent.
+- A registration-only `qf-scalp-20260828-v4` ledger binding all 270 market-partitioned units to the
+  exact committed runner, unchanged fixed-cutoff dataset, complete metrics, and sealed holdout
+  before any v4 computation.
 - The first v3 work-unit ID retained as an infrastructure `FAILED` result after the isolated
   worktree report path was denied; no performance artifact or metric was inferred, the ID will not
   be retried, and final-holdout/order access remained absent.

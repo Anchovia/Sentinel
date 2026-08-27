@@ -39,6 +39,8 @@ V2_LEDGER_PATH = V2_PLAN_PATH.with_suffix(".ledger.json")
 V3_PLAN_PATH = V2_PLAN_PATH.with_name("2026-08-27-scalping-challenger-v3.json")
 V3_LEDGER_PATH = V3_PLAN_PATH.with_suffix(".ledger.json")
 V3_EXECUTION_PATH = V3_PLAN_PATH.with_suffix(".execution.json")
+V4_PLAN_PATH = V3_PLAN_PATH.with_name("2026-08-28-scalping-challenger-v4.json")
+V4_LEDGER_PATH = V4_PLAN_PATH.with_suffix(".ledger.json")
 DATASET_HASH = "a" * 64
 MANIFEST_HASH = "b" * 64
 SOURCE_REVISION = "2" * 40
@@ -329,6 +331,24 @@ def test_v3_registration_is_metric_complete_and_bound_to_runner_revision() -> No
     assert plan.source_revision == "a2e2593f9d2c598a5f7e1051e5f85cf8e770b264"
     assert plan.digest == "453f6e913ccb9d2e4c7df28d1e44edd250b336e89c6b6f3d66fb032bb5e29516"
     assert payload.planned_metrics == PLANNED_METRICS
+    assert len(registration.records) == 1
+
+
+def test_v4_registration_closes_exact_market_partition_space() -> None:
+    plan = load_scalping_experiment_plan(V4_PLAN_PATH)
+    registration = read_experiment_ledger(V4_LEDGER_PATH)
+
+    payload = validate_scalping_trial_registration_seed(plan, registration)
+    parameter_map = dict(payload.hyperparameter_space)
+
+    assert plan.source_revision == "2f9672973905a785eb0e10a8903b4b521a848185"
+    assert plan.digest == "8d3a5fe1bcd5f22b16c0bc8fc7a93b8e2390581dc37eca068cf96a79b97057ee"
+    assert plan.validation.planned_trial_count == 270
+    assert len(parameter_map["market"]) == 15
+    assert payload.planned_metrics == PLANNED_METRICS
+    assert registration.chain_hash == (
+        "8a1827182eecb96abd9306773ad5cc3c39fc28c3582090895c459ae53ba6678f"
+    )
     assert len(registration.records) == 1
 
 

@@ -29,8 +29,8 @@ performance-based market selection, retry, hidden-trial deletion, final-holdout 
 selection, order capability, or automatic promotion.
 
 Version-1 plans remain byte-hash compatible and continue to represent their historical global
-units. V3 and its two failed records remain immutable. V4 must be separately preregistered against
-the committed version-2 runner before its execution plan or any trial is produced.
+units. V3 and its two failed records remain immutable. V4 is separately preregistered against the
+committed version-2 runner; its execution plan must be sealed before any trial is produced.
 
 ## Consequences
 

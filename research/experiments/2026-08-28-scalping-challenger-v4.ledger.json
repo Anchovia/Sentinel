@@ -1,0 +1,17 @@
+{
+  "chain_hash": "8a1827182eecb96abd9306773ad5cc3c39fc28c3582090895c459ae53ba6678f",
+  "records": [
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"code_version\":\"2f9672973905a785eb0e10a8903b4b521a848185\",\"created_at_utc\":\"2026-08-27T17:46:07.520962Z\",\"dataset_hash\":\"4002405439cbe4afbedf64ea90a84be486640754a0a2de12a4d726760dae8fd6\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"feature_set\":\"realtime-feature-frame-1\",\"final_holdout_planned\":true,\"hyperparameter_space\":[[\"cost_scenario\",[\"base\",\"stress\"]],[\"fold\",[\"1\",\"2\",\"3\"]],[\"hypothesis\",[\"H-SCALP-001\",\"H-SCALP-002\",\"H-SCALP-003\"]],[\"market\",[\"KRW-BTC\",\"KRW-DRV\",\"KRW-ETH\",\"KRW-EUL\",\"KRW-FLUID\",\"KRW-GAS\",\"KRW-META2\",\"KRW-ONG\",\"KRW-ONT\",\"KRW-PROM\",\"KRW-SOL\",\"KRW-STX\",\"KRW-TRUMP\",\"KRW-USDT\",\"KRW-XRP\"]]],\"hypothesis_id\":\"H-SCALP-001+H-SCALP-002+H-SCALP-003\",\"label_version\":\"cost-inclusive-round-trip-v1\",\"model_family\":\"preregistered-market-partitioned-deterministic-rules\",\"planned_cost_model\":\"conservative_l2 base and stress; one market per work unit; maximum_events=500000; maximum_elapsed_seconds=900; plan_sha256=8d3a5fe1bcd5f22b16c0bc8fc7a93b8e2390581dc37eca068cf96a79b97057ee\",\"planned_metrics\":[\"adverse_selection_cost\",\"average_holding_seconds\",\"closed_trade_count\",\"fees\",\"gross_pnl\",\"maximum_drawdown\",\"median_closed_trade_net_return_bps\",\"net_pnl\",\"non_fill_order_count\",\"slippage_cost\",\"spread_cost\",\"turnover\",\"win_rate\"],\"planned_splits\":[\"validation\",\"test\",\"final_holdout\"],\"researcher\":\"codex-interactive\",\"status\":\"preregistered\"}",
+      "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "record_hash": "8a1827182eecb96abd9306773ad5cc3c39fc28c3582090895c459ae53ba6678f",
+      "record_id": "148102a9-a73a-52d2-b8ba-542bef28955c",
+      "record_type": "registration",
+      "recorded_at_utc": "2026-08-27T17:46:07.520962Z",
+      "sequence": 1,
+      "trial_id": null
+    }
+  ],
+  "schema_version": 1
+}
