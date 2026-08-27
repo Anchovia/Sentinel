@@ -73,7 +73,7 @@
   `def61b40829c66084f2586594047ba439f63259fae7f841b0f27618caff241ab` and improved from 30.900 to
   0.936 seconds (26,697.8 rows/second), about 33 times faster.
 - Full validation passes: Ruff and format across 242 files, mypy across 118 source files, 401 tests
-  at 85.08% coverage, 542-file Secret scanning, and the unchanged dependency set's prior
+  at 85.08% coverage, 550-file Secret scanning, and the unchanged dependency set's prior
   `pip-audit` with no known vulnerabilities.
 - The committed fixed-cutoff scan completed in 451.509 seconds under the 900-second limit. It
   selected 9,157,974 clean detailed rows from 147 files, produced dataset hash
@@ -98,9 +98,16 @@
 - Revalidated all 9,157,974 selected events and obtained the same fixed dataset hash. The immutable
   v3 execution plan has digest `c692a59d9704a0a8e9fd4ccd587a3f4c0d6a2a7a42ef85f0e3e6b5a24ca3122a`,
   15 eligible markets, 12 validation and six test work units across three windows, and a sealed
-  final-holdout boundary. No actual trial has run.
-- ADR-028 records selection; ADR-029 records bounded execution. The next research action is work
-  unit 1/18 through the one-unit command; keep the final holdout sealed.
+  final-holdout boundary.
+- Attempted work unit 1/18 (`ae365d90-c6c8-5cf4-a9d7-e39b237e1f1d`, H-SCALP-001/base/fold-1)
+  from a dedicated worktree. The managed sandbox denied the worktree-local report directory before
+  any durable metric or artifact existed. The working ledger therefore retains the ID as
+  infrastructure `FAILED`, with no metrics, no artifact, and chain hash
+  `3c43e0f84136fcfe178b12f5939e02cafada5ad3f8525a557f16a56d126c8bdb`; it must not be retried.
+- ADR-028 records selection; ADR-029 records bounded execution and this first failure. The next
+  research action is work unit 2/18 (`72366e67-b0dc-5192-a2e2-2a6e4883373b`) using the primary
+  workspace's approved report path while the exact registered code runs in the dedicated worktree.
+  Keep the final holdout sealed.
 
 ## Six-hour operations-audit stabilization
 

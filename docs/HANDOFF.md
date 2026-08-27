@@ -92,7 +92,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   It binds runner revision `a2e2593`, the unchanged fixed-cutoff dataset, all thirteen emitted
   metrics, plan digest `453f6e913ccb9d2e4c7df28d1e44edd250b336e89c6b6f3d66fb032bb5e29516`,
   and registration chain hash `cbb48e99cf40acaa7598e048ae434652f20a2751a942cf8ae9610c0813db696d`.
-  Its ledger contains only the registration; no trial, decision, or holdout access exists.
+  Its committed seed ledger contains only the registration; no decision or holdout access exists.
 - Do not restore the original row-wise fingerprint implementation. Its first full clean scan was
   stopped after 118 minutes and roughly 1.77GB of Python identity state without producing a result.
 - The replacement uses bounded Arrow batches and ephemeral fixed-width identity/event-ID runs. Its
@@ -102,7 +102,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   improving from 30.900 to 0.936 seconds. Keep the 900-second cap on future fingerprints; a timeout
   remains a valid no-result outcome.
 - Validation passes Ruff/format across 242 files, mypy across 118 source files, 401 tests at 85.08%
-  coverage, 542-file Secret scanning, and the unchanged dependency set's prior audit with no known
+  coverage, 550-file Secret scanning, and the unchanged dependency set's prior audit with no known
   vulnerabilities.
 - The bounded runner is implemented but has not executed a market trial. It creates three
   deterministic purged/embargoed windows, fixes all 18 UUIDs and work limits, executes only the next
@@ -110,8 +110,14 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - `research/experiments/2026-08-27-scalping-challenger-v3.execution.json` revalidated the exact
   9,157,974-row hash and seals 15 markets, three windows, 12 validation/six test work units, and
   digest `c692a59d9704a0a8e9fd4ccd587a3f4c0d6a2a7a42ef85f0e3e6b5a24ca3122a`.
-- Next run only work unit 1/18 through `run-next-scalping-trial`. Keep the final holdout sealed and
-  retain any null or failure result without retrying its trial ID.
+- Work unit 1/18 (`ae365d90-c6c8-5cf4-a9d7-e39b237e1f1d`) was attempted from dedicated worktree
+  `codex/scalping-trial-1`, but its worktree-local report path was outside the managed write root.
+  No durable research metric or artifact was produced. The committed working ledger under
+  `reports/codex/research/qf-scalp-20260827-v3/ledger.json` consumes it as infrastructure `FAILED`
+  under chain hash `3c43e0f84136fcfe178b12f5939e02cafada5ad3f8525a557f16a56d126c8bdb`.
+- Do not retry work unit 1. Next run only work unit 2/18
+  (`72366e67-b0dc-5192-a2e2-2a6e4883373b`) from the dedicated worktree, but pass the approved
+  primary-workspace report/ledger path explicitly. Keep the final holdout sealed.
 
 ## Six-hour operations-audit stabilization
 

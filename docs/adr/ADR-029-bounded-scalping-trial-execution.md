@@ -56,3 +56,13 @@ change, paper-order gate, or live action.
   execution plan now seals all eighteen work units under digest `c692a59d9704a0a8e9fd4ccd587a3f4c0d6a2a7a42ef85f0e3e6b5a24ca3122a`.
 - The final holdout remains sealed. Opening it still requires a separate reviewed one-shot path and
   is deliberately absent from this runner.
+
+## First execution evidence
+
+The first registered work unit was attempted in a dedicated worktree, but the managed filesystem
+denied creation of its worktree-local `reports/codex/research` directory. No durable strategy metric
+or artifact survived, so the outcome is unavailable rather than positive, negative, or null. The
+trial ID is consumed as infrastructure `FAILED` and is not rerun. Subsequent units must keep code
+execution in the dedicated worktree while resolving ledger and artifact destinations to the
+approved primary-workspace report root before computation. This changes no trial parameter, source
+revision, data selection, or final-holdout boundary.

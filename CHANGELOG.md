@@ -174,6 +174,9 @@ All notable changes are recorded here. The project follows semantic versioning o
   hash chain with no trial or holdout access.
 - An immutable v3 execution plan sealing 15 eligible markets, three chronological non-holdout
   windows, all 18 validation/test work-unit UUIDs, and the fixed event/time limits before execution.
+- The first v3 work-unit ID retained as an infrastructure `FAILED` result after the isolated
+  worktree report path was denied; no performance artifact or metric was inferred, the ID will not
+  be retried, and final-holdout/order access remained absent.
 - A checksummed detailed-event inventory plus deterministic long-only research engine that routes
   entries, profit/stop/time exits, latency, partial/non-fills, and all cost attribution through the
   conservative L2 paper broker and exact Decimal ledger.
