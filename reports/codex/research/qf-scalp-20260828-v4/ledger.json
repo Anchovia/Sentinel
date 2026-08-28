@@ -1,5 +1,5 @@
 {
-  "chain_hash": "99f047a93a238b354c64967d73eb7633e108375ebd79dd1568b739bb20766dd0",
+  "chain_hash": "6bd0155aa1acf540efc291d03fbd13e408681e3124dcc99e129bed491d58f91b",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -836,6 +836,17 @@
       "recorded_at_utc": "2026-08-28T22:39:37.523610Z",
       "sequence": 76,
       "trial_id": "8b7cf95d-aaf8-587a-8abb-e70761c7fcbc"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"d953132ccb9064cc8846a2afc59434461ec824f2fab6ccbd462a4b2dd33ae3dd\",\"ended_at_utc\":\"2026-08-28T22:46:47.868819Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"stress\"],[\"fold\",\"3\"],[\"hypothesis\",\"H-SCALP-001\"],[\"market\",\"KRW-BTC\"]],\"metrics\":[[\"adverse_selection_cost\",0.0],[\"closed_trade_count\",0.0],[\"fees\",0.0],[\"gross_pnl\",0.0],[\"maximum_drawdown\",0.0],[\"net_pnl\",0.0],[\"non_fill_order_count\",0.0],[\"slippage_cost\",0.0],[\"spread_cost\",0.0],[\"turnover\",0.0]],\"random_seed\":20260824,\"split_hash\":\"7a0117108ba460c62f545ada13257694670c091d91f340e565c6289a60d01cf5\",\"split_role\":\"test\",\"started_at_utc\":\"2026-08-28T22:39:45.444688Z\",\"status\":\"succeeded\",\"trial_id\":\"18c8852c-121e-548d-b297-36c9f8474203\"}",
+      "previous_hash": "99f047a93a238b354c64967d73eb7633e108375ebd79dd1568b739bb20766dd0",
+      "record_hash": "6bd0155aa1acf540efc291d03fbd13e408681e3124dcc99e129bed491d58f91b",
+      "record_id": "f6622ef4-69ad-5fdc-9e8e-e95dc978f981",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-28T22:46:47.868819Z",
+      "sequence": 77,
+      "trial_id": "18c8852c-121e-548d-b297-36c9f8474203"
     }
   ],
   "schema_version": 1
