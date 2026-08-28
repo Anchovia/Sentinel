@@ -50,3 +50,18 @@ current detailed files reproduced the registered 9,157,974 rows and dataset hash
 digest `b4d60606d0ac6234c97f847fd0311322c857d0eb5d05ff77e9fa2a3db2564446` seals 180 validation and
 90 test units with matching 500,000 per-market/total-event limits and a 900-second wall limit. No
 trial or final-holdout access occurred while producing this evidence.
+
+## First-unit evidence
+
+The first fixed-order unit (`f8be3a4c-8643-5713-8cf7-d83435735202`) executed once in dedicated
+worktree `codex/scalping-v4-trial-1`. H-SCALP-001/base/fold-1/validation on KRW-BTC consumed 185,798
+events and completed in 581.188 seconds, within both registered limits. The candidate closed 13
+trades with Decimal net PnL `-195.319631205956800`; the identical-input always-neutral baseline was
+`0`. The result is negative evidence for this one market cell and cannot stand in for the planned
+fifteen-market aggregate or an experiment decision.
+
+The append-only working ledger contains the registration plus this one succeeded trial and has chain
+hash `e1c8a9cbee678f5d75fc804b207f86248d88523d1787bab3fb5bb5fb29d09b22`. The immutable artifact's
+semantic digest is `837835a5cacd5f6c8601f12580d8f4a6b630e242dcac9d40bb29c50c8e67de3b`. No champion existed,
+and no final-holdout access, authentication, private or order network, real order, promotion, or live
+submission occurred. The runner did not start a second unit automatically.

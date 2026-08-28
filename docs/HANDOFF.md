@@ -141,7 +141,20 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   files. The execution digest is `b4d60606d0ac6234c97f847fd0311322c857d0eb5d05ff77e9fa2a3db2564446`;
   it fixes 180 validation/90 test units and 500,000-event/900-second limits. The earlier apparent
   checksum failure was an incorrect parent input-root argument; direct hashing matched the manifest
-  and no raw data was changed. No v4 trial has run.
+  and no raw data was changed.
+- V4 work unit 1/270 (`f8be3a4c-8643-5713-8cf7-d83435735202`) ran once from dedicated worktree
+  `codex/scalping-v4-trial-1`. The H-SCALP-001/base/fold-1 validation unit read only KRW-BTC,
+  completed in 581.188 seconds with 185,798 events, and retained 13 closed candidate trades with
+  net PnL `-195.319631205956800`; the identical-input neutral baseline remained `0`. Treat this as
+  negative evidence for one predetermined market cell, not as a completed 15-market aggregate or a
+  final hypothesis decision.
+- The durable v4 working ledger is
+  `reports/codex/research/qf-scalp-20260828-v4/ledger.json`; it has exactly one trial after the
+  registration and chain hash `e1c8a9cbee678f5d75fc804b207f86248d88523d1787bab3fb5bb5fb29d09b22`.
+  The adjacent trial artifact has semantic digest
+  `837835a5cacd5f6c8601f12580d8f4a6b630e242dcac9d40bb29c50c8e67de3b`. Final holdout,
+  champion comparison, authentication, private/order network use, real orders, promotion, and live
+  submission all remained absent. Do not retry this consumed ID or skip ahead in the fixed order.
 
 ## Six-hour operations-audit stabilization
 
@@ -429,8 +442,10 @@ first invalid six-hour JSON retained; two later unattended manifests validated s
 1. Keep paper mode. Observe bounded mounted-data maintenance across hour/day boundaries and under real
    disk growth; verify compaction, retention pressure, restarts, coverage, gaps, parser failures, and
    reconnects without treating uptime as readiness.
-2. Preregister falsifiable alpha and exit hypotheses, run cost-inclusive chronological challengers,
-   preserve negative results, and present any candidate artifact for separate human paper review.
+2. Continue the fixed v4 order one bounded market unit at a time, preserving every negative, null,
+   failed, and positive result. Do not interpret partial market cells as an aggregate, access the
+   final holdout, or present a candidate for human paper review before the preregistered comparison
+   and multiplicity rules are satisfied.
 3. Exercise the reviewed acknowledgement only if an actual paper incident creates a persistent
    recovery block; preserve the interrupted evidence and never manufacture an incident to force a
    successful receipt. Model approval and the paper-order gate remain separate.

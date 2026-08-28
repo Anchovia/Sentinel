@@ -182,6 +182,11 @@ All notable changes are recorded here. The project follows semantic versioning o
   before any v4 computation.
 - An immutable v4 execution plan revalidating all 9,157,974 fixed-cutoff rows and sealing 180
   validation plus 90 test market units, 500,000-event/900-second bounds, and false-only safety state.
+- The first v4 market unit retained as reproducible negative validation evidence: H-SCALP-001 base
+  fold 1 on KRW-BTC processed 185,798 events in 581.188 seconds, closed 13 candidate trades, and
+  produced Decimal net PnL `-195.319631205956800` versus an identical-input neutral baseline of
+  zero. Its hash-chained ledger and immutable artifact preserve the result without holdout access,
+  champion selection, authentication, orders, promotion, or any automatic next-trial execution.
 - The first v3 work-unit ID retained as an infrastructure `FAILED` result after the isolated
   worktree report path was denied; no performance artifact or metric was inferred, the ID will not
   be retried, and final-holdout/order access remained absent.

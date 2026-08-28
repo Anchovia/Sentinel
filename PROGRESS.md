@@ -135,8 +135,18 @@
 - The immutable v4 execution plan has observed manifest-set hash
   `524e3cc94c207191c3a93394fc91c44bd5410566fd64db49ee92f5029cc19101`, digest
   `b4d60606d0ac6234c97f847fd0311322c857d0eb5d05ff77e9fa2a3db2564446`, 180 validation and 90
-  test units, matching 500,000 per-market/total-event caps, and a 900-second wall limit. No v4 trial,
-  final-holdout access, decision, authentication, private network, or order action occurred.
+  test units, matching 500,000 per-market/total-event caps, and a 900-second wall limit.
+- Ran exactly v4 work unit 1/270 (`f8be3a4c-8643-5713-8cf7-d83435735202`,
+  H-SCALP-001/base/fold-1/validation/KRW-BTC) from dedicated worktree
+  `codex/scalping-v4-trial-1`. It completed in 581.188 seconds over 185,798 fixed-cutoff events.
+  The candidate closed 13 trades and produced Decimal net PnL `-195.319631205956800` versus the
+  identical-input always-neutral baseline's `0`; this is retained negative validation evidence for
+  one market cell, not a completed cross-market hypothesis result.
+- The v4 working ledger now contains the registration plus exactly one succeeded trial under chain
+  hash `e1c8a9cbee678f5d75fc804b207f86248d88523d1787bab3fb5bb5fb29d09b22`. Artifact digest is
+  `837835a5cacd5f6c8601f12580d8f4a6b630e242dcac9d40bb29c50c8e67de3b`; final holdout,
+  champion comparison, decision, authentication, private network, order network, real orders, and
+  live submission all remained absent.
 
 ## Six-hour operations-audit stabilization
 

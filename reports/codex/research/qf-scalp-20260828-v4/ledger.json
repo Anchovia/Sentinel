@@ -1,0 +1,28 @@
+{
+  "chain_hash": "e1c8a9cbee678f5d75fc804b207f86248d88523d1787bab3fb5bb5fb29d09b22",
+  "records": [
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"code_version\":\"2f9672973905a785eb0e10a8903b4b521a848185\",\"created_at_utc\":\"2026-08-27T17:46:07.520962Z\",\"dataset_hash\":\"4002405439cbe4afbedf64ea90a84be486640754a0a2de12a4d726760dae8fd6\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"feature_set\":\"realtime-feature-frame-1\",\"final_holdout_planned\":true,\"hyperparameter_space\":[[\"cost_scenario\",[\"base\",\"stress\"]],[\"fold\",[\"1\",\"2\",\"3\"]],[\"hypothesis\",[\"H-SCALP-001\",\"H-SCALP-002\",\"H-SCALP-003\"]],[\"market\",[\"KRW-BTC\",\"KRW-DRV\",\"KRW-ETH\",\"KRW-EUL\",\"KRW-FLUID\",\"KRW-GAS\",\"KRW-META2\",\"KRW-ONG\",\"KRW-ONT\",\"KRW-PROM\",\"KRW-SOL\",\"KRW-STX\",\"KRW-TRUMP\",\"KRW-USDT\",\"KRW-XRP\"]]],\"hypothesis_id\":\"H-SCALP-001+H-SCALP-002+H-SCALP-003\",\"label_version\":\"cost-inclusive-round-trip-v1\",\"model_family\":\"preregistered-market-partitioned-deterministic-rules\",\"planned_cost_model\":\"conservative_l2 base and stress; one market per work unit; maximum_events=500000; maximum_elapsed_seconds=900; plan_sha256=8d3a5fe1bcd5f22b16c0bc8fc7a93b8e2390581dc37eca068cf96a79b97057ee\",\"planned_metrics\":[\"adverse_selection_cost\",\"average_holding_seconds\",\"closed_trade_count\",\"fees\",\"gross_pnl\",\"maximum_drawdown\",\"median_closed_trade_net_return_bps\",\"net_pnl\",\"non_fill_order_count\",\"slippage_cost\",\"spread_cost\",\"turnover\",\"win_rate\"],\"planned_splits\":[\"validation\",\"test\",\"final_holdout\"],\"researcher\":\"codex-interactive\",\"status\":\"preregistered\"}",
+      "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "record_hash": "8a1827182eecb96abd9306773ad5cc3c39fc28c3582090895c459ae53ba6678f",
+      "record_id": "148102a9-a73a-52d2-b8ba-542bef28955c",
+      "record_type": "registration",
+      "recorded_at_utc": "2026-08-27T17:46:07.520962Z",
+      "sequence": 1,
+      "trial_id": null
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"837835a5cacd5f6c8601f12580d8f4a6b630e242dcac9d40bb29c50c8e67de3b\",\"ended_at_utc\":\"2026-08-28T12:41:10.886768Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"base\"],[\"fold\",\"1\"],[\"hypothesis\",\"H-SCALP-001\"],[\"market\",\"KRW-BTC\"]],\"metrics\":[[\"adverse_selection_cost\",52.0039802776],[\"average_holding_seconds\",28.751992076923077],[\"closed_trade_count\",13.0],[\"fees\",130.0099487895568],[\"gross_pnl\",-65.3096824164],[\"maximum_drawdown\",231.6939350679558],[\"median_closed_trade_net_return_bps\",-17.729842537009187],[\"net_pnl\",-195.3196312059568],[\"non_fill_order_count\",0.0],[\"slippage_cost\",26.0019901388],[\"spread_cost\",63.314907],[\"turnover\",260019.8975791136],[\"win_rate\",0.07692307692307693]],\"random_seed\":20260824,\"split_hash\":\"9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-28T12:31:29.698481Z\",\"status\":\"succeeded\",\"trial_id\":\"f8be3a4c-8643-5713-8cf7-d83435735202\"}",
+      "previous_hash": "8a1827182eecb96abd9306773ad5cc3c39fc28c3582090895c459ae53ba6678f",
+      "record_hash": "e1c8a9cbee678f5d75fc804b207f86248d88523d1787bab3fb5bb5fb29d09b22",
+      "record_id": "fef6a4ae-587a-5a26-a572-4161d84ac73d",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-28T12:41:10.886768Z",
+      "sequence": 2,
+      "trial_id": "f8be3a4c-8643-5713-8cf7-d83435735202"
+    }
+  ],
+  "schema_version": 1
+}
