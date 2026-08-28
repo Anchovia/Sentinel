@@ -1,5 +1,5 @@
 {
-  "chain_hash": "a59cd5835f798d81deec2f487da316b7831f94f73423a39a948a5f8a159f2b3c",
+  "chain_hash": "ee7c9ae099063c1c53aa27ac51a7ef627b4a7854059c377ab7ca505ec97ddc3d",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -671,6 +671,17 @@
       "recorded_at_utc": "2026-08-28T21:53:07.161736Z",
       "sequence": 61,
       "trial_id": "a4eceb11-050a-5fcf-b7e3-e99126399b19"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"c4760cd1f84c88e3eeaddc59f4a923c09e72a6361dcf30f340decec22ee33fcb\",\"ended_at_utc\":\"2026-08-28T22:00:56.053770Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"stress\"],[\"fold\",\"2\"],[\"hypothesis\",\"H-SCALP-001\"],[\"market\",\"KRW-BTC\"]],\"metrics\":[[\"adverse_selection_cost\",19.995659225],[\"average_holding_seconds\",30.3965125],[\"closed_trade_count\",2.0],[\"fees\",19.995664624148],[\"gross_pnl\",-45.49092476],[\"maximum_drawdown\",65.486589384148],[\"median_closed_trade_net_return_bps\",-32.69647518477045],[\"net_pnl\",-65.486589384148],[\"non_fill_order_count\",0.0],[\"slippage_cost\",11.997395535],[\"spread_cost\",13.132355],[\"turnover\",39991.329248296],[\"win_rate\",0.0]],\"random_seed\":20260824,\"split_hash\":\"1d722844d029e5715a24a3855a85617aee7af853a6e2dbf7ae6c3b57c017d854\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-28T21:53:25.213063Z\",\"status\":\"succeeded\",\"trial_id\":\"900df9d1-6102-5164-ad12-7c2db8996daf\"}",
+      "previous_hash": "a59cd5835f798d81deec2f487da316b7831f94f73423a39a948a5f8a159f2b3c",
+      "record_hash": "ee7c9ae099063c1c53aa27ac51a7ef627b4a7854059c377ab7ca505ec97ddc3d",
+      "record_id": "5b0e4c97-3934-5a8e-9883-73a0585ef731",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-28T22:00:56.053770Z",
+      "sequence": 62,
+      "trial_id": "900df9d1-6102-5164-ad12-7c2db8996daf"
     }
   ],
   "schema_version": 1
