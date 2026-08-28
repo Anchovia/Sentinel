@@ -1,5 +1,5 @@
 {
-  "chain_hash": "34862d466cf47e062d67ab7c1e9330efe7af851a1afd665893bf948ee08fe570",
+  "chain_hash": "333bb1149cd388e384b01e77a592fd4d7835a4042c0ad3dcd5a09c1254624d1e",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -726,6 +726,17 @@
       "recorded_at_utc": "2026-08-28T22:09:08.711795Z",
       "sequence": 66,
       "trial_id": "1a049ca1-1f3f-517d-bd90-76d4122366a7"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"7e891b560206873bb65cae40f7bf87dfa2bcde3c58b0bad3794f7a83344a992b\",\"ended_at_utc\":\"2026-08-28T22:09:59.718619Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"stress\"],[\"fold\",\"2\"],[\"hypothesis\",\"H-SCALP-001\"],[\"market\",\"KRW-GAS\"]],\"metrics\":[[\"adverse_selection_cost\",19.99188927832],[\"average_holding_seconds\",10.302565],[\"closed_trade_count\",2.0],[\"fees\",19.99191817721728],[\"gross_pnl\",-104.234266045312],[\"maximum_drawdown\",124.22618422252928],[\"median_closed_trade_net_return_bps\",-61.95244495013683],[\"net_pnl\",-124.22618422252928],[\"non_fill_order_count\",0.0],[\"slippage_cost\",11.995133566992],[\"spread_cost\",55.7000838],[\"turnover\",39983.83635443456],[\"win_rate\",0.0]],\"random_seed\":20260824,\"split_hash\":\"1d722844d029e5715a24a3855a85617aee7af853a6e2dbf7ae6c3b57c017d854\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-28T22:09:16.748390Z\",\"status\":\"succeeded\",\"trial_id\":\"7e963d59-2807-5002-b316-95882ee089d4\"}",
+      "previous_hash": "34862d466cf47e062d67ab7c1e9330efe7af851a1afd665893bf948ee08fe570",
+      "record_hash": "333bb1149cd388e384b01e77a592fd4d7835a4042c0ad3dcd5a09c1254624d1e",
+      "record_id": "9b8b5ae0-b1e8-56fa-8618-e7ec881bfa19",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-28T22:09:59.718619Z",
+      "sequence": 67,
+      "trial_id": "7e963d59-2807-5002-b316-95882ee089d4"
     }
   ],
   "schema_version": 1
