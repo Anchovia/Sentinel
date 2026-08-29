@@ -1,5 +1,5 @@
 {
-  "chain_hash": "b09ea54d1faac04a7f05a6f350252f1deb70cbba6643fd7f77bbec74e6bae0fb",
+  "chain_hash": "c6168c29671e8e863046435e12b0ea7674eb71fcee1764477c85e18f12c0a2de",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -2508,6 +2508,17 @@
       "recorded_at_utc": "2026-08-29T09:43:52.396225Z",
       "sequence": 228,
       "trial_id": "23d1da4f-ccee-5568-9f87-a0b47147f763"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"568cd8b188d979471df94fe3e90b65c8c0713e8602a949a0cc551398284c8ae1\",\"ended_at_utc\":\"2026-08-29T09:49:40.704206Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"stress\"],[\"fold\",\"1\"],[\"hypothesis\",\"H-SCALP-003\"],[\"market\",\"KRW-ETH\"]],\"metrics\":[[\"adverse_selection_cost\",50.023417895],[\"average_holding_seconds\",24.5170508],[\"closed_trade_count\",5.0],[\"fees\",50.023408443396],[\"gross_pnl\",-56.408458632],[\"maximum_drawdown\",137.738489185516],[\"median_closed_trade_net_return_bps\",-23.046434397973513],[\"net_pnl\",-106.431867075396],[\"non_fill_order_count\",0.0],[\"slippage_cost\",30.014050737],[\"spread_cost\",35.163105],[\"turnover\",100046.816886792],[\"win_rate\",0.2]],\"random_seed\":20260824,\"split_hash\":\"9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-29T09:44:01.397216Z\",\"status\":\"succeeded\",\"trial_id\":\"1cac599f-dffd-5b13-9f1a-948b9e8a260f\"}",
+      "previous_hash": "b09ea54d1faac04a7f05a6f350252f1deb70cbba6643fd7f77bbec74e6bae0fb",
+      "record_hash": "c6168c29671e8e863046435e12b0ea7674eb71fcee1764477c85e18f12c0a2de",
+      "record_id": "19ac3fa4-2f27-5a86-9b3b-e09ab3c42e62",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T09:49:40.704206Z",
+      "sequence": 229,
+      "trial_id": "1cac599f-dffd-5b13-9f1a-948b9e8a260f"
     }
   ],
   "schema_version": 1
