@@ -1,5 +1,5 @@
 {
-  "chain_hash": "c6168c29671e8e863046435e12b0ea7674eb71fcee1764477c85e18f12c0a2de",
+  "chain_hash": "ed4868cb431eb0ec173d3e7da54e3db3901627040372be11bf942d42dadffcb2",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -2519,6 +2519,17 @@
       "recorded_at_utc": "2026-08-29T09:49:40.704206Z",
       "sequence": 229,
       "trial_id": "1cac599f-dffd-5b13-9f1a-948b9e8a260f"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"f428fa8a8eb54e93e75c8c5b46914e9bd1bfe56b98e9cd55c77e656c38e06d59\",\"ended_at_utc\":\"2026-08-29T09:51:00.217490Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"stress\"],[\"fold\",\"1\"],[\"hypothesis\",\"H-SCALP-003\"],[\"market\",\"KRW-EUL\"]],\"metrics\":[[\"adverse_selection_cost\",9.994994985],[\"average_holding_seconds\",0.30824],[\"closed_trade_count\",1.0],[\"fees\",9.995006997012],[\"gross_pnl\",-46.022021976],[\"maximum_drawdown\",56.017028973012],[\"median_closed_trade_net_return_bps\",-55.88833480941384],[\"net_pnl\",-56.017028973012],[\"non_fill_order_count\",0.0],[\"slippage_cost\",5.996996991],[\"spread_cost\",27.5275275],[\"turnover\",19990.013994024],[\"win_rate\",0.0]],\"random_seed\":20260824,\"split_hash\":\"9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-29T09:49:48.638102Z\",\"status\":\"succeeded\",\"trial_id\":\"d9ca87c9-5d94-56ba-92c9-9d14e215e20c\"}",
+      "previous_hash": "c6168c29671e8e863046435e12b0ea7674eb71fcee1764477c85e18f12c0a2de",
+      "record_hash": "ed4868cb431eb0ec173d3e7da54e3db3901627040372be11bf942d42dadffcb2",
+      "record_id": "f73f31bf-cc13-5c65-9477-e4c2b5e0d60d",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T09:51:00.217490Z",
+      "sequence": 230,
+      "trial_id": "d9ca87c9-5d94-56ba-92c9-9d14e215e20c"
     }
   ],
   "schema_version": 1
