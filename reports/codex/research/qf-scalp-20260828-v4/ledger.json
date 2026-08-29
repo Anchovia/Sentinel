@@ -1,5 +1,5 @@
 {
-  "chain_hash": "7749064b3d7908012fb65d6c53dc8f2a5cc6a278d72a19c874357196adf62792",
+  "chain_hash": "30a80027cc9545e5ee3e827e074154d796910dc772db5b0b8f647514e1fb9556",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -2013,6 +2013,17 @@
       "recorded_at_utc": "2026-08-29T07:06:19.268357Z",
       "sequence": 183,
       "trial_id": "9304a505-6a27-54b8-9822-4413e1711e83"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"3faf383521bfbe48d1e8190069d0c5a8bccee2407f2194931515d2ca1d8ab5c5\",\"ended_at_utc\":\"2026-08-29T07:11:40.913890Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"base\"],[\"fold\",\"1\"],[\"hypothesis\",\"H-SCALP-003\"],[\"market\",\"KRW-ETH\"]],\"metrics\":[[\"adverse_selection_cost\",20.008192762],[\"average_holding_seconds\",26.05845],[\"closed_trade_count\",5.0],[\"fees\",50.0204792414455],[\"gross_pnl\",-12.255259143],[\"maximum_drawdown\",100.6507803694905],[\"median_closed_trade_net_return_bps\",-13.064487463236853],[\"net_pnl\",-62.2757383844455],[\"non_fill_order_count\",0.0],[\"slippage_cost\",10.004096381],[\"spread_cost\",35.17125],[\"turnover\",100040.958482891],[\"win_rate\",0.2]],\"random_seed\":20260824,\"split_hash\":\"9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-29T07:06:28.404391Z\",\"status\":\"succeeded\",\"trial_id\":\"d4d66c9a-ba05-5d9a-b43f-c4bdddedd431\"}",
+      "previous_hash": "7749064b3d7908012fb65d6c53dc8f2a5cc6a278d72a19c874357196adf62792",
+      "record_hash": "30a80027cc9545e5ee3e827e074154d796910dc772db5b0b8f647514e1fb9556",
+      "record_id": "bb334bfa-9769-5716-a216-7089e023dcef",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T07:11:40.913890Z",
+      "sequence": 184,
+      "trial_id": "d4d66c9a-ba05-5d9a-b43f-c4bdddedd431"
     }
   ],
   "schema_version": 1
