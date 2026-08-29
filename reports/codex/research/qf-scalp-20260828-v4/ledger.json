@@ -1,5 +1,5 @@
 {
-  "chain_hash": "c888b9a1aa43a290a3a492597d27bae06fefc152e3520b09561380164a82fd53",
+  "chain_hash": "7906530b0d02b0e5cffd31a48bdd8dd6446dd585acc376bb7c74ba6a32ca1011",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -1980,6 +1980,17 @@
       "recorded_at_utc": "2026-08-29T06:43:25.013201Z",
       "sequence": 180,
       "trial_id": "08ed0666-27c1-5a86-a31d-eb70921a5e06"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"5ef9c2a8c9d74d02653ec45770ef559fcea5021cca916e6660bcfd04888610c5\",\"ended_at_utc\":\"2026-08-29T06:57:45.568849Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"stress\"],[\"fold\",\"3\"],[\"hypothesis\",\"H-SCALP-002\"],[\"market\",\"KRW-XRP\"]],\"metrics\":[[\"adverse_selection_cost\",2549.78534621086],[\"average_holding_seconds\",29.573403243137257],[\"closed_trade_count\",255.0],[\"fees\",2549.785678009331],[\"gross_pnl\",-4909.152731417376],[\"maximum_drawdown\",7458.938409426707],[\"median_closed_trade_net_return_bps\",-31.042077665918253],[\"net_pnl\",-7458.938409426707],[\"non_fill_order_count\",3.0],[\"slippage_cost\",1529.871207726516],[\"spread_cost\",1396.44289592],[\"turnover\",5099571.3560186615],[\"win_rate\",0.0]],\"random_seed\":20260824,\"split_hash\":\"7a0117108ba460c62f545ada13257694670c091d91f340e565c6289a60d01cf5\",\"split_role\":\"test\",\"started_at_utc\":\"2026-08-29T06:43:35.344572Z\",\"status\":\"succeeded\",\"trial_id\":\"c3f242c6-de3e-5d94-abe1-01d812d52565\"}",
+      "previous_hash": "c888b9a1aa43a290a3a492597d27bae06fefc152e3520b09561380164a82fd53",
+      "record_hash": "7906530b0d02b0e5cffd31a48bdd8dd6446dd585acc376bb7c74ba6a32ca1011",
+      "record_id": "c9ae50d0-4f81-5ada-a96b-4f60cf41a6a9",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T06:57:45.568849Z",
+      "sequence": 181,
+      "trial_id": "c3f242c6-de3e-5d94-abe1-01d812d52565"
     }
   ],
   "schema_version": 1
