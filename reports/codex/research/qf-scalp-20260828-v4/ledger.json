@@ -1,5 +1,5 @@
 {
-  "chain_hash": "3e81a44d4c83e3087be58d1ff127265dc29765333a4dd32d81582b19be18e856",
+  "chain_hash": "d0bc4797af13d47f42576f86297ff2d028bf75b2014b9ad0da764d7e471b56c0",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -1540,6 +1540,17 @@
       "recorded_at_utc": "2026-08-29T03:44:52.354386Z",
       "sequence": 140,
       "trial_id": "40f1bcf8-e3a1-5d33-9aa9-0fb0cecf701f"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"37ceb09356018b180b5e6e8d2f10e919bd90411ff33345cae4db7f5f2e654ee9\",\"ended_at_utc\":\"2026-08-29T03:47:48.213079Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"stress\"],[\"fold\",\"1\"],[\"hypothesis\",\"H-SCALP-002\"],[\"market\",\"KRW-FLUID\"]],\"metrics\":[[\"adverse_selection_cost\",950.2395037227225],[\"average_holding_seconds\",20.903708136842106],[\"closed_trade_count\",95.0],[\"fees\",950.2398460815198],[\"gross_pnl\",-2376.280199181356],[\"maximum_drawdown\",3326.520045262876],[\"median_closed_trade_net_return_bps\",-40.66996879223859],[\"net_pnl\",-3326.520045262876],[\"non_fill_order_count\",4.0],[\"slippage_cost\",570.1437022336335],[\"spread_cost\",1365.864573665],[\"turnover\",1900479.6921630395],[\"win_rate\",0.06315789473684211]],\"random_seed\":20260824,\"split_hash\":\"9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-29T03:44:59.241305Z\",\"status\":\"succeeded\",\"trial_id\":\"a2b4da92-690c-5d15-ae64-0175539543ab\"}",
+      "previous_hash": "3e81a44d4c83e3087be58d1ff127265dc29765333a4dd32d81582b19be18e856",
+      "record_hash": "d0bc4797af13d47f42576f86297ff2d028bf75b2014b9ad0da764d7e471b56c0",
+      "record_id": "e14492b7-17ee-54c3-a94f-54b708035ddc",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T03:47:48.213079Z",
+      "sequence": 141,
+      "trial_id": "a2b4da92-690c-5d15-ae64-0175539543ab"
     }
   ],
   "schema_version": 1
