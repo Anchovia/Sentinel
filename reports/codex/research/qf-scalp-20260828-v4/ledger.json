@@ -1,5 +1,5 @@
 {
-  "chain_hash": "2f50e498a25316cd711e89c430faf186fb044c7ba5ce68baf9bc1c38bb4787f0",
+  "chain_hash": "a432ad0054d8f3e2a88989f164ada59575b8038837568f5e552204cbde2d675d",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -2354,6 +2354,17 @@
       "recorded_at_utc": "2026-08-29T08:51:17.454901Z",
       "sequence": 214,
       "trial_id": "d7523474-1059-5425-a26e-dc90d044f15c"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"34c95c895124a5df40ea8f074c2bd0aa5bb229c8d44a7575ee31081496da9989\",\"ended_at_utc\":\"2026-08-29T08:52:49.168368Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"base\"],[\"fold\",\"3\"],[\"hypothesis\",\"H-SCALP-003\"],[\"market\",\"KRW-EUL\"]],\"metrics\":[[\"adverse_selection_cost\",15.97832331563],[\"average_holding_seconds\",12.292057],[\"closed_trade_count\",4.0],[\"fees\",39.94582454657518],[\"gross_pnl\",-132.350819523445],[\"maximum_drawdown\",172.2966440700202],[\"median_closed_trade_net_return_bps\",-43.1773297239145],[\"net_pnl\",-172.2966440700202],[\"non_fill_order_count\",0.0],[\"slippage_cost\",7.989161657815],[\"spread_cost\",61.72265297],[\"turnover\",79891.64909315036],[\"win_rate\",0.0]],\"random_seed\":20260824,\"split_hash\":\"7a0117108ba460c62f545ada13257694670c091d91f340e565c6289a60d01cf5\",\"split_role\":\"test\",\"started_at_utc\":\"2026-08-29T08:51:27.226787Z\",\"status\":\"succeeded\",\"trial_id\":\"2dc81ae9-2a28-5a96-8c91-9c146d6c967c\"}",
+      "previous_hash": "2f50e498a25316cd711e89c430faf186fb044c7ba5ce68baf9bc1c38bb4787f0",
+      "record_hash": "a432ad0054d8f3e2a88989f164ada59575b8038837568f5e552204cbde2d675d",
+      "record_id": "86a5a975-fe1b-5c71-83fb-1ebe61bb6ca6",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T08:52:49.168368Z",
+      "sequence": 215,
+      "trial_id": "2dc81ae9-2a28-5a96-8c91-9c146d6c967c"
     }
   ],
   "schema_version": 1
