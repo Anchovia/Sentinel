@@ -1,5 +1,5 @@
 {
-  "chain_hash": "baec038b717e2618814493a704a0f2af469d9edd89a7f9b7da3a836612d55bb0",
+  "chain_hash": "e730c1410128cb9e39d737b0d70e733d11c01c9dd09615b9f3a19eef4ad13237",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -2222,6 +2222,17 @@
       "recorded_at_utc": "2026-08-29T08:08:50.966209Z",
       "sequence": 202,
       "trial_id": "7d92640a-c2ba-596d-8cae-65ec5ae91b19"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"34a6ec95f63c6cc438bff92c44275e8d9a6957c3449f8ee0cefbb0f23000d935\",\"ended_at_utc\":\"2026-08-29T08:10:03.406087Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"base\"],[\"fold\",\"2\"],[\"hypothesis\",\"H-SCALP-003\"],[\"market\",\"KRW-META2\"]],\"metrics\":[[\"adverse_selection_cost\",7.99999997118],[\"average_holding_seconds\",5.8185104999999995],[\"closed_trade_count\",2.0],[\"fees\",19.99999992795],[\"gross_pnl\",-11.99999995677],[\"maximum_drawdown\",91.4142299247275],[\"median_closed_trade_net_return_bps\",-15.987207835650304],[\"net_pnl\",-31.99999988472],[\"non_fill_order_count\",0.0],[\"slippage_cost\",3.99999998559],[\"spread_cost\",74.7891336],[\"turnover\",39999.9998559],[\"win_rate\",0.0]],\"random_seed\":20260824,\"split_hash\":\"1d722844d029e5715a24a3855a85617aee7af853a6e2dbf7ae6c3b57c017d854\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-29T08:08:59.932485Z\",\"status\":\"succeeded\",\"trial_id\":\"e48c2edd-708d-5ea0-9528-58a685e5a2ec\"}",
+      "previous_hash": "baec038b717e2618814493a704a0f2af469d9edd89a7f9b7da3a836612d55bb0",
+      "record_hash": "e730c1410128cb9e39d737b0d70e733d11c01c9dd09615b9f3a19eef4ad13237",
+      "record_id": "e8c09134-8de1-5240-beea-072a7e19ca11",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T08:10:03.406087Z",
+      "sequence": 203,
+      "trial_id": "e48c2edd-708d-5ea0-9528-58a685e5a2ec"
     }
   ],
   "schema_version": 1
