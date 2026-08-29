@@ -1,5 +1,5 @@
 {
-  "chain_hash": "2a54208c9198fa6106a4376a75b7319aaddb64ac34847d2a287df5ed252ecf2c",
+  "chain_hash": "12a0012ae27ede8eb015c3e8b58a2e435d20e88234e99fe7f43912d14459d876",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -1155,6 +1155,17 @@
       "recorded_at_utc": "2026-08-29T00:51:41.656002Z",
       "sequence": 105,
       "trial_id": "9a76c65b-2d29-50fc-ae9d-6c7440eb8532"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":null,\"ended_at_utc\":\"2026-08-29T01:06:58.139125Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":\"ScalpingTrialLimitError: trial exceeded 288.132 seconds\",\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"base\"],[\"fold\",\"1\"],[\"hypothesis\",\"H-SCALP-002\"],[\"market\",\"KRW-XRP\"]],\"metrics\":[],\"random_seed\":20260824,\"split_hash\":\"9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-29T00:51:53.557019Z\",\"status\":\"failed\",\"trial_id\":\"22c0f339-6879-563c-add7-506c77ad2d90\"}",
+      "previous_hash": "2a54208c9198fa6106a4376a75b7319aaddb64ac34847d2a287df5ed252ecf2c",
+      "record_hash": "12a0012ae27ede8eb015c3e8b58a2e435d20e88234e99fe7f43912d14459d876",
+      "record_id": "01fefd5e-5f93-50f2-ad13-c8b991c65b99",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T01:06:58.139125Z",
+      "sequence": 106,
+      "trial_id": "22c0f339-6879-563c-add7-506c77ad2d90"
     }
   ],
   "schema_version": 1
