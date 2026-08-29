@@ -1,5 +1,5 @@
 {
-  "chain_hash": "7906530b0d02b0e5cffd31a48bdd8dd6446dd585acc376bb7c74ba6a32ca1011",
+  "chain_hash": "40b671c17e42045f4168330e6d3d035285fbe1bb42e5bc5e909ce407175248db",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -1991,6 +1991,17 @@
       "recorded_at_utc": "2026-08-29T06:57:45.568849Z",
       "sequence": 181,
       "trial_id": "c3f242c6-de3e-5d94-abe1-01d812d52565"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"5ddac80c47ec4cc3f710f1cc831f156e161093ccad5fc88bfd60cc679a4fe2f8\",\"ended_at_utc\":\"2026-08-29T07:04:15.010309Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"base\"],[\"fold\",\"1\"],[\"hypothesis\",\"H-SCALP-003\"],[\"market\",\"KRW-BTC\"]],\"metrics\":[[\"adverse_selection_cost\",20.0091592296],[\"average_holding_seconds\",26.329441199999998],[\"closed_trade_count\",5.0],[\"fees\",50.0228926836258],[\"gross_pnl\",5.9220891556],[\"maximum_drawdown\",86.299627721353],[\"median_closed_trade_net_return_bps\",-15.895526435525746],[\"net_pnl\",-44.1008035280258],[\"non_fill_order_count\",0.0],[\"slippage_cost\",10.0045796148],[\"spread_cost\",33.929667],[\"turnover\",100045.7853672516],[\"win_rate\",0.2]],\"random_seed\":20260824,\"split_hash\":\"9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-29T06:57:53.784844Z\",\"status\":\"succeeded\",\"trial_id\":\"0b6f073a-b8e3-5374-be87-469c63de90b1\"}",
+      "previous_hash": "7906530b0d02b0e5cffd31a48bdd8dd6446dd585acc376bb7c74ba6a32ca1011",
+      "record_hash": "40b671c17e42045f4168330e6d3d035285fbe1bb42e5bc5e909ce407175248db",
+      "record_id": "c54172c7-8ca8-5dee-a9ad-9d184b597970",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T07:04:15.010309Z",
+      "sequence": 182,
+      "trial_id": "0b6f073a-b8e3-5374-be87-469c63de90b1"
     }
   ],
   "schema_version": 1
