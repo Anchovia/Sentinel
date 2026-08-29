@@ -1,5 +1,5 @@
 {
-  "chain_hash": "47c4029ca277edece8e3bcaa33bbd5706d1f1fb1014be50dfa98a5d1c18e48ef",
+  "chain_hash": "baec038b717e2618814493a704a0f2af469d9edd89a7f9b7da3a836612d55bb0",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -2211,6 +2211,17 @@
       "recorded_at_utc": "2026-08-29T08:07:38.638116Z",
       "sequence": 201,
       "trial_id": "7a38bc8c-b638-5772-b91c-6be6898f060b"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"3e43c8f121de32e973556936e17708a1bb8b1728b9e3753741fd29c197a09117\",\"ended_at_utc\":\"2026-08-29T08:08:50.966209Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"base\"],[\"fold\",\"2\"],[\"hypothesis\",\"H-SCALP-003\"],[\"market\",\"KRW-GAS\"]],\"metrics\":[[\"adverse_selection_cost\",0.0],[\"closed_trade_count\",0.0],[\"fees\",0.0],[\"gross_pnl\",0.0],[\"maximum_drawdown\",0.0],[\"net_pnl\",0.0],[\"non_fill_order_count\",0.0],[\"slippage_cost\",0.0],[\"spread_cost\",0.0],[\"turnover\",0.0]],\"random_seed\":20260824,\"split_hash\":\"1d722844d029e5715a24a3855a85617aee7af853a6e2dbf7ae6c3b57c017d854\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-29T08:07:48.040992Z\",\"status\":\"succeeded\",\"trial_id\":\"7d92640a-c2ba-596d-8cae-65ec5ae91b19\"}",
+      "previous_hash": "47c4029ca277edece8e3bcaa33bbd5706d1f1fb1014be50dfa98a5d1c18e48ef",
+      "record_hash": "baec038b717e2618814493a704a0f2af469d9edd89a7f9b7da3a836612d55bb0",
+      "record_id": "cf4f0cbf-31a3-5037-9703-db47a9e7ca0c",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T08:08:50.966209Z",
+      "sequence": 202,
+      "trial_id": "7d92640a-c2ba-596d-8cae-65ec5ae91b19"
     }
   ],
   "schema_version": 1
