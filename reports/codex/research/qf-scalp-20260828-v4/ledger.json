@@ -1,5 +1,5 @@
 {
-  "chain_hash": "d27cce3a5f73b2835820673775b2c3eadee62de056c0e41e50c02529bbcb8aff",
+  "chain_hash": "88463c74df04b8e709ae32b08bd17e86116004c34c82672bef9d154d1a95c67b",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -2486,6 +2486,17 @@
       "recorded_at_utc": "2026-08-29T09:33:07.168130Z",
       "sequence": 226,
       "trial_id": "d01690cb-3d5d-5d91-a35c-8a85b09f539f"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"ac32926cab9596adf13c3661231d3b6b166096fa5821c88a00e820804b0040b0\",\"ended_at_utc\":\"2026-08-29T09:40:21.906301Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"stress\"],[\"fold\",\"1\"],[\"hypothesis\",\"H-SCALP-003\"],[\"market\",\"KRW-BTC\"]],\"metrics\":[[\"adverse_selection_cost\",40.0085424075],[\"average_holding_seconds\",30.35941575],[\"closed_trade_count\",4.0],[\"fees\",40.008534368758],[\"gross_pnl\",-43.916812852],[\"maximum_drawdown\",117.728370453112],[\"median_closed_trade_net_return_bps\",-20.52620054978337],[\"net_pnl\",-83.925347220758],[\"non_fill_order_count\",0.0],[\"slippage_cost\",24.0051254445],[\"spread_cost\",31.042535],[\"turnover\",80017.068737516],[\"win_rate\",0.0]],\"random_seed\":20260824,\"split_hash\":\"9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-29T09:33:15.213098Z\",\"status\":\"succeeded\",\"trial_id\":\"ef763685-88dc-5ce7-97cb-2f32a91845e5\"}",
+      "previous_hash": "d27cce3a5f73b2835820673775b2c3eadee62de056c0e41e50c02529bbcb8aff",
+      "record_hash": "88463c74df04b8e709ae32b08bd17e86116004c34c82672bef9d154d1a95c67b",
+      "record_id": "9aedcf42-0290-5df1-8597-c36406a66709",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T09:40:21.906301Z",
+      "sequence": 227,
+      "trial_id": "ef763685-88dc-5ce7-97cb-2f32a91845e5"
     }
   ],
   "schema_version": 1
