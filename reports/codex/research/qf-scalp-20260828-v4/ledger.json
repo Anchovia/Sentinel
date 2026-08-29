@@ -1,5 +1,5 @@
 {
-  "chain_hash": "d0bc4797af13d47f42576f86297ff2d028bf75b2014b9ad0da764d7e471b56c0",
+  "chain_hash": "6fe5a885d04a13966929a4b35f89271ca540af7d3ccffe24c97ebd48030f95dc",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -1551,6 +1551,17 @@
       "recorded_at_utc": "2026-08-29T03:47:48.213079Z",
       "sequence": 141,
       "trial_id": "a2b4da92-690c-5d15-ae64-0175539543ab"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":null,\"ended_at_utc\":\"2026-08-29T03:49:22.822615Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":\"AccountingInvariantError: paper fill exceeds locked cash\",\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"stress\"],[\"fold\",\"1\"],[\"hypothesis\",\"H-SCALP-002\"],[\"market\",\"KRW-GAS\"]],\"metrics\":[],\"random_seed\":20260824,\"split_hash\":\"9d395d0fc7e2570f35b15f864b8acc8ef2d76f2f302b80db3e3a6e8170126482\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-29T03:47:55.478078Z\",\"status\":\"failed\",\"trial_id\":\"2d4a940c-12c3-5f77-872b-755240fecfb8\"}",
+      "previous_hash": "d0bc4797af13d47f42576f86297ff2d028bf75b2014b9ad0da764d7e471b56c0",
+      "record_hash": "6fe5a885d04a13966929a4b35f89271ca540af7d3ccffe24c97ebd48030f95dc",
+      "record_id": "2568e991-095e-5b6f-9ae5-6fd94f073e7e",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T03:49:22.822615Z",
+      "sequence": 142,
+      "trial_id": "2d4a940c-12c3-5f77-872b-755240fecfb8"
     }
   ],
   "schema_version": 1
