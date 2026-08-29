@@ -1,5 +1,5 @@
 {
-  "chain_hash": "eb5b1bb61c1e04dd5c557150db30edff30b03a36df364ebd4376f2c45611d298",
+  "chain_hash": "e37c116d5734990c37b1d39cbe58a6302e0483a8e893b358cde71a4005d72528",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -2893,6 +2893,17 @@
       "recorded_at_utc": "2026-08-29T11:38:53.015910Z",
       "sequence": 263,
       "trial_id": "6447bcf4-b505-5288-843f-e002cec81a9c"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"958a285db32c7ca7c328355d94fc79e65d3f67f66f845c65156d344c6ba097ba\",\"ended_at_utc\":\"2026-08-29T11:44:32.267840Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"stress\"],[\"fold\",\"3\"],[\"hypothesis\",\"H-SCALP-003\"],[\"market\",\"KRW-ONG\"]],\"metrics\":[[\"adverse_selection_cost\",0.0],[\"closed_trade_count\",0.0],[\"fees\",0.0],[\"gross_pnl\",0.0],[\"maximum_drawdown\",0.0],[\"net_pnl\",0.0],[\"non_fill_order_count\",0.0],[\"slippage_cost\",0.0],[\"spread_cost\",0.0],[\"turnover\",0.0]],\"random_seed\":20260824,\"split_hash\":\"7a0117108ba460c62f545ada13257694670c091d91f340e565c6289a60d01cf5\",\"split_role\":\"test\",\"started_at_utc\":\"2026-08-29T11:39:00.290359Z\",\"status\":\"succeeded\",\"trial_id\":\"0c324e17-a065-5bd0-99d4-0b0d980e9215\"}",
+      "previous_hash": "eb5b1bb61c1e04dd5c557150db30edff30b03a36df364ebd4376f2c45611d298",
+      "record_hash": "e37c116d5734990c37b1d39cbe58a6302e0483a8e893b358cde71a4005d72528",
+      "record_id": "4e7dd631-4833-52f5-9f84-2b6f31997dcd",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T11:44:32.267840Z",
+      "sequence": 264,
+      "trial_id": "0c324e17-a065-5bd0-99d4-0b0d980e9215"
     }
   ],
   "schema_version": 1
