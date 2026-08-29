@@ -1,5 +1,5 @@
 {
-  "chain_hash": "da5f65f94fb70e144d10a57b83094e664d64e514dda658f6e6434c0a007303cf",
+  "chain_hash": "f49a8ecce7080049aa51f0f542df4112d7a85c77c5c3e5de694be13cf0e112fb",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -1771,6 +1771,17 @@
       "recorded_at_utc": "2026-08-29T05:12:27.005441Z",
       "sequence": 161,
       "trial_id": "ad29579f-8986-5915-9ee8-3c12816c584f"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":\"243e567cc2b09255dabb1bfacbd64c6d0a35fe15c4e382dba6bd8e7b8f538c0c\",\"ended_at_utc\":\"2026-08-29T05:15:02.919587Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":null,\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"stress\"],[\"fold\",\"2\"],[\"hypothesis\",\"H-SCALP-002\"],[\"market\",\"KRW-SOL\"]],\"metrics\":[[\"adverse_selection_cost\",249.9853666655],[\"average_holding_seconds\",50.77731568],[\"closed_trade_count\",25.0],[\"fees\",249.9854261737972],[\"gross_pnl\",-548.7473296648],[\"maximum_drawdown\",798.7327558385972],[\"median_closed_trade_net_return_bps\",-33.38738958620115],[\"net_pnl\",-798.7327558385972],[\"non_fill_order_count\",4.0],[\"slippage_cost\",149.9912199993],[\"spread_cost\",242.2320535],[\"turnover\",499970.8523475944],[\"win_rate\",0.0]],\"random_seed\":20260824,\"split_hash\":\"1d722844d029e5715a24a3855a85617aee7af853a6e2dbf7ae6c3b57c017d854\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-29T05:12:34.529676Z\",\"status\":\"succeeded\",\"trial_id\":\"09c2f904-70da-5d33-8915-7313b4433073\"}",
+      "previous_hash": "da5f65f94fb70e144d10a57b83094e664d64e514dda658f6e6434c0a007303cf",
+      "record_hash": "f49a8ecce7080049aa51f0f542df4112d7a85c77c5c3e5de694be13cf0e112fb",
+      "record_id": "465b637a-386e-583e-961d-bc1f31eda9d2",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T05:15:02.919587Z",
+      "sequence": 162,
+      "trial_id": "09c2f904-70da-5d33-8915-7313b4433073"
     }
   ],
   "schema_version": 1
