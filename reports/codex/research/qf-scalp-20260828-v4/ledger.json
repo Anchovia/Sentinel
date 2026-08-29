@@ -1,5 +1,5 @@
 {
-  "chain_hash": "abba49f83abfe4a697355bb7e32f8266585241980efad8ac7334dd239c17fc2c",
+  "chain_hash": "510c239bf2f8d0fd9c4ea850eb87abe897f37d69d2232385349545981d6006fc",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -1232,6 +1232,17 @@
       "recorded_at_utc": "2026-08-29T01:29:23.714248Z",
       "sequence": 112,
       "trial_id": "98047f4a-8dcd-5e3b-b481-816293037fd0"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"approved_review_id\":null,\"artifact_hash\":null,\"ended_at_utc\":\"2026-08-29T01:30:29.968071Z\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_reason\":\"AccountingInvariantError: paper fill exceeds locked cash\",\"holdout_used\":false,\"hyperparameters\":[[\"cost_scenario\",\"base\"],[\"fold\",\"2\"],[\"hypothesis\",\"H-SCALP-002\"],[\"market\",\"KRW-META2\"]],\"metrics\":[],\"random_seed\":20260824,\"split_hash\":\"1d722844d029e5715a24a3855a85617aee7af853a6e2dbf7ae6c3b57c017d854\",\"split_role\":\"validation\",\"started_at_utc\":\"2026-08-29T01:29:31.454833Z\",\"status\":\"failed\",\"trial_id\":\"7fc47a06-3224-5d55-b457-1dbcdf9f3c7b\"}",
+      "previous_hash": "abba49f83abfe4a697355bb7e32f8266585241980efad8ac7334dd239c17fc2c",
+      "record_hash": "510c239bf2f8d0fd9c4ea850eb87abe897f37d69d2232385349545981d6006fc",
+      "record_id": "52c84226-ceff-5e50-8c71-19d4f0b69709",
+      "record_type": "trial",
+      "recorded_at_utc": "2026-08-29T01:30:29.968071Z",
+      "sequence": 113,
+      "trial_id": "7fc47a06-3224-5d55-b457-1dbcdf9f3c7b"
     }
   ],
   "schema_version": 1
