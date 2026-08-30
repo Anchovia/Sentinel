@@ -7,7 +7,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 
 ## Current state
 
-- Date: 2026-08-28 KST
+- Date: 2026-08-30 KST
 - Completed phases: 0–10; Phase 11.1–11.10 checkpoints complete
 - Current checkpoint: durable continuity plus storage-acceptance, local-clock, and audit-evidence
   stabilization
@@ -37,6 +37,29 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Phase 11.3: `f067442 feat: 모의 거래 재시작 복구 구축`
 - Phase 11.6 preregistration: `4cb419c chore: 단타 전략 실험 사전등록`
 - Phase 11.6 implementation: `0e3040b feat: 단타 전략 연구 기반 구축`
+
+## Closed scalping v4 experiment
+
+- V4 is complete and closed. Do not continue, retry, tune, access its final holdout, or promote any
+  rule. The final evidence is `reports/codex/research/qf-scalp-20260828-v4/final-report.{json,md}`.
+- The fixed order retained 270/270 units: 253 succeeded artifacts and 17 failures. Successful units
+  were 0 positive, 135 negative, and 118 zero. Failure classes were five
+  `AccountingInvariantError`, nine `RawDataIntegrityError`, and three `ScalpingTrialLimitError`;
+  none was retried or imputed.
+- Overlapping independent-trial sums were gross `-131237.33226318459320`, fees
+  `82488.924414171324848200`, net `-213726.256677355918048200`, and 8,249 closed trades. They are
+  research diagnostics across repeated rules/costs/folds/markets, not actual account performance.
+- H-SCALP-001, H-SCALP-002, and H-SCALP-003 are all `REJECT`, respectively net
+  `-42901.767482337213834900`, `-156447.122105732359952700`, and
+  `-14377.367089286344260600`. Every base/stress and validation/test aggregate was non-positive.
+- Report digest is `0794f2e6bf9d68a49f506501eca774d0f0f91f3556f207fcb985096fce7c2a12`.
+  The 272-record ledger chain is
+  `009263444403a07487616db6698f5d26e9ce02e5041bc3572522e16ba3cb7c45`, with one decision and zero
+  holdout-access records. Authentication, private/order network, real orders, risk changes,
+  promotion, and live activation remained absent.
+- Finalizer validation passed Ruff/format on 244 files, strict mypy on 119 source files, 408 tests
+  including the primary-checkout-only boundary case, Secret scanning on 609 text files, and
+  dependency audit with no known vulnerabilities.
 
 ## 24-hour evidence and version-7 rollout
 
@@ -442,10 +465,10 @@ first invalid six-hour JSON retained; two later unattended manifests validated s
 1. Keep paper mode. Observe bounded mounted-data maintenance across hour/day boundaries and under real
    disk growth; verify compaction, retention pressure, restarts, coverage, gaps, parser failures, and
    reconnects without treating uptime as readiness.
-2. Continue the fixed v4 order one bounded market unit at a time, preserving every negative, null,
-   failed, and positive result. Do not interpret partial market cells as an aggregate, access the
-   final holdout, or present a candidate for human paper review before the preregistered comparison
-   and multiplicity rules are satisfied.
+2. Do not rerun or tune the closed v4 experiment. If strategy research continues, preregister a
+   materially new falsifiable hypothesis under a new experiment identifier and preserve every
+   negative, null, failed, and positive result. Keep the final holdout sealed unless a future plan's
+   already-fixed positive-evidence gates are satisfied and a separate human review authorizes it.
 3. Exercise the reviewed acknowledgement only if an actual paper incident creates a persistent
    recovery block; preserve the interrupted evidence and never manufacture an incident to force a
    successful receipt. Model approval and the paper-order gate remain separate.

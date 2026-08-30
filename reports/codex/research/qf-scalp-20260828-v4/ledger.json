@@ -1,5 +1,5 @@
 {
-  "chain_hash": "25f66eb1280fccbe2c3ce67c08328ea0987df54a2783f3ae9da633fa34e3182d",
+  "chain_hash": "009263444403a07487616db6698f5d26e9ce02e5041bc3572522e16ba3cb7c45",
   "records": [
     {
       "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
@@ -2981,6 +2981,17 @@
       "recorded_at_utc": "2026-08-29T12:12:14.890400Z",
       "sequence": 271,
       "trial_id": "509a7ca6-0e69-50c8-960d-10170a9729a5"
+    },
+    {
+      "experiment_id": "438ea679-fa38-553f-9aac-06e0c01c5b38",
+      "payload_json": "{\"closed_at_utc\":\"2026-08-30T07:44:05.793957Z\",\"decision\":\"reject\",\"experiment_id\":\"438ea679-fa38-553f-9aac-06e0c01c5b38\",\"failure_count\":17,\"holdout_used\":false,\"oos_metrics\":[[\"candidate_net_pnl_sum\",-213726.2566773559],[\"closed_trade_count\",8249.0],[\"failed_trial_count\",17.0],[\"negative_trial_count\",135.0],[\"positive_trial_count\",0.0],[\"succeeded_trial_count\",253.0],[\"zero_trial_count\",118.0]],\"reason\":\"all successful preregistered market trials had non-positive cost-inclusive net PnL; bounded failures were retained without retry\",\"trial_count\":270}",
+      "previous_hash": "25f66eb1280fccbe2c3ce67c08328ea0987df54a2783f3ae9da633fa34e3182d",
+      "record_hash": "009263444403a07487616db6698f5d26e9ce02e5041bc3572522e16ba3cb7c45",
+      "record_id": "b4ff0077-7d31-5e99-91d4-a9ba897e9caf",
+      "record_type": "decision",
+      "recorded_at_utc": "2026-08-30T07:44:05.793957Z",
+      "sequence": 272,
+      "trial_id": null
     }
   ],
   "schema_version": 1

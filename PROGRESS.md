@@ -16,6 +16,30 @@
   24-hour data verification (`gpt-5.6-terra`); both run as separate local Codex tasks
 - Automatic merge/deploy/model promotion/live activation: unavailable
 
+## Scalping v4 final decision
+
+- The fixed-order v4 experiment is closed: 270/270 preregistered market units were retained, with
+  253 successful artifacts and 17 bounded failures. No failed unit was retried or imputed.
+- Every successful unit was non-positive after costs: 0 positive, 135 negative, and 118 zero. The
+  overlapping independent-trial sums were Decimal gross PnL `-131237.33226318459320`, fees
+  `82488.924414171324848200`, and net PnL `-213726.256677355918048200` across 8,249 closed trades.
+  These sums are research diagnostics, not a portfolio or account return.
+- All three hypotheses are `REJECT`: H-SCALP-001 net `-42901.767482337213834900`, H-SCALP-002 net
+  `-156447.122105732359952700`, and H-SCALP-003 net `-14377.367089286344260600`. Every base,
+  stress, validation, and test aggregate was non-positive, so no positive-evidence multiplicity
+  gate or champion review was reached.
+- The immutable final report digest is
+  `0794f2e6bf9d68a49f506501eca774d0f0f91f3556f207fcb985096fce7c2a12`. The append-only ledger
+  contains registration + 270 trials + one decision, with final chain hash
+  `009263444403a07487616db6698f5d26e9ce02e5041bc3572522e16ba3cb7c45` and zero holdout records.
+- Finalization validated all successful artifact hashes and retained the 17 failures as five
+  `AccountingInvariantError`, nine `RawDataIntegrityError`, and three `ScalpingTrialLimitError`
+  records. Authentication, private/order network access, real orders, and automatic promotion all
+  remained false.
+- Final validation passed Ruff/format on 244 files, strict mypy on 119 source files, 408 tests
+  including the primary-checkout boundary test, Secret scanning on 609 text files, and dependency
+  audit with no known vulnerabilities.
+
 ## 24-hour collection evidence and version-7 rollout
 
 - Captured and validated the report-only 24-hour evidence at
@@ -636,8 +660,9 @@ active; the first invalid six-hour JSON is retained and two later unattended rep
 
 Do not enable live trading. Keep the bounded mounted-data burn-in running and verify maintenance across
 hour/day boundaries, actual retention pressure, restart recovery, parser failures, gaps, and disk
-growth. Next preregister falsifiable alpha and exit hypotheses, evaluate challengers on cost-
-inclusive chronological data, and submit any surviving artifact for separate human paper review.
+growth. Do not rerun, tune, or promote the rejected v4 rules. Any next strategy research must start
+with materially new, falsifiable alpha/exit hypotheses and a new immutable preregistration, then use
+cost-inclusive chronological data and preserve all negative, null, and failed evidence.
 Exercise the recovery acknowledgement against an actual block only when a real paper incident
 creates one; do not manufacture or clear an incident merely to produce evidence.
 Only clean recovery, a reviewed artifact, and a separately enabled paper-order gate may turn the

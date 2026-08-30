@@ -65,3 +65,22 @@ hash `e1c8a9cbee678f5d75fc804b207f86248d88523d1787bab3fb5bb5fb29d09b22`. The imm
 semantic digest is `837835a5cacd5f6c8601f12580d8f4a6b630e242dcac9d40bb29c50c8e67de3b`. No champion existed,
 and no final-holdout access, authentication, private or order network, real order, promotion, or live
 submission occurred. The runner did not start a second unit automatically.
+
+## Final decision evidence
+
+All 270 fixed-order v4 units were eventually consumed without retry: 253 succeeded with validated
+artifacts and 17 retained bounded failures. Successful units contained 0 positive, 135 negative,
+and 118 zero net-PnL results. The overlapping independent-trial net sum was
+`-213726.256677355918048200` across 8,249 closed trades; it is not a portfolio equity curve.
+
+Every predetermined base, stress, validation, and test aggregate was non-positive for each of
+H-SCALP-001 through H-SCALP-003. The preregistered rejection condition therefore fired before a
+positive-evidence Holm gate, champion comparison, or final-holdout review. The experiment decision
+is `REJECT` for all three rules. Do not retry, tune, promote, or reinterpret v4 as investment
+performance; new research requires a materially new hypothesis and preregistration.
+
+Final report digest is
+`0794f2e6bf9d68a49f506501eca774d0f0f91f3556f207fcb985096fce7c2a12`; the ledger's post-decision
+chain hash is `009263444403a07487616db6698f5d26e9ce02e5041bc3572522e16ba3cb7c45` over 272 records. It
+contains zero final-holdout records. Authentication, private/order network access, real orders,
+promotion, risk changes, and live activation remained absent.

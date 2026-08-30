@@ -6,6 +6,12 @@ All notable changes are recorded here. The project follows semantic versioning o
 
 ### Added
 
+- A deterministic scalping-experiment finalizer that validates the complete fixed-order ledger and
+  every successful artifact hash, rejects incomplete or holdout-accessed runs, retains failures,
+  writes immutable JSON/Markdown evidence, and appends exactly one reconciled decision record.
+- The closed v4 research result: 270/270 units retained, 253 validated artifacts, 17 bounded
+  failures, no positive market trial, and all three hypotheses rejected without holdout access,
+  authentication, order-network use, real orders, promotion, or live-state changes.
 - Phase 0 product, architecture, risk, research, data, security, threat, runbook, and recovery contracts.
 - Python 3.13 uv project and developer/CI/container skeleton.
 - Fail-closed typed settings and six-gate live submission guard.
