@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import orjson
@@ -18,9 +18,14 @@ from quantforge.research import (
 )
 from quantforge.research.scalping import (
     ScalpingExperimentPlan,
+    ScalpingResearchDecision,
     ScalpingResearchError,
     ScalpingTrialLimitError,
     load_scalping_experiment_plan,
+)
+from quantforge.research.scalping_finalization import (
+    ScalpingTrialFinalReport,
+    finalize_scalping_trial_experiment,
 )
 from quantforge.research.scalping_trials import (
     ScalpingTrialExecutionPlan,
@@ -475,6 +480,88 @@ def test_runner_retains_failed_trial_and_advances_without_retry(tmp_path: Path) 
     assert failed.artifact_path is None
     assert recovered.trial.trial_id != failed.trial.trial_id
     assert recovered.completed_trial_count == 2
+
+
+def test_finalizer_closes_complete_market_partitioned_experiment_as_reject(
+    tmp_path: Path,
+) -> None:
+    plan, registration, execution = _market_partitioned_execution_fixture()
+    working_ledger = tmp_path / "ledger.json"
+    artifact_root = tmp_path / "artifacts"
+    report_root = tmp_path / "reports"
+    for _ in execution.trials:
+        outcome = run_next_scalping_trial(
+            plan,
+            execution,
+            registration,
+            working_ledger_path=working_ledger,
+            artifact_root=artifact_root,
+            event_loader=_event_loader,
+        )
+    closed_at = datetime.now(UTC) + timedelta(minutes=1)
+
+    finalized = finalize_scalping_trial_experiment(
+        plan,
+        execution,
+        registration,
+        working_ledger_path=working_ledger,
+        artifact_root=artifact_root,
+        report_root=report_root,
+        closed_at_utc=closed_at,
+    )
+    repeated = finalize_scalping_trial_experiment(
+        plan,
+        execution,
+        registration,
+        working_ledger_path=working_ledger,
+        artifact_root=artifact_root,
+        report_root=report_root,
+        closed_at_utc=closed_at,
+    )
+    persisted = ScalpingTrialFinalReport.model_validate_json(
+        finalized.report_json_path.read_bytes()
+    )
+
+    assert outcome.completed_trial_count == 54
+    assert finalized.report.decision is ScalpingResearchDecision.REJECT
+    assert finalized.report.planned_trial_count == 54
+    assert finalized.report.succeeded_trial_count == 54
+    assert finalized.report.failed_trial_count == 0
+    assert finalized.report.validated_artifact_count == 54
+    assert finalized.report.overall_metrics.profitable_trial_count == 0
+    assert finalized.report.overall_metrics.zero_trial_count == 54
+    assert len(finalized.report.cells) == 18
+    assert len(finalized.report.hypotheses) == 3
+    assert finalized.report.final_holdout_used is False
+    assert finalized.report.actual_investment_performed is False
+    assert len(finalized.ledger.records) == 56
+    assert finalized.ledger.chain_hash == repeated.ledger.chain_hash
+    assert persisted == finalized.report
+    assert finalized.report_markdown_path.is_file()
+
+
+def test_finalizer_refuses_incomplete_registered_trial_space(tmp_path: Path) -> None:
+    plan, registration, execution = _market_partitioned_execution_fixture()
+    working_ledger = tmp_path / "ledger.json"
+    run_next_scalping_trial(
+        plan,
+        execution,
+        registration,
+        working_ledger_path=working_ledger,
+        artifact_root=tmp_path / "artifacts",
+        event_loader=_event_loader,
+    )
+
+    with pytest.raises(ScalpingResearchError, match="every preregistered"):
+        finalize_scalping_trial_experiment(
+            plan,
+            execution,
+            registration,
+            working_ledger_path=working_ledger,
+            artifact_root=tmp_path / "artifacts",
+            report_root=tmp_path / "reports",
+            closed_at_utc=datetime.now(UTC) + timedelta(minutes=1),
+        )
 
 
 def test_execution_contract_rejects_any_final_holdout_trial() -> None:

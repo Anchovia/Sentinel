@@ -55,6 +55,7 @@ from quantforge.research.scalping import (
     load_scalping_experiment_plan,
     write_scalping_research_bundle,
 )
+from quantforge.research.scalping_finalization import finalize_scalping_trial_experiment
 from quantforge.research.scalping_trials import (
     create_scalping_trial_execution_plan,
     load_scalping_trial_execution_plan,
@@ -1129,6 +1130,76 @@ def run_next_scalping_trial_command(
     )
     if outcome.trial.status is TrialStatus.FAILED:
         raise typer.Exit(code=2)
+
+
+@app.command("finalize-scalping-trials")
+def finalize_scalping_trials_command(
+    execution_plan_path: Annotated[
+        Path,
+        typer.Option(help="Committed immutable trial execution plan"),
+    ],
+    working_ledger_path: Annotated[
+        Path,
+        typer.Option(help="Completed Codex trial ledger to close"),
+    ],
+    closed_at_utc: Annotated[
+        datetime,
+        typer.Option(help="Explicit reproducible UTC decision timestamp"),
+    ],
+    plan_path: Annotated[
+        Path,
+        typer.Option(help="Committed scalping experiment plan"),
+    ] = DEFAULT_SCALPING_CURRENT_PLAN,
+    registration_ledger_path: Annotated[
+        Path,
+        typer.Option(help="Committed registration-only experiment ledger"),
+    ] = DEFAULT_SCALPING_CURRENT_LEDGER,
+    artifact_root: Annotated[
+        Path,
+        typer.Option(help="Codex research trial artifact root"),
+    ] = DEFAULT_CODEX_RESEARCH_OUTPUT,
+    report_root: Annotated[
+        Path,
+        typer.Option(help="Codex final research report root"),
+    ] = DEFAULT_CODEX_RESEARCH_OUTPUT,
+) -> None:
+    """Validate all registered units, retain REJECT, and close the experiment ledger."""
+
+    if working_ledger_path.resolve() == registration_ledger_path.resolve():
+        raise typer.BadParameter("working ledger must not overwrite the registration seed")
+    plan = load_scalping_experiment_plan(plan_path)
+    execution_plan = load_scalping_trial_execution_plan(execution_plan_path)
+    registration_snapshot = read_experiment_ledger(registration_ledger_path)
+    outcome = finalize_scalping_trial_experiment(
+        plan,
+        execution_plan,
+        registration_snapshot,
+        working_ledger_path=working_ledger_path,
+        artifact_root=artifact_root,
+        report_root=report_root,
+        closed_at_utc=closed_at_utc,
+    )
+    typer.echo(
+        json.dumps(
+            {
+                "status": outcome.report.decision,
+                "report_digest": outcome.report.digest,
+                "report_json": str(outcome.report_json_path.resolve()),
+                "report_markdown": str(outcome.report_markdown_path.resolve()),
+                "ledger": str(outcome.ledger_path.resolve()),
+                "ledger_chain_hash": outcome.ledger.chain_hash,
+                "planned_trial_count": outcome.report.planned_trial_count,
+                "succeeded_trial_count": outcome.report.succeeded_trial_count,
+                "failed_trial_count": outcome.report.failed_trial_count,
+                "final_holdout_used": False,
+                "authentication_used": False,
+                "order_network_used": False,
+                "real_orders_executed": False,
+                "automatic_promotion": False,
+            },
+            sort_keys=True,
+        )
+    )
 
 
 @app.command("export-operations")
