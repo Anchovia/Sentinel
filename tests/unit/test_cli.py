@@ -47,6 +47,24 @@ def test_safety_status_human_output() -> None:
     assert "Live submission allowed: False" in result.stdout
 
 
+def test_finalize_scalping_trials_rejects_non_utc_timestamp(tmp_path: Path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "finalize-scalping-trials",
+            "--execution-plan-path",
+            str(tmp_path / "execution.json"),
+            "--working-ledger-path",
+            str(tmp_path / "working-ledger.json"),
+            "--closed-at-utc",
+            "2026-08-30T07:44:05",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "ISO-8601 UTC timestamp" in result.output
+
+
 def test_replay_raw_verifies_storage_and_writes_runtime_snapshot(tmp_path: Path) -> None:
     raw_root = tmp_path / "raw"
     writer = ParquetRawEventWriter(raw_root, max_rows=1)

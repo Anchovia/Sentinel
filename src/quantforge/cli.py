@@ -1143,8 +1143,8 @@ def finalize_scalping_trials_command(
         typer.Option(help="Completed Codex trial ledger to close"),
     ],
     closed_at_utc: Annotated[
-        datetime,
-        typer.Option(help="Explicit reproducible UTC decision timestamp"),
+        str,
+        typer.Option(help="Explicit reproducible ISO-8601 UTC decision timestamp"),
     ],
     plan_path: Annotated[
         Path,
@@ -1167,6 +1167,12 @@ def finalize_scalping_trials_command(
 
     if working_ledger_path.resolve() == registration_ledger_path.resolve():
         raise typer.BadParameter("working ledger must not overwrite the registration seed")
+    try:
+        decision_time = datetime.fromisoformat(closed_at_utc.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise typer.BadParameter("closed-at-utc must be an ISO-8601 UTC timestamp") from error
+    if decision_time.tzinfo is None or decision_time.utcoffset() != UTC.utcoffset(decision_time):
+        raise typer.BadParameter("closed-at-utc must be an ISO-8601 UTC timestamp")
     plan = load_scalping_experiment_plan(plan_path)
     execution_plan = load_scalping_trial_execution_plan(execution_plan_path)
     registration_snapshot = read_experiment_ledger(registration_ledger_path)
@@ -1177,7 +1183,7 @@ def finalize_scalping_trials_command(
         working_ledger_path=working_ledger_path,
         artifact_root=artifact_root,
         report_root=report_root,
-        closed_at_utc=closed_at_utc,
+        closed_at_utc=decision_time,
     )
     typer.echo(
         json.dumps(
