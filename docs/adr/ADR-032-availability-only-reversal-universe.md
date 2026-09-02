@@ -39,3 +39,15 @@ eight-market row fingerprint is computed.
   another automatic relaxation.
 - Authentication, private/order networking, real orders, paper-order activation, model promotion,
   risk changes, deployment, and live activation remain unavailable.
+
+## Registration evidence
+
+The committed eight-market inventory contains 8,373,685 clean events from 345 selected files and
+has dataset hash `dd3d3215342bd0567b8650a59e394f628cb3d612d4237d09152d9600da770b7c`. All eight markets
+meet the unchanged requirements. The registration-only ledger contains one record with chain hash
+`ab62c71d4c929fa3198d096f729ea368d50d87c57efcbad5df834bdd6d0f95cc`.
+
+Execution-plan digest `d2a9a82abae518274f537b62eac841e47b5f52c348ec610c0c0f89762de31120`
+seals 96 validation and 48 test units, a 500,000-event per-unit limit, and a 900-second wall limit.
+It contains no final-holdout access or order capability. No v6 trial was executed while producing
+this evidence.

@@ -14,11 +14,13 @@ from quantforge.research import (
     ExperimentRegistration,
     SplitRole,
     new_experiment_id,
+    read_experiment_ledger,
 )
 from quantforge.research.scalping import (
     ScalpingBacktestEngine,
     ScalpingExperimentPlan,
     ScalpingResearchDecision,
+    ScalpingResearchReport,
     ScalpingRule,
     blocked_experiment_ledger,
     create_blocked_scalping_report,
@@ -48,6 +50,12 @@ PLAN_PATH = ROOT / "research" / "experiments" / "2026-08-24-scalping-challenger-
 V2_PLAN_PATH = ROOT / "research" / "experiments" / "2026-08-27-scalping-challenger-v2.json"
 V2_LEDGER_PATH = V2_PLAN_PATH.with_suffix(".ledger.json")
 V4_PLAN_PATH = V2_PLAN_PATH.with_name("2026-08-28-scalping-challenger-v4.json")
+V5_INVENTORY_PATH = (
+    ROOT / "research" / "experiments" / ("2026-09-02-scalping-mean-reversion-v5.inventory.json")
+)
+V5_BLOCKED_REPORT_PATH = (
+    ROOT / "reports" / "codex" / "research" / "2026" / "09" / "02" / "qf-scalp-20260902-v5"
+)
 V2_DATASET_HASH = "4002405439cbe4afbedf64ea90a84be486640754a0a2de12a4d726760dae8fd6"
 
 
@@ -737,6 +745,34 @@ def test_blocked_result_and_ledger_retain_no_trial_outcome(tmp_path: Path) -> No
     assert paths[0].relative_to(tmp_path).parts[:3] == ("2026", "08", "24")
     payload = orjson.loads(paths[1].read_bytes())
     assert payload["safety"]["real_orders_executed"] is False
+
+
+def test_committed_v5_blocked_result_retains_zero_trial_readiness_evidence() -> None:
+    report = ScalpingResearchReport.model_validate_json(
+        V5_BLOCKED_REPORT_PATH.with_suffix(".json").read_bytes()
+    )
+    ledger = read_experiment_ledger(V5_BLOCKED_REPORT_PATH.with_suffix(".ledger.json"))
+    inventory = load_raw_event_research_inventory(V5_INVENTORY_PATH)
+
+    assert report.decision is ScalpingResearchDecision.BLOCKED
+    assert report.trial_results == ()
+    assert report.sufficiency.eligible_markets == (
+        "KRW-BTC",
+        "KRW-ETH",
+        "KRW-ONG",
+        "KRW-PROM",
+        "KRW-SOL",
+        "KRW-TRUMP",
+        "KRW-USDT",
+        "KRW-XRP",
+    )
+    assert inventory.dataset_hash == (
+        "a7313fdfb96ba9d13e5b25d3c2f4fda5fb3256bf48e643faaa54d169c4813ccd"
+    )
+    assert ledger.chain_hash == ("8dfd7a4f6bedcd9529ecad69d9b254c3cedde8f92c09806cb5c61976bde3ab07")
+    assert len(ledger.records) == 2
+    assert report.final_holdout_used is False
+    assert report.safety.real_orders_executed is False
 
 
 def test_trade_continuation_runs_entry_and_exit_through_conservative_broker() -> None:

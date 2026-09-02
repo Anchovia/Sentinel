@@ -81,7 +81,17 @@
 - ADR-032 records that availability-only decision. The committed v6 plan preserves source,
   snapshot, interval, rules, exits, costs, folds, multiplicity, and holdout; it changes only the
   eight fixed qualifying markets and implied 144 units. Its plan digest is
-  `3882fd46638c59f233afc3d6d9d7a3c50685ecc97d69e1e651e374b6d9bf47e9`. No v6 row scan has run.
+  `3882fd46638c59f233afc3d6d9d7a3c50685ecc97d69e1e651e374b6d9bf47e9`.
+- The separate v6 scan verified the same 797 immutable detailed manifests and selected 8,373,685
+  events from 345 files. All eight markets pass, and dataset hash is
+  `dd3d3215342bd0567b8650a59e394f628cb3d612d4237d09152d9600da770b7c`.
+- The v6 registration ledger contains exactly one record with chain hash
+  `ab62c71d4c929fa3198d096f729ea368d50d87c57efcbad5df834bdd6d0f95cc`. Execution-plan digest
+  `d2a9a82abae518274f537b62eac841e47b5f52c348ec610c0c0f89762de31120` seals 96 validation and
+  48 test units, 500,000 events and 900 seconds per unit, and zero holdout access. No trial has run.
+- Final v6 sealing validation passed Ruff and format across 250 files, strict mypy across 119 source
+  files, 426 worktree tests plus the primary-checkout boundary test, 85.14% branch coverage, the
+  657-file secret scan, and the unchanged dependency audit with no known vulnerabilities.
 - No holdout access, authentication, private/order network call, real order, risk change, model
   promotion, paper-order activation, or live activation occurred.
 

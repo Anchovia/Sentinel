@@ -1,0 +1,80 @@
+{
+  "dataset_hash": "dd3d3215342bd0567b8650a59e394f628cb3d612d4237d09152d9600da770b7c",
+  "exclude_marked_duplicates": true,
+  "exclude_quality_flagged_events": true,
+  "manifest_set_sha256": "ab1ca8c98763f56b5efcdc6de05747a6aa9952d7c38e0019ef77f8f252df0f8e",
+  "markets": [
+    {
+      "first_received_at_utc": "2026-08-30T07:44:05.831130Z",
+      "last_received_at_utc": "2026-09-02T10:20:55.136396Z",
+      "market": "KRW-BTC",
+      "orderbook_events": 1725006,
+      "trade_events": 375333
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:44:05.829140Z",
+      "last_received_at_utc": "2026-09-02T10:20:55.105152Z",
+      "market": "KRW-ETH",
+      "orderbook_events": 1296613,
+      "trade_events": 159524
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:49:42.463096Z",
+      "last_received_at_utc": "2026-09-02T10:20:54.813405Z",
+      "market": "KRW-ONG",
+      "orderbook_events": 181878,
+      "trade_events": 69593
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:44:05.879736Z",
+      "last_received_at_utc": "2026-09-02T10:20:55.101568Z",
+      "market": "KRW-PROM",
+      "orderbook_events": 937316,
+      "trade_events": 128210
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:45:32.077659Z",
+      "last_received_at_utc": "2026-09-02T10:20:55.044921Z",
+      "market": "KRW-SOL",
+      "orderbook_events": 492706,
+      "trade_events": 65339
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:44:06.939451Z",
+      "last_received_at_utc": "2026-09-02T10:18:30.248053Z",
+      "market": "KRW-TRUMP",
+      "orderbook_events": 820966,
+      "trade_events": 130834
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:44:06.680979Z",
+      "last_received_at_utc": "2026-09-02T10:20:54.987924Z",
+      "market": "KRW-USDT",
+      "orderbook_events": 128377,
+      "trade_events": 86777
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:44:06.023187Z",
+      "last_received_at_utc": "2026-09-02T10:20:55.119164Z",
+      "market": "KRW-XRP",
+      "orderbook_events": 1391758,
+      "trade_events": 383455
+    }
+  ],
+  "maximum_exchange_timestamp_utc": "2026-09-02T10:31:00.173776Z",
+  "maximum_received_at_utc": "2026-09-02T10:31:00.173776Z",
+  "minimum_received_at_utc": "2026-08-30T07:44:05.793957Z",
+  "schema_version": "raw-event-research-inventory-1",
+  "selected_event_count": 8373685,
+  "selected_file_count": 345,
+  "selected_markets": [
+    "KRW-BTC",
+    "KRW-ETH",
+    "KRW-ONG",
+    "KRW-PROM",
+    "KRW-SOL",
+    "KRW-TRUMP",
+    "KRW-USDT",
+    "KRW-XRP"
+  ]
+}

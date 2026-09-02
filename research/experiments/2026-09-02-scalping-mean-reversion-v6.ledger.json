@@ -1,0 +1,17 @@
+{
+  "chain_hash": "ab62c71d4c929fa3198d096f729ea368d50d87c57efcbad5df834bdd6d0f95cc",
+  "records": [
+    {
+      "experiment_id": "7d991f4b-c6f8-5c40-a8de-06958818cd34",
+      "payload_json": "{\"code_version\":\"8e05bd9a6ceb2f84a5bb9e1e5e79d1f4380bc019\",\"created_at_utc\":\"2026-09-02T10:46:55.582919Z\",\"dataset_hash\":\"dd3d3215342bd0567b8650a59e394f628cb3d612d4237d09152d9600da770b7c\",\"experiment_id\":\"7d991f4b-c6f8-5c40-a8de-06958818cd34\",\"feature_set\":\"realtime-feature-frame-1\",\"final_holdout_planned\":true,\"hyperparameter_space\":[[\"cost_scenario\",[\"base\",\"stress\"]],[\"fold\",[\"1\",\"2\",\"3\"]],[\"hypothesis\",[\"H-SCALP-004\",\"H-SCALP-005\",\"H-SCALP-006\"]],[\"market\",[\"KRW-BTC\",\"KRW-ETH\",\"KRW-ONG\",\"KRW-PROM\",\"KRW-SOL\",\"KRW-TRUMP\",\"KRW-USDT\",\"KRW-XRP\"]]],\"hypothesis_id\":\"H-SCALP-004+H-SCALP-005+H-SCALP-006\",\"label_version\":\"cost-inclusive-round-trip-v1\",\"model_family\":\"preregistered-deterministic-rules\",\"planned_cost_model\":\"conservative_l2 base and stress; plan_sha256=3882fd46638c59f233afc3d6d9d7a3c50685ecc97d69e1e651e374b6d9bf47e9\",\"planned_metrics\":[\"adverse_selection_cost\",\"average_holding_seconds\",\"closed_trade_count\",\"fees\",\"gross_pnl\",\"maximum_drawdown\",\"median_closed_trade_net_return_bps\",\"net_pnl\",\"non_fill_order_count\",\"slippage_cost\",\"spread_cost\",\"turnover\",\"win_rate\"],\"planned_splits\":[\"validation\",\"test\",\"final_holdout\"],\"researcher\":\"codex-interactive\",\"status\":\"preregistered\"}",
+      "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "record_hash": "ab62c71d4c929fa3198d096f729ea368d50d87c57efcbad5df834bdd6d0f95cc",
+      "record_id": "1a1f1313-0ec8-5783-bbca-c45ef469e655",
+      "record_type": "registration",
+      "recorded_at_utc": "2026-09-02T10:46:55.582919Z",
+      "sequence": 1,
+      "trial_id": null
+    }
+  ],
+  "schema_version": 1
+}

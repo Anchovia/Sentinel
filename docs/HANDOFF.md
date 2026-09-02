@@ -103,7 +103,18 @@ file before continuing. Inspect code and evidence; do not infer completion from 
   replacement. V6 fixes 144 units and plan digest
   `3882fd46638c59f233afc3d6d9d7a3c50685ecc97d69e1e651e374b6d9bf47e9`; all strategy and data
   assumptions other than the availability-qualified market list are byte-equivalent at the model
-  level. Commit it before scanning, then create a new v6 inventory and registration seed.
+  level.
+- The v6 inventory is ready: 8,373,685 clean events from 345 selected files, all eight markets
+  eligible, dataset hash `dd3d3215342bd0567b8650a59e394f628cb3d612d4237d09152d9600da770b7c`.
+  The one-record registration chain is
+  `ab62c71d4c929fa3198d096f729ea368d50d87c57efcbad5df834bdd6d0f95cc`.
+- Execution-plan digest `d2a9a82abae518274f537b62eac841e47b5f52c348ec610c0c0f89762de31120`
+  seals 144 cells (96 validation, 48 test), 500,000 events and 900 seconds per cell. Final holdout,
+  authentication, private/order network, real orders, and automatic promotion remain false. No v6
+  trial has run; the next executable item is unit 1/144 only after this evidence is committed.
+- Final v6 sealing validation passed Ruff and format across 250 files, strict mypy across 119 source
+  files, 426 worktree tests plus the primary-checkout boundary test, 85.14% branch coverage, the
+  657-file secret scan, and the unchanged dependency audit with no known vulnerabilities.
 
 ## 24-hour evidence and version-7 rollout
 

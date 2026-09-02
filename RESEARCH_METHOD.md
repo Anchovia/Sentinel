@@ -78,6 +78,14 @@ then closes the dataset hash and registration-only ledger. Keep the snapshot unt
 closed; any creation race, cross-volume link failure, checksum change, or lineage mismatch blocks
 the run.
 
+If such a plan is blocked before every trial solely because fixed markets fail its already declared
+span/event-count criteria, retain that blocked ledger unchanged. A separate replacement may use all
+and only the markets that passed those unchanged criteria, provided the readiness scan loaded no
+price payload, feature, return, PnL, or holdout content and every other hypothesis, parameter, cost,
+time bound, snapshot, and decision rule remains fixed. Commit the replacement before its own
+market-filtered fingerprint; never weaken a failed threshold or call availability filtering strategy
+evidence.
+
 The execution preflight requires the ledger metric set to cover the plan, including median closed-
 trade net return, closed-trade count, and non-fill count. An incomplete registration is blocked
 before inventory scanning and is superseded by a new immutable registration rather than edited.

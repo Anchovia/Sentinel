@@ -38,7 +38,11 @@ from quantforge.research.scalping_trials import (
     validate_scalping_trial_registration_seed,
     write_scalping_trial_execution_plan,
 )
-from quantforge.storage import RawEventMarketInventory, RawEventResearchInventory
+from quantforge.storage import (
+    RawEventMarketInventory,
+    RawEventResearchInventory,
+    load_raw_event_research_inventory,
+)
 
 ROOT = Path(__file__).parents[2]
 V2_PLAN_PATH = ROOT / "research" / "experiments" / "2026-08-27-scalping-challenger-v2.json"
@@ -49,6 +53,10 @@ V3_EXECUTION_PATH = V3_PLAN_PATH.with_suffix(".execution.json")
 V4_PLAN_PATH = V3_PLAN_PATH.with_name("2026-08-28-scalping-challenger-v4.json")
 V4_LEDGER_PATH = V4_PLAN_PATH.with_suffix(".ledger.json")
 V4_EXECUTION_PATH = V4_PLAN_PATH.with_suffix(".execution.json")
+V6_PLAN_PATH = V4_PLAN_PATH.with_name("2026-09-02-scalping-mean-reversion-v6.json")
+V6_LEDGER_PATH = V6_PLAN_PATH.with_suffix(".ledger.json")
+V6_EXECUTION_PATH = V6_PLAN_PATH.with_suffix(".execution.json")
+V6_INVENTORY_PATH = V6_PLAN_PATH.with_suffix(".inventory.json")
 DATASET_HASH = "a" * 64
 MANIFEST_HASH = "b" * 64
 SOURCE_REVISION = "1" * 40
@@ -500,6 +508,35 @@ def test_v4_registration_closes_exact_market_partition_space() -> None:
         "8a1827182eecb96abd9306773ad5cc3c39fc28c3582090895c459ae53ba6678f"
     )
     assert len(registration.records) == 1
+
+
+def test_v6_registration_closes_exact_availability_qualified_reversal_space() -> None:
+    plan = load_scalping_experiment_plan(V6_PLAN_PATH)
+    inventory = load_raw_event_research_inventory(V6_INVENTORY_PATH)
+    registration = read_experiment_ledger(V6_LEDGER_PATH)
+    execution = load_scalping_trial_execution_plan(V6_EXECUTION_PATH)
+
+    payload = validate_scalping_trial_registration_seed(plan, registration)
+    parameter_map = dict(payload.hyperparameter_space)
+
+    assert plan.source_revision == "8e05bd9a6ceb2f84a5bb9e1e5e79d1f4380bc019"
+    assert plan.digest == "3882fd46638c59f233afc3d6d9d7a3c50685ecc97d69e1e651e374b6d9bf47e9"
+    assert inventory.dataset_hash == (
+        "dd3d3215342bd0567b8650a59e394f628cb3d612d4237d09152d9600da770b7c"
+    )
+    assert inventory.manifest_set_sha256 == (
+        "ab1ca8c98763f56b5efcdc6de05747a6aa9952d7c38e0019ef77f8f252df0f8e"
+    )
+    assert parameter_map["market"] == plan.dataset_selection.fixed_markets
+    assert registration.chain_hash == (
+        "ab62c71d4c929fa3198d096f729ea368d50d87c57efcbad5df834bdd6d0f95cc"
+    )
+    assert execution.digest == ("d2a9a82abae518274f537b62eac841e47b5f52c348ec610c0c0f89762de31120")
+    assert len(execution.trials) == 144
+    assert sum(trial.split_role is SplitRole.VALIDATION for trial in execution.trials) == 96
+    assert sum(trial.split_role is SplitRole.TEST for trial in execution.trials) == 48
+    assert execution.final_holdout_access is False
+    assert execution.real_orders_executed is False
 
 
 def test_committed_v3_execution_plan_seals_exact_non_holdout_work_units(

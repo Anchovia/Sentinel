@@ -18,6 +18,8 @@ All notable changes are recorded here. The project follows semantic versioning o
 - A separate availability-only v6 replacement that preserves every reversal hypothesis and
   assumption while fixing the eight markets that passed v5's unchanged readiness criteria and
   mechanically closes 144 work units before its own row scan.
+- The sealed v6 inventory, one-record registration ledger, and 144-unit execution plan, with 96
+  validation and 48 test units and no trial or final-holdout access.
 - A deterministic scalping-experiment finalizer that validates the complete fixed-order ledger and
   every successful artifact hash, rejects incomplete or holdout-accessed runs, retains failures,
   writes immutable JSON/Markdown evidence, and appends exactly one reconciled decision record.

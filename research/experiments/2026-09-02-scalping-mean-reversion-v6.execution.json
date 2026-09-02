@@ -1,0 +1,1504 @@
+{
+  "authentication_used": false,
+  "automatic_promotion": false,
+  "champion_available": false,
+  "created_at_utc": "2026-09-02T10:57:26.735004Z",
+  "dataset_hash": "dd3d3215342bd0567b8650a59e394f628cb3d612d4237d09152d9600da770b7c",
+  "eligible_markets": [
+    "KRW-BTC",
+    "KRW-ETH",
+    "KRW-ONG",
+    "KRW-PROM",
+    "KRW-SOL",
+    "KRW-TRUMP",
+    "KRW-USDT",
+    "KRW-XRP"
+  ],
+  "experiment_id": "7d991f4b-c6f8-5c40-a8de-06958818cd34",
+  "experiment_name": "qf-scalp-20260902-v6",
+  "experiment_plan_sha256": "3882fd46638c59f233afc3d6d9d7a3c50685ecc97d69e1e651e374b6d9bf47e9",
+  "final_holdout_access": false,
+  "final_holdout_start_utc": "2026-09-01T19:24:44.691061Z",
+  "live_submission_allowed": false,
+  "maximum_elapsed_seconds_per_trial": 900.0,
+  "maximum_events_per_market": 500000,
+  "maximum_total_events_per_trial": 500000,
+  "observed_manifest_set_sha256": "ab1ca8c98763f56b5efcdc6de05747a6aa9952d7c38e0019ef77f8f252df0f8e",
+  "order_network_used": false,
+  "private_network_used": false,
+  "real_orders_executed": false,
+  "registered_manifest_set_sha256": "ab1ca8c98763f56b5efcdc6de05747a6aa9952d7c38e0019ef77f8f252df0f8e",
+  "registration_record_hash": "ab62c71d4c929fa3198d096f729ea368d50d87c57efcbad5df834bdd6d0f95cc",
+  "schema_version": "scalping-trial-execution-plan-2",
+  "selection_end_utc": "2026-09-02T10:18:30.248053Z",
+  "selection_start_utc": "2026-08-30T07:49:42.463096Z",
+  "source_revision": "8e05bd9a6ceb2f84a5bb9e1e5e79d1f4380bc019",
+  "trials": [
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-BTC",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "ceb29d4b-c8d1-54f6-a8e9-025ecd504e23"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-ETH",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "7065401a-8944-5a4c-b276-5d57f9d7678c"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-ONG",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "f4a9e9c1-6370-5ef8-9714-72349765e504"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-PROM",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "353873cd-b303-535f-a360-7dac06d5d3ca"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-SOL",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "96af26bf-6179-5c5e-848b-a0ca61ff7162"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-TRUMP",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "badb29b4-b717-50e9-9091-75b6e1835ff1"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-USDT",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "d87ae6a4-9c39-5fd6-bcaf-776fd3e9a9e7"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-XRP",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "47f100be-a6ec-586c-b615-6308f4623ac4"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-BTC",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "c2cbe0c6-288d-56fd-a160-e982aaf56396"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-ETH",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "3872d630-bba4-5430-85c8-01f6740a3490"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-ONG",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "04f1b60a-9651-5ae2-bbbb-a30d6335acf6"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-PROM",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "4a7b3516-eb44-5824-b54c-6b808cf48376"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-SOL",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "fa22fa2e-2a2d-5d7d-8e58-b07246f902fc"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-TRUMP",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "50c97099-f99c-5ced-ad6d-f99d5d63c647"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-USDT",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "c88146be-8c61-5da5-bf61-f88c09db2fbb"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-XRP",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "149ec8f1-e0b3-53c0-b437-08ad65ebd2ff"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-BTC",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "e1fe5be4-ded6-55b3-a6fc-f474117e06dd"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-ETH",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "4a83982b-76cf-559e-88d1-87d80d26c5b3"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-ONG",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "c4eddf9e-951a-526b-a519-e962514239b1"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-PROM",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "4f472b0c-7614-5b53-947c-b50182448d6a"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-SOL",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "f578805e-0e15-54a6-ac1d-47b03cbfd4fc"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-TRUMP",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "89c16298-094b-56c1-a555-1afc5e9c8c9a"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-USDT",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "dcd469e1-31da-5ef9-8dfa-45b1bb09a894"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-XRP",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "5642c954-a7cc-541e-abe9-c7640d796f4c"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-BTC",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "27fd86fe-2097-5725-b1ef-82867c07a15e"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-ETH",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "00a4d047-9c54-5dc2-851a-bc82feb36ed0"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-ONG",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "0bfb9343-d43f-51cb-89dc-cad816a2bdd0"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-PROM",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "1753c72b-25f2-5cda-b28f-dd571b29321f"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-SOL",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "c2f60fc7-dd26-58e9-8d54-3ce50727cc70"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-TRUMP",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "480162fe-7498-5f28-ae21-631121b2ae76"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-USDT",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "95f026b2-b001-51eb-9279-d4cd9983d013"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-XRP",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "49396f29-0733-5f85-ba1f-2e3aac992494"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-BTC",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "edd777a2-d8f4-52cf-8687-8656971cf65d"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-ETH",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "2a622779-b8b4-5ca0-86c7-d59ae3f7d23c"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-ONG",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "52e5d9e0-f5a3-596f-8bf0-6dbecd2bf8ef"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-PROM",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "f5cff7a3-31c1-5f10-a85c-60aa39511a81"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-SOL",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "fc9b8e2f-1df4-57e3-b467-60ee76e635f1"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-TRUMP",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "8e4b0b92-3e74-5196-a731-865814613309"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-USDT",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "9ef3b17a-5271-5aa8-8322-f325515dde0b"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-XRP",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "validation",
+      "trial_id": "e4c18d6a-7f2d-5cd0-9523-c1ee68313993"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-BTC",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "ed077904-1ca3-5b14-a842-6e9dd591fc14"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-ETH",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "c35103bc-1372-5820-88d2-4d6d8af6780b"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-ONG",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "a69df01e-995f-524a-820d-dbced3152202"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-PROM",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "e6a33c9e-8597-5622-9cd2-10b5f71ea168"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-SOL",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "5523ea94-fd51-5953-a31d-298d393d8229"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-TRUMP",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "f9881b72-b1da-5f0d-b540-0a47f974f6eb"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-USDT",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "b4cdec20-af4b-5439-846b-ac3aef1f6d12"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-004",
+      "market": "KRW-XRP",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "sell_shock_exhaustion",
+      "split_role": "test",
+      "trial_id": "3b2d4e25-270c-52e6-988f-1d425b094e8a"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-BTC",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "4d526e36-81f5-5bdc-9dec-5dabcceef0f3"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-ETH",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "5eacca6d-70bf-5e32-b388-f393f93070f4"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-ONG",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "954d660d-8c51-5171-aff3-1e44d900d8b8"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-PROM",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "7b43caea-6e1a-5771-b074-7479b05f254e"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-SOL",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "13e0abb2-00a0-50ec-b208-c439ee8ff620"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-TRUMP",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "decc2f62-a5d3-5612-b82a-37bdb4c90627"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-USDT",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "92a26143-5b03-5734-a9dd-15a0eb3dec0b"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-XRP",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "48454a83-250c-50b6-9420-276200ba6cf1"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-BTC",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "9ed86c83-89eb-5517-816e-6d1cddfef909"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-ETH",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "1ddb764d-9d56-5631-876c-1b692269701f"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-ONG",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "37e89da4-f965-5d79-bc1b-6c2fbd812a47"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-PROM",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "3fc2afa5-42b4-5f6d-9f83-c06d3b4acc7e"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-SOL",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "4646c369-7534-568e-aded-06539469aa1e"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-TRUMP",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "8958ae2e-39b2-5788-a226-37b0af3b5a72"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-USDT",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "64e402e5-0023-5054-b965-6a5d5519d70c"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-XRP",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "a800f5e4-c556-58d5-b040-839aaca4ac0a"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-BTC",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "4e2f4948-098b-51d7-bf36-d4ef401e571e"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-ETH",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "7f7a38c0-3266-5a15-9ee7-5158b43a6abd"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-ONG",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "b2cd9df3-f05d-5509-ad79-e93c9f787bbe"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-PROM",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "863f7c42-7d66-5532-be1e-42081ae6bb3e"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-SOL",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "0c3bd767-62b9-52c7-ac8f-e50fc3104725"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-TRUMP",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "43b071a0-83ab-5312-91fe-634e707d2a36"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-USDT",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "a40bb5e7-5d38-5948-82ac-9a922d8b0a4e"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-XRP",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "62b9dd56-8f97-50e7-981e-5d8a723ad27a"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-BTC",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "bd116d4e-41d8-5a95-acb9-f348236143c0"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-ETH",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "1a8782fc-d868-54a2-a8c0-33a479c80b08"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-ONG",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "d1b76a30-4168-5a83-858c-b3d63ab81ad3"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-PROM",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "37e4893b-761f-50cd-87a7-341aa70ddcc3"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-SOL",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "11db9474-f7b7-5ef6-82f1-78187fede57b"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-TRUMP",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "3a84786d-b573-54bc-849e-66e5cf08dccb"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-USDT",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "0520a6e5-c685-50ea-805f-6ae06a506c6c"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-XRP",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "24b52daf-d7e8-5c75-830f-9e3b2dbf3145"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-BTC",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "cff9fb02-ee39-575d-a4dd-1dc1ca493810"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-ETH",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "3563c38c-d32d-5de5-ad1b-9ce5ad9269da"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-ONG",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "15e371c9-cdb8-531b-a654-34c9b2b49797"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-PROM",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "10f62441-bad5-55af-8941-1b026a5d9c17"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-SOL",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "ab2a6fe9-cd00-5abf-b020-231b3895a01f"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-TRUMP",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "f64a0865-8706-5c5d-b010-adb5f8fd3787"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-USDT",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "76ff412c-d73a-555a-8d2a-8bf4b60dd8c2"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-XRP",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "validation",
+      "trial_id": "3dea67ea-58ed-5189-9b58-0a44b3c33aa1"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-BTC",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "b727ba9e-2193-5bc5-9cfe-9a6f4277cce7"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-ETH",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "822ef5a8-33f7-5dea-910a-267bbf74d745"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-ONG",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "982f076f-f1d2-520a-8e96-2c1f5249b9f1"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-PROM",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "bc9ea4cd-4849-5464-b698-fa30de1c7090"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-SOL",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "ba64df43-1f85-5e18-a3b9-19e547997b5c"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-TRUMP",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "7e783d05-cd01-563f-85c2-0ba450360ace"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-USDT",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "1584b073-cc7b-5225-ba36-cb4b926c1df6"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-005",
+      "market": "KRW-XRP",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "bid_replenishment_reversal",
+      "split_role": "test",
+      "trial_id": "f5d7e80d-ebc6-59fb-af4b-a22e5b74967b"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-BTC",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "a32daf21-9cb4-5459-bf88-e4501f44aa55"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-ETH",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "09e2f3c9-67d0-5b3c-9807-5565519f9503"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-ONG",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "ebc94a4e-342b-564f-8854-ac27d75788e6"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-PROM",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "c1dacc34-b99d-54f2-a27c-9a8d38a1164d"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-SOL",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "e5f1d3f0-6658-5adb-bf84-26bf06d97937"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-TRUMP",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "230d850d-910d-50f4-9220-ae559e9772c9"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-USDT",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "37b5e385-1145-582c-a6a2-78e6ca855da1"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-XRP",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "68f017a7-57d7-54c8-a142-bd9928eb3872"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-BTC",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "eb7f9cf5-6f58-5446-856e-ead17550b06e"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-ETH",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "c23bc2cb-6d2a-5841-8215-294a2d0245a6"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-ONG",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "d574a6ec-1092-53b6-9cf6-53efdfff7081"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-PROM",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "912d7ad0-89d2-592c-b40b-149898629270"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-SOL",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "6d8b87ee-b68b-578c-ac54-1dfc27aa0e43"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-TRUMP",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "ca48c1a1-5f2d-5d90-8d68-38e3da8dc1e0"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-USDT",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "6010e95f-e215-5e9e-ba77-67979863012e"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-XRP",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "bb092d14-71dd-510a-89ef-20896efad215"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-BTC",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "efc5ebfe-1a65-5aac-ad43-ed515c29d6bf"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-ETH",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "4fda9716-82f1-57d0-aa57-e6313ff2daca"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-ONG",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "da2ab801-13b3-52e7-a833-01ea6d1e2e47"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-PROM",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "4b401d8c-ba20-5f96-8fb8-d2809402f44e"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-SOL",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "f4fd11d5-e612-5fed-a6b4-27b88f49493a"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-TRUMP",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "5333b3e1-b53f-58d7-9ed5-b50f5a335564"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-USDT",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "8df03a4e-70b2-52c0-be39-71076587a407"
+    },
+    {
+      "cost_scenario": "base",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-XRP",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "4a378848-00b3-5563-8016-fff895d166e0"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-BTC",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "0b62efce-55e5-500a-bdb9-04a66d9a2af2"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-ETH",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "97121a9d-5c94-561b-a899-0fd803af5d52"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-ONG",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "6ce937d8-b63f-5349-bd93-3cf0becfb5ed"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-PROM",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "84e39da6-ad63-5a47-9978-c93e27b7bb11"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-SOL",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "920d20bf-09e7-5860-95d5-ff0bad51ae7c"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-TRUMP",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "376e38dc-f8dd-5969-9036-d2dda95cf5c4"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-USDT",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "a52a4a3c-899d-557f-b24d-dcfb0e234b7c"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "1",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-XRP",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "1a11837b-ee57-52ab-aa5c-8c28315961f1"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-BTC",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "6bf0ecf0-3384-5843-9d85-16e2c5d870f5"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-ETH",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "04c7a405-ad87-5844-b3f4-5759dfdbaee2"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-ONG",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "cccaebe8-6b06-5dad-bebc-7bba188b0e98"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-PROM",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "fa54ce06-7c5c-5589-8a50-02bcdfd53cc6"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-SOL",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "183a15c8-8582-51a7-bd07-75888d2652c1"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-TRUMP",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "5aa86a94-1718-593d-975d-90393fdda7c6"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-USDT",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "f9a2e728-7c89-5481-9159-9fc0c537a14c"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "2",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-XRP",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "rule": "confirmed_reversal",
+      "split_role": "validation",
+      "trial_id": "1ea3f029-72f4-5798-9d04-f75984bd1766"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-BTC",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "9bfb28ed-8667-5a9e-ba17-6e114b6d79b8"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-ETH",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "6b81afe3-18ba-53b0-b95b-d7b09d397542"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-ONG",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "61847bfa-7add-5e2f-94db-0097e73a638d"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-PROM",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "b8dbbd1d-ea7b-587c-b0b7-b877386229c3"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-SOL",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "f5fcb890-51bd-5829-aef4-acaa82aa16ef"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-TRUMP",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "9d28cdf9-9318-5cc2-8415-073a9464636f"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-USDT",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "0a570954-5052-52b9-ae73-3f891739b440"
+    },
+    {
+      "cost_scenario": "stress",
+      "fold_id": "3",
+      "hypothesis_id": "H-SCALP-006",
+      "market": "KRW-XRP",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "rule": "confirmed_reversal",
+      "split_role": "test",
+      "trial_id": "bb6aa69a-2768-5550-b8b5-a3a11ec6ede1"
+    }
+  ],
+  "windows": [
+    {
+      "entry_start_utc": "2026-08-30T22:43:58.020087Z",
+      "evaluation_end_utc": "2026-08-31T13:36:43.577078Z",
+      "fold_id": "1",
+      "partition_hash": "4a3b406a50163a74e820e053820708051a7fc4ac9736b3f73ea9ce6f68eead21",
+      "split_role": "validation",
+      "warmup_start_utc": "2026-08-30T22:43:43.020087Z"
+    },
+    {
+      "entry_start_utc": "2026-08-31T13:37:43.577078Z",
+      "evaluation_end_utc": "2026-09-01T04:30:29.134069Z",
+      "fold_id": "2",
+      "partition_hash": "b8daa09e820fe61bb43f9f52212d8b313eb8ac8ddca10dddc2be7094e325c9e9",
+      "split_role": "validation",
+      "warmup_start_utc": "2026-08-31T13:37:28.577078Z"
+    },
+    {
+      "entry_start_utc": "2026-09-01T04:31:29.134069Z",
+      "evaluation_end_utc": "2026-09-01T19:24:14.691060Z",
+      "fold_id": "3",
+      "partition_hash": "52978812d16fc77dd8a7b49298d755e3da0aff5b0983a64cee9b57e02473b2a7",
+      "split_role": "test",
+      "warmup_start_utc": "2026-09-01T04:31:14.134069Z"
+    }
+  ]
+}
