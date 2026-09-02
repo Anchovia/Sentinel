@@ -1,0 +1,28 @@
+{
+  "chain_hash": "8dfd7a4f6bedcd9529ecad69d9b254c3cedde8f92c09806cb5c61976bde3ab07",
+  "records": [
+    {
+      "experiment_id": "e189a873-64ba-523a-8e90-3a2a063cc421",
+      "payload_json": "{\"code_version\":\"8e05bd9a6ceb2f84a5bb9e1e5e79d1f4380bc019\",\"created_at_utc\":\"2026-09-02T10:32:56.901824Z\",\"dataset_hash\":\"a7313fdfb96ba9d13e5b25d3c2f4fda5fb3256bf48e643faaa54d169c4813ccd\",\"experiment_id\":\"e189a873-64ba-523a-8e90-3a2a063cc421\",\"feature_set\":\"realtime-feature-frame-1\",\"final_holdout_planned\":false,\"hyperparameter_space\":[[\"cost_scenario\",[\"base\",\"stress\"]],[\"fold\",[\"1\",\"2\",\"3\"]],[\"hypothesis\",[\"H-SCALP-004\",\"H-SCALP-005\",\"H-SCALP-006\"]]],\"hypothesis_id\":\"H-SCALP-004+H-SCALP-005+H-SCALP-006\",\"label_version\":\"cost-inclusive-round-trip-v1\",\"model_family\":\"preregistered-deterministic-rules\",\"planned_cost_model\":\"conservative_l2 base and stress\",\"planned_metrics\":[\"adverse_selection_cost\",\"average_holding_seconds\",\"fees\",\"gross_pnl\",\"maximum_drawdown\",\"net_pnl\",\"slippage_cost\",\"spread_cost\",\"turnover\",\"win_rate\"],\"planned_splits\":[\"validation\",\"test\"],\"researcher\":\"codex-interactive\",\"status\":\"preregistered\"}",
+      "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "record_hash": "6b7beedf158016588da1b9ee4fcc4a49a5e4dc56ab8763ea422f00c30e2df4b6",
+      "record_id": "3d69aaeb-247e-51e1-ab62-8b3ed9764fc6",
+      "record_type": "registration",
+      "recorded_at_utc": "2026-09-02T10:32:56.901824Z",
+      "sequence": 1,
+      "trial_id": null
+    },
+    {
+      "experiment_id": "e189a873-64ba-523a-8e90-3a2a063cc421",
+      "payload_json": "{\"closed_at_utc\":\"2026-09-02T10:43:16.370341Z\",\"decision\":\"hold\",\"experiment_id\":\"e189a873-64ba-523a-8e90-3a2a063cc421\",\"failure_count\":0,\"holdout_used\":false,\"oos_metrics\":[[\"eligible_markets\",8.0],[\"maximum_observed_span_hours\",74.61369590722222]],\"reason\":\"preregistered public-data minimum was not met before any trial\",\"trial_count\":0}",
+      "previous_hash": "6b7beedf158016588da1b9ee4fcc4a49a5e4dc56ab8763ea422f00c30e2df4b6",
+      "record_hash": "8dfd7a4f6bedcd9529ecad69d9b254c3cedde8f92c09806cb5c61976bde3ab07",
+      "record_id": "5392fb5a-d6ac-515f-82da-08de993c4fc2",
+      "record_type": "decision",
+      "recorded_at_utc": "2026-09-02T10:43:16.370341Z",
+      "sequence": 2,
+      "trial_id": null
+    }
+  ],
+  "schema_version": 1
+}

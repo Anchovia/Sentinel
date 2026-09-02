@@ -87,9 +87,18 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - `research/experiments/2026-09-02-scalping-mean-reversion-v5.json` binds source `8e05bd9`, the
   prospective interval, fifteen markets, and 270 units under plan digest
   `adef263e393b6e033c3884454462cc2050432a650244106abfdb6aafc0a642b7`.
-- No v5 row-level inventory, registration ledger, execution plan, trial, or holdout access has been
-  produced. Next, scan only the retained snapshot, retain the immutable inventory, create the
-  one-record registration ledger, and seal the 270-unit execution plan.
+- V5's bounded snapshot scan is complete and immutable. It selected 8,508,661 clean events under
+  dataset hash `a7313fdfb96ba9d13e5b25d3c2f4fda5fb3256bf48e643faaa54d169c4813ccd`; every checksum,
+  row-count, schema, duplicate-ID, and availability-order check passed.
+- V5 is `BLOCKED` with zero trials. Exactly eight markets met the unchanged readiness thresholds:
+  BTC, ETH, ONG, PROM, SOL, TRUMP, USDT, and XRP. The other seven failed only span/event-count
+  checks; no feature, return, PnL, strategy outcome, or final holdout was read.
+- Retain the v5 inventory and JSON/Markdown/two-record ledger. Ledger chain is
+  `8dfd7a4f6bedcd9529ecad69d9b254c3cedde8f92c09806cb5c61976bde3ab07`. Do not modify v5 or
+  create its registration/execution plan.
+- A new availability-only replacement may fix exactly those eight passing markets while preserving
+  the same hypotheses, thresholds, costs, exits, interval, snapshot, and sealed holdout. It must be
+  committed as a new plan before its market-filtered inventory scan.
 
 ## 24-hour evidence and version-7 rollout
 

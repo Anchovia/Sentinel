@@ -66,8 +66,20 @@
   `2026-08-30T07:44:05.793957Z` through `2026-09-02T10:31:00.173776Z`, all fifteen fixed markets,
   exact reversal rules/costs/exits, 270 cells, and plan digest
   `adef263e393b6e033c3884454462cc2050432a650244106abfdb6aafc0a642b7`.
-- No v5 row-level inventory or trial has yet run, and no holdout access, authentication,
-  private/order network call, real order, risk change, model promotion, or live activation occurred.
+- The bounded v5 scan verified all 797 detailed snapshot manifests and selected 8,508,661 clean
+  post-v4 events under dataset hash
+  `a7313fdfb96ba9d13e5b25d3c2f4fda5fb3256bf48e643faaa54d169c4813ccd`. Global event-ID
+  uniqueness, schema, row counts, checksums, and availability-order hashing all passed.
+- V5 is closed `BLOCKED` with zero trials because only BTC, ETH, ONG, PROM, SOL, TRUMP, USDT, and
+  XRP met the unchanged 24-hour/20,000-trade/20,000-orderbook criteria. DRV, EUL, FLUID, GAS,
+  META2, ONT, and STX failed only declared availability checks; no strategy feature, return, PnL,
+  or holdout content was evaluated.
+- The retained two-record blocked ledger has chain hash
+  `8dfd7a4f6bedcd9529ecad69d9b254c3cedde8f92c09806cb5c61976bde3ab07`. Do not edit or execute
+  v5. A separate availability-only replacement may preserve every hypothesis/threshold/cost and fix
+  exactly the eight passing markets before another row scan.
+- No holdout access, authentication, private/order network call, real order, risk change, model
+  promotion, paper-order activation, or live activation occurred.
 
 ## 24-hour collection evidence and version-7 rollout
 

@@ -1,0 +1,129 @@
+{
+  "dataset_hash": "a7313fdfb96ba9d13e5b25d3c2f4fda5fb3256bf48e643faaa54d169c4813ccd",
+  "exclude_marked_duplicates": true,
+  "exclude_quality_flagged_events": true,
+  "manifest_set_sha256": "ab1ca8c98763f56b5efcdc6de05747a6aa9952d7c38e0019ef77f8f252df0f8e",
+  "markets": [
+    {
+      "first_received_at_utc": "2026-08-30T07:44:05.831130Z",
+      "last_received_at_utc": "2026-09-02T10:20:55.136396Z",
+      "market": "KRW-BTC",
+      "orderbook_events": 1725006,
+      "trade_events": 375333
+    },
+    {
+      "first_received_at_utc": "2026-09-01T00:13:50.694200Z",
+      "last_received_at_utc": "2026-09-01T23:52:14.952992Z",
+      "market": "KRW-DRV",
+      "orderbook_events": 3610,
+      "trade_events": 1524
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:44:05.829140Z",
+      "last_received_at_utc": "2026-09-02T10:20:55.105152Z",
+      "market": "KRW-ETH",
+      "orderbook_events": 1296613,
+      "trade_events": 159524
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:57:01.203332Z",
+      "last_received_at_utc": "2026-09-01T23:42:13.989821Z",
+      "market": "KRW-EUL",
+      "orderbook_events": 13101,
+      "trade_events": 785
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:44:29.694220Z",
+      "last_received_at_utc": "2026-09-02T10:19:28.143140Z",
+      "market": "KRW-GAS",
+      "orderbook_events": 12145,
+      "trade_events": 3418
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:49:42.477145Z",
+      "last_received_at_utc": "2026-09-01T05:40:03.663480Z",
+      "market": "KRW-META2",
+      "orderbook_events": 5463,
+      "trade_events": 731
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:49:42.463096Z",
+      "last_received_at_utc": "2026-09-02T10:20:54.813405Z",
+      "market": "KRW-ONG",
+      "orderbook_events": 181878,
+      "trade_events": 69593
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:49:42.445238Z",
+      "last_received_at_utc": "2026-09-02T09:21:48.350978Z",
+      "market": "KRW-ONT",
+      "orderbook_events": 48243,
+      "trade_events": 17473
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:44:05.879736Z",
+      "last_received_at_utc": "2026-09-02T10:20:55.101568Z",
+      "market": "KRW-PROM",
+      "orderbook_events": 937316,
+      "trade_events": 128210
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:45:32.077659Z",
+      "last_received_at_utc": "2026-09-02T10:20:55.044921Z",
+      "market": "KRW-SOL",
+      "orderbook_events": 492706,
+      "trade_events": 65339
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:46:33.780089Z",
+      "last_received_at_utc": "2026-09-02T10:19:30.980801Z",
+      "market": "KRW-STX",
+      "orderbook_events": 25893,
+      "trade_events": 2590
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:44:06.939451Z",
+      "last_received_at_utc": "2026-09-02T10:18:30.248053Z",
+      "market": "KRW-TRUMP",
+      "orderbook_events": 820966,
+      "trade_events": 130834
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:44:06.680979Z",
+      "last_received_at_utc": "2026-09-02T10:20:54.987924Z",
+      "market": "KRW-USDT",
+      "orderbook_events": 128377,
+      "trade_events": 86777
+    },
+    {
+      "first_received_at_utc": "2026-08-30T07:44:06.023187Z",
+      "last_received_at_utc": "2026-09-02T10:20:55.119164Z",
+      "market": "KRW-XRP",
+      "orderbook_events": 1391758,
+      "trade_events": 383455
+    }
+  ],
+  "maximum_exchange_timestamp_utc": "2026-09-02T10:31:00.173776Z",
+  "maximum_received_at_utc": "2026-09-02T10:31:00.173776Z",
+  "minimum_received_at_utc": "2026-08-30T07:44:05.793957Z",
+  "schema_version": "raw-event-research-inventory-1",
+  "selected_event_count": 8508661,
+  "selected_file_count": 345,
+  "selected_markets": [
+    "KRW-BTC",
+    "KRW-DRV",
+    "KRW-ETH",
+    "KRW-EUL",
+    "KRW-FLUID",
+    "KRW-GAS",
+    "KRW-META2",
+    "KRW-ONG",
+    "KRW-ONT",
+    "KRW-PROM",
+    "KRW-SOL",
+    "KRW-STX",
+    "KRW-TRUMP",
+    "KRW-USDT",
+    "KRW-XRP"
+  ]
+}
