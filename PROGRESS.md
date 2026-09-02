@@ -58,8 +58,16 @@
 - Foundation validation passed Ruff/format on 246 files, strict mypy on 119 source files, 424
   dedicated-worktree tests plus the primary-checkout boundary test at 85.14% coverage, Secret
   scanning on 610 text files, and dependency audit with no known vulnerabilities.
-- No v5 dataset has yet been scanned and no v5 trial, holdout access, authentication, private/order
-  network call, real order, risk change, model promotion, or live activation has occurred.
+- Immutable snapshot `qf-scalp-20260902-v5` now fixes 1,044 active manifests, including 797 detailed
+  manifests and 8,351,334,280 logical Parquet bytes, under manifest hash
+  `ab1ca8c98763f56b5efcdc6de05747a6aa9952d7c38e0019ef77f8f252df0f8e`. It uses verified
+  same-volume hard links and did not pause or mutate the active collector.
+- The v5 plan binds source `8e05bd9`, that snapshot hash, receive interval
+  `2026-08-30T07:44:05.793957Z` through `2026-09-02T10:31:00.173776Z`, all fifteen fixed markets,
+  exact reversal rules/costs/exits, 270 cells, and plan digest
+  `adef263e393b6e033c3884454462cc2050432a650244106abfdb6aafc0a642b7`.
+- No v5 row-level inventory or trial has yet run, and no holdout access, authentication,
+  private/order network call, real order, risk change, model promotion, or live activation occurred.
 
 ## 24-hour collection evidence and version-7 rollout
 

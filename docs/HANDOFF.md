@@ -79,10 +79,17 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Foundation validation passed Ruff/format on 246 files, strict mypy on 119 source files, 424
   worktree tests plus the primary-checkout boundary test at 85.14% coverage, Secret scanning on 610
   text files, and dependency audit with no known vulnerabilities.
-- At this checkpoint the foundation and tests exist, but no v5 snapshot, inventory, registration,
-  execution plan, trial, or holdout access has been produced. The next safe sequence is: validate
-  and commit this implementation, snapshot active raw data, commit the exact plan, scan and retain
-  inventory, create the one-record registration ledger, then seal the 270-unit execution plan.
+- Snapshot `qf-scalp-20260902-v5` is retained at
+  `C:/Sentinel/data/research-snapshots/qf-scalp-20260902-v5`. Its 1,044 active manifests and
+  8,351,334,280 logical bytes are hard-linked under hash
+  `ab1ca8c98763f56b5efcdc6de05747a6aa9952d7c38e0019ef77f8f252df0f8e`; the collector was not
+  paused or mutated.
+- `research/experiments/2026-09-02-scalping-mean-reversion-v5.json` binds source `8e05bd9`, the
+  prospective interval, fifteen markets, and 270 units under plan digest
+  `adef263e393b6e033c3884454462cc2050432a650244106abfdb6aafc0a642b7`.
+- No v5 row-level inventory, registration ledger, execution plan, trial, or holdout access has been
+  produced. Next, scan only the retained snapshot, retain the immutable inventory, create the
+  one-record registration ledger, and seal the 270-unit execution plan.
 
 ## 24-hour evidence and version-7 rollout
 

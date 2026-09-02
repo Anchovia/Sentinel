@@ -1,0 +1,160 @@
+{
+  "schema_version": "scalping-experiment-plan-2",
+  "experiment_id": "qf-scalp-20260902-v5",
+  "registered_at_utc": "2026-09-02T10:32:56.901824Z",
+  "researcher": "codex-interactive",
+  "source_revision": "8e05bd9a6ceb2f84a5bb9e1e5e79d1f4380bc019",
+  "hypothesis_ids": [
+    "H-SCALP-004",
+    "H-SCALP-005",
+    "H-SCALP-006"
+  ],
+  "dataset_selection": {
+    "source": "checksummed public raw Parquet immutable hard-link snapshot",
+    "storage_label": "workspace:data/research-snapshots/qf-scalp-20260902-v5",
+    "manifest_set_sha256": "ab1ca8c98763f56b5efcdc6de05747a6aa9952d7c38e0019ef77f8f252df0f8e",
+    "maximum_exchange_timestamp_utc": "2026-09-02T10:31:00.173776Z",
+    "minimum_received_at_utc": "2026-08-30T07:44:05.793957Z",
+    "maximum_received_at_utc": "2026-09-02T10:31:00.173776Z",
+    "fixed_markets": [
+      "KRW-BTC",
+      "KRW-DRV",
+      "KRW-ETH",
+      "KRW-EUL",
+      "KRW-FLUID",
+      "KRW-GAS",
+      "KRW-META2",
+      "KRW-ONG",
+      "KRW-ONT",
+      "KRW-PROM",
+      "KRW-SOL",
+      "KRW-STX",
+      "KRW-TRUMP",
+      "KRW-USDT",
+      "KRW-XRP"
+    ],
+    "exclude_marked_duplicates": true,
+    "exclude_quality_flagged_events": true,
+    "availability_order": "received_at_utc then deterministic event identity",
+    "market_scope": "fifteen fixed post-v4 KRW markets with public trade and orderbook data",
+    "final_holdout_fraction": "0.20",
+    "final_holdout_access": false
+  },
+  "availability_and_leakage": {
+    "features_use_only_received_events_at_or_before_signal": true,
+    "entry_occurs_after_configured_order_latency": true,
+    "historic_universe_reconstruction_from_future_catalog": false,
+    "feature_warmup_seconds": 15,
+    "purge_seconds": 30,
+    "embargo_seconds": 30
+  },
+  "feature_and_entry_rules": {
+    "feature_contract": "realtime-feature-frame-1",
+    "sell_shock_exhaustion": {
+      "maximum_trade_return_5s_bps": "-15",
+      "maximum_trade_imbalance_5s": "-0.25",
+      "minimum_recovery_return_1s_bps": "0",
+      "minimum_recovery_trade_imbalance_1s": "-0.05",
+      "minimum_trade_count_5s": 8
+    },
+    "bid_replenishment_reversal": {
+      "maximum_trade_return_5s_bps": "-15",
+      "minimum_top_book_imbalance": "0.20",
+      "minimum_total_book_imbalance": "0.10",
+      "minimum_snapshot_derived_ofi": "0.02"
+    },
+    "confirmed_reversal": "sell_shock_exhaustion AND bid_replenishment_reversal",
+    "maximum_spread_bps": "8",
+    "order_notional_krw": "10000",
+    "long_only": true
+  },
+  "exit_rules": {
+    "profit_target_bps": "30",
+    "stop_loss_bps": "20",
+    "maximum_holding_seconds": 15,
+    "cooldown_seconds": 15,
+    "close_open_position_at_split_boundary": true
+  },
+  "cost_scenarios": {
+    "base": {
+      "paper_fill_model": "conservative_l2",
+      "maker_fee_rate": "0.0005",
+      "taker_fee_rate": "0.0005",
+      "fee_note": "versioned simulation assumption, not a current exchange fee claim",
+      "order_latency_ms": 100,
+      "cancel_latency_ms": 100,
+      "depth_haircut": "0.80",
+      "queue_factor": "0.75",
+      "snapshot_decrease_fill_fraction": "0.25",
+      "slippage_buffer_bps": "1",
+      "adverse_selection_bps": "2"
+    },
+    "stress": {
+      "paper_fill_model": "conservative_l2",
+      "maker_fee_rate": "0.0005",
+      "taker_fee_rate": "0.0005",
+      "fee_note": "versioned simulation assumption, not a current exchange fee claim",
+      "order_latency_ms": 250,
+      "cancel_latency_ms": 250,
+      "depth_haircut": "0.50",
+      "queue_factor": "0.90",
+      "snapshot_decrease_fill_fraction": "0.10",
+      "slippage_buffer_bps": "3",
+      "adverse_selection_bps": "5"
+    }
+  },
+  "validation": {
+    "minimum_observed_span_hours": 24,
+    "minimum_trade_events_per_market": 20000,
+    "minimum_orderbook_events_per_market": 20000,
+    "minimum_eligible_markets": 15,
+    "walk_forward_folds": 3,
+    "minimum_closed_trades_per_rule": 30,
+    "planned_trial_count": 270,
+    "random_seed": 20260902,
+    "baseline": "always_neutral",
+    "multiple_testing_control": "one-sided exact sign test with Holm correction",
+    "regime_checks": [
+      "realized_volatility_15s_bps quartile",
+      "spread_bps quartile",
+      "market",
+      "walk-forward fold"
+    ]
+  },
+  "metrics": {
+    "primary": "cost-inclusive net PnL and median closed-trade net return",
+    "secondary": [
+      "gross PnL",
+      "fees",
+      "spread cost",
+      "slippage cost",
+      "adverse-selection cost",
+      "maximum drawdown",
+      "win rate",
+      "trade frequency",
+      "turnover",
+      "average holding seconds",
+      "partial/non-fill count",
+      "market and regime stability"
+    ]
+  },
+  "decision_rules": {
+    "blocked": "data sufficiency, source revision, or immutable snapshot integrity requirement is not met",
+    "reject": "base or stress net result is non-positive, a planned fold or market is unstable, or Holm-adjusted evidence fails",
+    "continue_research": "direction is promising but sample or stability criteria are incomplete",
+    "paper_candidate": "all preregistered sufficiency, cost, fold, market, drawdown, and multiplicity criteria pass",
+    "automatic_promotion": false,
+    "human_paper_review_required": true,
+    "highest_allowed_label": "PAPER_CANDIDATE"
+  },
+  "safety": {
+    "authentication_used": false,
+    "private_network_used": false,
+    "order_network_used": false,
+    "real_orders_executed": false,
+    "live_mode_changed": false,
+    "risk_limits_changed": false,
+    "model_promoted": false,
+    "paper_order_gate_changed": false
+  }
+}
