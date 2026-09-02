@@ -69,6 +69,9 @@ class ScalpingRule(StrEnum):
     TRADE_CONTINUATION = "trade_continuation"
     SNAPSHOT_BOOK_PRESSURE = "snapshot_book_pressure"
     CONFIRMED_CONTINUATION = "confirmed_continuation"
+    SELL_SHOCK_EXHAUSTION = "sell_shock_exhaustion"
+    BID_REPLENISHMENT_REVERSAL = "bid_replenishment_reversal"
+    CONFIRMED_REVERSAL = "confirmed_reversal"
 
 
 class ScalpingExitReason(StrEnum):
@@ -95,7 +98,9 @@ class DatasetSelectionPlan(_FrozenModel):
     storage_label: str = Field(min_length=1)
     manifest_set_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     maximum_exchange_timestamp_utc: datetime
+    minimum_received_at_utc: datetime | None = None
     maximum_received_at_utc: datetime | None = None
+    fixed_markets: tuple[str, ...] | None = None
     exclude_marked_duplicates: bool = False
     exclude_quality_flagged_events: bool = False
     availability_order: str = Field(min_length=1)
@@ -103,7 +108,11 @@ class DatasetSelectionPlan(_FrozenModel):
     final_holdout_fraction: Decimal = Field(gt=0, lt=1)
     final_holdout_access: Literal[False]
 
-    @field_validator("maximum_exchange_timestamp_utc", "maximum_received_at_utc")
+    @field_validator(
+        "maximum_exchange_timestamp_utc",
+        "minimum_received_at_utc",
+        "maximum_received_at_utc",
+    )
     @classmethod
     def require_utc(cls, value: datetime | None) -> datetime | None:
         if value is not None and (
@@ -111,6 +120,21 @@ class DatasetSelectionPlan(_FrozenModel):
         ):
             raise ValueError("dataset cutoff must be UTC-aware")
         return value
+
+    @model_validator(mode="after")
+    def validate_fixed_selection(self) -> "DatasetSelectionPlan":
+        if (
+            self.minimum_received_at_utc is not None
+            and self.maximum_received_at_utc is not None
+            and self.minimum_received_at_utc >= self.maximum_received_at_utc
+        ):
+            raise ValueError("dataset receive interval is empty or reversed")
+        if self.fixed_markets is not None:
+            if self.fixed_markets != tuple(sorted(set(self.fixed_markets))):
+                raise ValueError("fixed research markets must be sorted and unique")
+            if any(not market.startswith("KRW-") for market in self.fixed_markets):
+                raise ValueError("fixed research markets must remain in the KRW universe")
+        return self
 
 
 class AvailabilityLeakagePlan(_FrozenModel):
@@ -139,6 +163,31 @@ class FeatureEntryPlan(_FrozenModel):
     trade_continuation: TradeContinuationPlan
     snapshot_book_pressure: BookPressurePlan
     confirmed_continuation: str = Field(min_length=1)
+    maximum_spread_bps: Decimal = Field(gt=0)
+    order_notional_krw: MonetaryDecimal = Field(gt=0)
+    long_only: Literal[True]
+
+
+class SellShockExhaustionPlan(_FrozenModel):
+    maximum_trade_return_5s_bps: Decimal = Field(lt=0)
+    maximum_trade_imbalance_5s: Decimal = Field(ge=-1, lt=0)
+    minimum_recovery_return_1s_bps: Decimal = Field(ge=0)
+    minimum_recovery_trade_imbalance_1s: Decimal = Field(ge=-1, le=1)
+    minimum_trade_count_5s: Annotated[int, Field(gt=0)]
+
+
+class BidReplenishmentReversalPlan(_FrozenModel):
+    maximum_trade_return_5s_bps: Decimal = Field(lt=0)
+    minimum_top_book_imbalance: Decimal = Field(ge=-1, le=1)
+    minimum_total_book_imbalance: Decimal = Field(ge=-1, le=1)
+    minimum_snapshot_derived_ofi: Decimal
+
+
+class ReversalFeatureEntryPlan(_FrozenModel):
+    feature_contract: Literal["realtime-feature-frame-1"]
+    sell_shock_exhaustion: SellShockExhaustionPlan
+    bid_replenishment_reversal: BidReplenishmentReversalPlan
+    confirmed_reversal: str = Field(min_length=1)
     maximum_spread_bps: Decimal = Field(gt=0)
     order_notional_krw: MonetaryDecimal = Field(gt=0)
     long_only: Literal[True]
@@ -220,7 +269,7 @@ class ResearchSafetyPlan(_FrozenModel):
 
 
 class ScalpingExperimentPlan(_FrozenModel):
-    schema_version: Literal["scalping-experiment-plan-1"]
+    schema_version: Literal["scalping-experiment-plan-1", "scalping-experiment-plan-2"]
     experiment_id: str = Field(pattern=r"^[a-z0-9-]+$")
     registered_at_utc: datetime
     researcher: str = Field(min_length=1)
@@ -228,7 +277,7 @@ class ScalpingExperimentPlan(_FrozenModel):
     hypothesis_ids: tuple[str, ...] = Field(min_length=1)
     dataset_selection: DatasetSelectionPlan
     availability_and_leakage: AvailabilityLeakagePlan
-    feature_and_entry_rules: FeatureEntryPlan
+    feature_and_entry_rules: FeatureEntryPlan | ReversalFeatureEntryPlan
     exit_rules: ExitPlan
     cost_scenarios: dict[str, CostScenarioPlan]
     validation: ValidationPlan
@@ -259,11 +308,40 @@ class ScalpingExperimentPlan(_FrozenModel):
         receive_cutoff = self.dataset_selection.maximum_received_at_utc
         if receive_cutoff is not None and receive_cutoff > self.registered_at_utc:
             raise ValueError("dataset receive cutoff cannot follow experiment registration")
+        if self.schema_version == "scalping-experiment-plan-1":
+            if not isinstance(self.feature_and_entry_rules, FeatureEntryPlan):
+                raise ValueError("version-1 plans require continuation entry rules")
+        elif not isinstance(self.feature_and_entry_rules, ReversalFeatureEntryPlan):
+            raise ValueError("version-2 plans require reversal entry rules")
+        if self.schema_version == "scalping-experiment-plan-2":
+            if self.hypothesis_ids != (
+                "H-SCALP-004",
+                "H-SCALP-005",
+                "H-SCALP-006",
+            ):
+                raise ValueError("version-2 plans require the fixed reversal hypotheses")
+            fixed_markets = self.dataset_selection.fixed_markets
+            if (
+                fixed_markets is None
+                or len(fixed_markets) != self.validation.minimum_eligible_markets
+            ):
+                raise ValueError("version-2 plans require every eligible market to be fixed")
+            if self.dataset_selection.minimum_received_at_utc is None:
+                raise ValueError("version-2 plans require a prospective receive-time lower bound")
+            if self.dataset_selection.maximum_received_at_utc is None:
+                raise ValueError("version-2 plans require a fixed receive-time upper bound")
+            if self.validation.planned_trial_count != planned * len(fixed_markets):
+                raise ValueError("version-2 trials must cover every fixed market exactly once")
         return self
 
     @property
     def digest(self) -> str:
-        payload = orjson.dumps(self.model_dump(mode="json"), option=orjson.OPT_SORT_KEYS)
+        values = self.model_dump(mode="json")
+        selection = values["dataset_selection"]
+        if self.schema_version == "scalping-experiment-plan-1":
+            selection.pop("minimum_received_at_utc", None)
+            selection.pop("fixed_markets", None)
+        payload = orjson.dumps(values, option=orjson.OPT_SORT_KEYS)
         return sha256(payload).hexdigest()
 
 
@@ -396,12 +474,30 @@ def evaluate_scalping_data_sufficiency(
                 reasons=tuple(reasons),
             )
         )
+    fixed_markets = plan.dataset_selection.fixed_markets
+    if fixed_markets is not None:
+        observed_names = {item.market for item in observed}
+        observed.extend(
+            MarketSufficiency(
+                market=market,
+                observed_span_hours=0,
+                trade_events=0,
+                orderbook_events=0,
+                eligible=False,
+                reasons=("MISSING_FIXED_MARKET",),
+            )
+            for market in fixed_markets
+            if market not in observed_names
+        )
+        observed.sort(key=lambda item: item.market)
     eligible = tuple(item.market for item in observed if item.eligible)
     reasons = []
     if len(eligible) < plan.validation.minimum_eligible_markets:
         reasons.append("INSUFFICIENT_ELIGIBLE_MARKETS")
     if inventory.selected_event_count == 0:
         reasons.append("NO_DETAILED_PUBLIC_EVENTS")
+    if fixed_markets is not None and eligible != fixed_markets:
+        reasons.append("FIXED_MARKET_REQUIREMENTS_NOT_MET")
     return ScalpingDataSufficiency(
         meets_requirements=not reasons,
         eligible_markets=eligible,
@@ -748,30 +844,67 @@ class ScalpingBacktestEngine:
     def _entry_matches(self, frame: RealtimeFeatureFrame) -> bool:
         if not frame.ready_for_inference or frame.spread_bps is None:
             return False
-        if Decimal(str(frame.spread_bps)) > self.plan.feature_and_entry_rules.maximum_spread_bps:
+        entry = self.plan.feature_and_entry_rules
+        if Decimal(str(frame.spread_bps)) > entry.maximum_spread_bps:
             return False
-        trade = self.plan.feature_and_entry_rules.trade_continuation
-        book = self.plan.feature_and_entry_rules.snapshot_book_pressure
+        if isinstance(entry, FeatureEntryPlan):
+            trade = entry.trade_continuation
+            book = entry.snapshot_book_pressure
+            trade_match = (
+                frame.trade_return_5s_bps is not None
+                and Decimal(str(frame.trade_return_5s_bps)) >= trade.minimum_trade_return_5s_bps
+                and frame.trade_imbalance_1s is not None
+                and Decimal(str(frame.trade_imbalance_1s)) >= trade.minimum_trade_imbalance_1s
+                and frame.trade_count_5s >= trade.minimum_trade_count_5s
+            )
+            book_match = (
+                frame.top_book_imbalance is not None
+                and Decimal(str(frame.top_book_imbalance)) >= book.minimum_top_book_imbalance
+                and frame.total_book_imbalance is not None
+                and Decimal(str(frame.total_book_imbalance)) >= book.minimum_total_book_imbalance
+                and frame.book_flow_delta is not None
+                and Decimal(str(frame.book_flow_delta)) >= book.minimum_snapshot_derived_ofi
+            )
+            if self.rule is ScalpingRule.TRADE_CONTINUATION:
+                return trade_match
+            if self.rule is ScalpingRule.SNAPSHOT_BOOK_PRESSURE:
+                return book_match
+            if self.rule is ScalpingRule.CONFIRMED_CONTINUATION:
+                return trade_match and book_match
+            return False
+
+        reversal_trade = entry.sell_shock_exhaustion
+        reversal_book = entry.bid_replenishment_reversal
         trade_match = (
             frame.trade_return_5s_bps is not None
-            and Decimal(str(frame.trade_return_5s_bps)) >= trade.minimum_trade_return_5s_bps
+            and Decimal(str(frame.trade_return_5s_bps))
+            <= reversal_trade.maximum_trade_return_5s_bps
+            and frame.trade_imbalance_5s is not None
+            and Decimal(str(frame.trade_imbalance_5s)) <= reversal_trade.maximum_trade_imbalance_5s
+            and frame.trade_return_1s_bps is not None
+            and Decimal(str(frame.trade_return_1s_bps))
+            >= reversal_trade.minimum_recovery_return_1s_bps
             and frame.trade_imbalance_1s is not None
-            and Decimal(str(frame.trade_imbalance_1s)) >= trade.minimum_trade_imbalance_1s
-            and frame.trade_count_5s >= trade.minimum_trade_count_5s
+            and Decimal(str(frame.trade_imbalance_1s))
+            >= reversal_trade.minimum_recovery_trade_imbalance_1s
+            and frame.trade_count_5s >= reversal_trade.minimum_trade_count_5s
         )
         book_match = (
-            frame.top_book_imbalance is not None
-            and Decimal(str(frame.top_book_imbalance)) >= book.minimum_top_book_imbalance
+            frame.trade_return_5s_bps is not None
+            and Decimal(str(frame.trade_return_5s_bps)) <= reversal_book.maximum_trade_return_5s_bps
+            and frame.top_book_imbalance is not None
+            and Decimal(str(frame.top_book_imbalance)) >= reversal_book.minimum_top_book_imbalance
             and frame.total_book_imbalance is not None
-            and Decimal(str(frame.total_book_imbalance)) >= book.minimum_total_book_imbalance
+            and Decimal(str(frame.total_book_imbalance))
+            >= reversal_book.minimum_total_book_imbalance
             and frame.book_flow_delta is not None
-            and Decimal(str(frame.book_flow_delta)) >= book.minimum_snapshot_derived_ofi
+            and Decimal(str(frame.book_flow_delta)) >= reversal_book.minimum_snapshot_derived_ofi
         )
-        if self.rule is ScalpingRule.TRADE_CONTINUATION:
+        if self.rule is ScalpingRule.SELL_SHOCK_EXHAUSTION:
             return trade_match
-        if self.rule is ScalpingRule.SNAPSHOT_BOOK_PRESSURE:
+        if self.rule is ScalpingRule.BID_REPLENISHMENT_REVERSAL:
             return book_match
-        if self.rule is ScalpingRule.CONFIRMED_CONTINUATION:
+        if self.rule is ScalpingRule.CONFIRMED_REVERSAL:
             return trade_match and book_match
         return False
 

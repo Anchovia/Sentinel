@@ -40,6 +40,27 @@
   including the primary-checkout boundary test, Secret scanning on 609 text files, and dependency
   audit with no known vulnerabilities.
 
+## Scalping v5 prospective research foundation
+
+- V5 is a materially new long-only mean-reversion family, not a continuation-threshold retry.
+  H-SCALP-004 tests sell-shock exhaustion, H-SCALP-005 tests visible bid replenishment after a sell
+  shock, and H-SCALP-006 requires both on the same causal frame.
+- The version-2 plan contract requires the exact fixed markets, a receive-time lower bound at the
+  recorded v4 decision, a fixed upper bound, exact snapshot manifest lineage, and exactly 270
+  hypothesis/cost/fold/market units. Historical v1-v4 plan digests remain unchanged.
+- Added an atomic local snapshot command that verifies active manifests and checksums, hard-links
+  immutable Parquet objects, copies and revalidates manifests, and leaves the running collector
+  untouched. Research scans can no longer lose active inputs to concurrent compaction.
+- Added immutable inventory persistence and a registration-only ledger builder that rejects source,
+  selection, fixed-market, sufficiency, metric, or snapshot drift before trial planning.
+- Delayed paper market buys now cap fills to remaining reserved cash including taker fee, retaining
+  a conservative partial fill instead of crossing a Decimal accounting invariant after a price jump.
+- Foundation validation passed Ruff/format on 246 files, strict mypy on 119 source files, 424
+  dedicated-worktree tests plus the primary-checkout boundary test at 85.14% coverage, Secret
+  scanning on 610 text files, and dependency audit with no known vulnerabilities.
+- No v5 dataset has yet been scanned and no v5 trial, holdout access, authentication, private/order
+  network call, real order, risk change, model promotion, or live activation has occurred.
+
 ## 24-hour collection evidence and version-7 rollout
 
 - Captured and validated the report-only 24-hour evidence at

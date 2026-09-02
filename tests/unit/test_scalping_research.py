@@ -1,6 +1,7 @@
 from datetime import timedelta
 from hashlib import sha256
 from pathlib import Path
+from uuid import UUID
 
 import orjson
 import pytest
@@ -16,6 +17,7 @@ from quantforge.research import (
 )
 from quantforge.research.scalping import (
     ScalpingBacktestEngine,
+    ScalpingExperimentPlan,
     ScalpingResearchDecision,
     ScalpingRule,
     blocked_experiment_ledger,
@@ -24,6 +26,7 @@ from quantforge.research.scalping import (
     load_scalping_experiment_plan,
     write_scalping_research_bundle,
 )
+from quantforge.runtime import RealtimeFeatureFrame
 from quantforge.storage import (
     ParquetRawEventWriter,
     RawDataIntegrityError,
@@ -32,15 +35,65 @@ from quantforge.storage import (
     RawEventReadTimeout,
     RawEventResearchInventory,
     RawResearchInventoryTimeout,
+    active_raw_file_manifests,
+    create_raw_research_snapshot,
+    load_raw_event_research_inventory,
     read_raw_events,
     scan_raw_event_research_inventory,
+    write_raw_event_research_inventory,
 )
 
 ROOT = Path(__file__).parents[2]
 PLAN_PATH = ROOT / "research" / "experiments" / "2026-08-24-scalping-challenger-v1.json"
 V2_PLAN_PATH = ROOT / "research" / "experiments" / "2026-08-27-scalping-challenger-v2.json"
 V2_LEDGER_PATH = V2_PLAN_PATH.with_suffix(".ledger.json")
+V4_PLAN_PATH = V2_PLAN_PATH.with_name("2026-08-28-scalping-challenger-v4.json")
 V2_DATASET_HASH = "4002405439cbe4afbedf64ea90a84be486640754a0a2de12a4d726760dae8fd6"
+
+
+def _reversal_plan() -> ScalpingExperimentPlan:
+    payload = orjson.loads(V4_PLAN_PATH.read_bytes())
+    cutoff = BASE_TIME + timedelta(hours=24)
+    payload.update(
+        {
+            "schema_version": "scalping-experiment-plan-2",
+            "experiment_id": "qf-scalp-test-v5",
+            "registered_at_utc": BASE_TIME + timedelta(hours=25),
+            "source_revision": "1" * 40,
+            "hypothesis_ids": ["H-SCALP-004", "H-SCALP-005", "H-SCALP-006"],
+        }
+    )
+    payload["dataset_selection"].update(
+        {
+            "manifest_set_sha256": "c" * 64,
+            "maximum_exchange_timestamp_utc": cutoff,
+            "minimum_received_at_utc": BASE_TIME,
+            "maximum_received_at_utc": cutoff,
+            "fixed_markets": ["KRW-T0", "KRW-T1", "KRW-T2"],
+        }
+    )
+    payload["feature_and_entry_rules"] = {
+        "feature_contract": "realtime-feature-frame-1",
+        "sell_shock_exhaustion": {
+            "maximum_trade_return_5s_bps": "-15",
+            "maximum_trade_imbalance_5s": "-0.25",
+            "minimum_recovery_return_1s_bps": "0",
+            "minimum_recovery_trade_imbalance_1s": "-0.05",
+            "minimum_trade_count_5s": 8,
+        },
+        "bid_replenishment_reversal": {
+            "maximum_trade_return_5s_bps": "-15",
+            "minimum_top_book_imbalance": "0.20",
+            "minimum_total_book_imbalance": "0.10",
+            "minimum_snapshot_derived_ofi": "0.02",
+        },
+        "confirmed_reversal": "sell_shock_exhaustion AND bid_replenishment_reversal",
+        "maximum_spread_bps": "8",
+        "order_notional_krw": "10000",
+        "long_only": True,
+    }
+    payload["validation"].update({"minimum_eligible_markets": 3, "planned_trial_count": 54})
+    return ScalpingExperimentPlan.model_validate(payload)
 
 
 def _legacy_dataset_hash(events: list[EventEnvelope]) -> str:
@@ -220,6 +273,79 @@ def test_plan_rejects_receive_cutoff_after_registration() -> None:
         type(load_scalping_experiment_plan(PLAN_PATH)).model_validate(payload)
 
 
+def test_v5_plan_closes_prospective_market_partitioned_reversal_space() -> None:
+    plan = _reversal_plan()
+
+    assert plan.schema_version == "scalping-experiment-plan-2"
+    assert plan.hypothesis_ids == ("H-SCALP-004", "H-SCALP-005", "H-SCALP-006")
+    assert plan.dataset_selection.minimum_received_at_utc == BASE_TIME
+    assert plan.dataset_selection.fixed_markets == ("KRW-T0", "KRW-T1", "KRW-T2")
+    assert plan.validation.planned_trial_count == 54
+    assert len(plan.digest) == 64
+
+    payload = plan.model_dump(mode="json")
+    payload["validation"]["planned_trial_count"] = 108
+    with pytest.raises(ValueError, match="cover every fixed market exactly once"):
+        ScalpingExperimentPlan.model_validate(payload)
+
+
+def test_v5_plan_rejects_any_open_or_legacy_contract_dimension() -> None:
+    plan = _reversal_plan()
+
+    payload = plan.model_dump(mode="json")
+    payload["hypothesis_ids"] = ["H-SCALP-004"]
+    with pytest.raises(ValueError, match="fixed reversal hypotheses"):
+        ScalpingExperimentPlan.model_validate(payload)
+
+    payload = plan.model_dump(mode="json")
+    payload["dataset_selection"]["fixed_markets"] = None
+    with pytest.raises(ValueError, match="every eligible market"):
+        ScalpingExperimentPlan.model_validate(payload)
+
+    payload = plan.model_dump(mode="json")
+    payload["dataset_selection"]["minimum_received_at_utc"] = None
+    with pytest.raises(ValueError, match="prospective receive-time lower bound"):
+        ScalpingExperimentPlan.model_validate(payload)
+
+    payload = plan.model_dump(mode="json")
+    payload["dataset_selection"]["maximum_received_at_utc"] = None
+    with pytest.raises(ValueError, match="fixed receive-time upper bound"):
+        ScalpingExperimentPlan.model_validate(payload)
+
+    payload = plan.model_dump(mode="json")
+    payload["schema_version"] = "scalping-experiment-plan-1"
+    with pytest.raises(ValueError, match="version-1 plans require continuation"):
+        ScalpingExperimentPlan.model_validate(payload)
+
+    payload = plan.model_dump(mode="json")
+    payload["feature_and_entry_rules"] = orjson.loads(V4_PLAN_PATH.read_bytes())[
+        "feature_and_entry_rules"
+    ]
+    with pytest.raises(ValueError, match="version-2 plans require reversal"):
+        ScalpingExperimentPlan.model_validate(payload)
+
+
+def test_v5_dataset_selection_rejects_noncanonical_bounds_and_markets() -> None:
+    plan = _reversal_plan()
+
+    payload = plan.model_dump(mode="json")
+    payload["dataset_selection"]["minimum_received_at_utc"] = payload["dataset_selection"][
+        "maximum_received_at_utc"
+    ]
+    with pytest.raises(ValueError, match="interval is empty or reversed"):
+        ScalpingExperimentPlan.model_validate(payload)
+
+    payload = plan.model_dump(mode="json")
+    payload["dataset_selection"]["fixed_markets"] = ["KRW-T1", "KRW-T0", "KRW-T2"]
+    with pytest.raises(ValueError, match="sorted and unique"):
+        ScalpingExperimentPlan.model_validate(payload)
+
+    payload = plan.model_dump(mode="json")
+    payload["dataset_selection"]["fixed_markets"] = ["BTC-USDT", "KRW-T1", "KRW-T2"]
+    with pytest.raises(ValueError, match="KRW universe"):
+        ScalpingExperimentPlan.model_validate(payload)
+
+
 def test_data_sufficiency_requires_three_full_markets() -> None:
     plan = load_scalping_experiment_plan(PLAN_PATH)
 
@@ -230,6 +356,21 @@ def test_data_sufficiency_requires_three_full_markets() -> None:
     assert blocked.reasons == ("INSUFFICIENT_ELIGIBLE_MARKETS",)
     assert ready.meets_requirements is True
     assert len(ready.eligible_markets) == 3
+
+
+def test_v5_data_sufficiency_requires_every_fixed_market() -> None:
+    plan = _reversal_plan()
+    inventory = _inventory(eligible_markets=2)
+
+    sufficiency = evaluate_scalping_data_sufficiency(plan, inventory)
+
+    assert sufficiency.meets_requirements is False
+    assert sufficiency.reasons == (
+        "INSUFFICIENT_ELIGIBLE_MARKETS",
+        "FIXED_MARKET_REQUIREMENTS_NOT_MET",
+    )
+    missing = next(item for item in sufficiency.observed_markets if item.market == "KRW-T2")
+    assert missing.reasons == ("MISSING_FIXED_MARKET",)
 
 
 def test_inventory_scan_is_content_addressed_and_honors_cutoff(tmp_path: Path) -> None:
@@ -256,6 +397,188 @@ def test_inventory_scan_is_content_addressed_and_honors_cutoff(tmp_path: Path) -
     assert first.selected_event_count == 2
     assert first.markets[0].trade_events == 1
     assert first.markets[0].orderbook_events == 1
+
+
+def test_inventory_scan_honors_prospective_interval_and_fixed_markets(tmp_path: Path) -> None:
+    writer = ParquetRawEventWriter(tmp_path, max_rows=10)
+    writer.append(
+        make_trade_event(
+            sequence=1,
+            exchange_offset_ms=100,
+            received_offset_ms=100,
+            market="KRW-BTC",
+        )
+    )
+    writer.append(
+        make_orderbook_event(
+            sequence=2,
+            received_offset_ms=200,
+            market="KRW-BTC",
+        )
+    )
+    writer.append(
+        make_trade_event(
+            sequence=3,
+            exchange_offset_ms=300,
+            received_offset_ms=300,
+            market="KRW-BTC",
+        )
+    )
+    writer.append(
+        make_trade_event(
+            sequence=4,
+            exchange_offset_ms=300,
+            received_offset_ms=300,
+            market="KRW-ETH",
+        )
+    )
+    writer.close()
+
+    minimum = BASE_TIME + timedelta(milliseconds=150)
+    maximum = BASE_TIME + timedelta(milliseconds=350)
+    inventory = scan_raw_event_research_inventory(
+        tmp_path,
+        markets=frozenset({"KRW-BTC"}),
+        minimum_received_at_utc=minimum,
+        maximum_received_at_utc=maximum,
+    )
+
+    assert inventory.minimum_received_at_utc == minimum
+    assert inventory.maximum_received_at_utc == maximum
+    assert inventory.selected_markets == ("KRW-BTC",)
+    assert inventory.selected_event_count == 2
+    assert inventory.markets[0].trade_events == 1
+    assert inventory.markets[0].orderbook_events == 1
+
+
+def test_research_snapshot_survives_source_retirement_via_verified_hard_links(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "active"
+    snapshot_root = tmp_path / "snapshot"
+    writer = ParquetRawEventWriter(source, max_rows=10)
+    writer.append(make_orderbook_event(sequence=1, received_offset_ms=0))
+    writer.append(make_trade_event(sequence=2, exchange_offset_ms=100, received_offset_ms=100))
+    writer.close()
+    source_manifests = active_raw_file_manifests(source)
+
+    snapshot = create_raw_research_snapshot(
+        source,
+        snapshot_root,
+        snapshot_id="qf-scalp-test-v5",
+        source_label="pytest:active-raw",
+        created_at_utc=BASE_TIME,
+    )
+
+    assert snapshot.active_manifest_count == 2
+    for manifest in source_manifests:
+        source_data = source / manifest.data_file
+        snapshot_data = snapshot_root / manifest.data_file
+        assert source_data.samefile(snapshot_data)
+        source_data.unlink()
+    inventory = scan_raw_event_research_inventory(snapshot_root)
+    assert inventory.manifest_set_sha256 == snapshot.manifest_set_sha256
+    assert inventory.selected_event_count == 2
+    assert snapshot.source_mutated is False
+    assert snapshot.real_orders_executed is False
+
+
+def test_research_snapshot_fails_closed_on_unsafe_or_empty_roots(tmp_path: Path) -> None:
+    missing = tmp_path / "missing"
+    with pytest.raises(RawDataIntegrityError, match="source must be a directory"):
+        create_raw_research_snapshot(
+            missing,
+            tmp_path / "snapshot-missing",
+            snapshot_id="qf-test-missing",
+            source_label="pytest:missing",
+            created_at_utc=BASE_TIME,
+        )
+
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    with pytest.raises(RawDataIntegrityError, match="no active manifests"):
+        create_raw_research_snapshot(
+            empty,
+            tmp_path / "snapshot-empty",
+            snapshot_id="qf-test-empty",
+            source_label="pytest:empty",
+            created_at_utc=BASE_TIME,
+        )
+
+    source = tmp_path / "active"
+    writer = ParquetRawEventWriter(source, max_rows=10)
+    writer.append(make_trade_event(sequence=1, exchange_offset_ms=0, received_offset_ms=0))
+    writer.close()
+    existing = tmp_path / "existing"
+    existing.mkdir()
+    with pytest.raises(RawDataIntegrityError, match="destination already exists"):
+        create_raw_research_snapshot(
+            source,
+            existing,
+            snapshot_id="qf-test-existing",
+            source_label="pytest:active",
+            created_at_utc=BASE_TIME,
+        )
+    with pytest.raises(RawDataIntegrityError, match="cannot be nested"):
+        create_raw_research_snapshot(
+            source,
+            source / "nested-snapshot",
+            snapshot_id="qf-test-nested",
+            source_label="pytest:active",
+            created_at_utc=BASE_TIME,
+        )
+
+
+def test_research_selection_models_reject_noncanonical_scope() -> None:
+    inventory = _inventory(eligible_markets=3)
+    payload = inventory.model_dump(mode="json")
+    payload.update(
+        {
+            "minimum_received_at_utc": BASE_TIME,
+            "maximum_received_at_utc": BASE_TIME,
+        }
+    )
+    with pytest.raises(ValueError, match="interval is empty or reversed"):
+        RawEventResearchInventory.model_validate(payload)
+
+    payload = inventory.model_dump(mode="json")
+    payload["selected_markets"] = ["KRW-T1", "KRW-T0", "KRW-T2"]
+    with pytest.raises(ValueError, match="sorted and unique"):
+        RawEventResearchInventory.model_validate(payload)
+
+    payload = inventory.model_dump(mode="json")
+    payload["selected_markets"] = ["BTC-USDT", "KRW-T1", "KRW-T2"]
+    with pytest.raises(ValueError, match="KRW universe"):
+        RawEventResearchInventory.model_validate(payload)
+
+    payload = inventory.model_dump(mode="json")
+    payload["selected_markets"] = ["KRW-T0"]
+    with pytest.raises(ValueError, match="unselected market"):
+        RawEventResearchInventory.model_validate(payload)
+
+
+def test_inventory_scan_rejects_empty_market_scope_or_reversed_interval(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="market selection"):
+        scan_raw_event_research_inventory(tmp_path, markets=frozenset())
+    with pytest.raises(ValueError, match="interval is empty or reversed"):
+        scan_raw_event_research_inventory(
+            tmp_path,
+            minimum_received_at_utc=BASE_TIME + timedelta(seconds=1),
+            maximum_received_at_utc=BASE_TIME,
+        )
+
+
+def test_research_inventory_file_is_immutable_and_round_trips(tmp_path: Path) -> None:
+    destination = tmp_path / "inventory.json"
+    inventory = _inventory(eligible_markets=3)
+
+    assert write_raw_event_research_inventory(inventory, destination) == destination
+    assert write_raw_event_research_inventory(inventory, destination) == destination
+    assert load_raw_event_research_inventory(destination) == inventory
+
+    changed = inventory.model_copy(update={"dataset_hash": "b" * 64})
+    with pytest.raises(RawDataIntegrityError, match="immutable"):
+        write_raw_event_research_inventory(changed, destination)
 
 
 def test_inventory_scan_excludes_late_arrival_before_duplicate_checks(tmp_path: Path) -> None:
@@ -446,6 +769,66 @@ def test_trade_continuation_runs_entry_and_exit_through_conservative_broker() ->
     assert first.adverse_selection_cost > 0
     assert first.order_network_used is False
     assert first.real_orders_executed is False
+
+
+def test_v5_reversal_rules_require_their_preregistered_causal_evidence() -> None:
+    plan = _reversal_plan()
+    frame = RealtimeFeatureFrame(
+        frame_id=UUID(int=100),
+        market="KRW-T0",
+        source_event_id=UUID(int=101),
+        source_event_type="trade",
+        sequence=12,
+        event_time_utc=BASE_TIME,
+        available_at_utc=BASE_TIME,
+        best_bid="99.99",
+        best_ask="100.01",
+        mid_price="100",
+        spread_bps=2,
+        top_book_imbalance=0.5,
+        total_book_imbalance=0.4,
+        book_flow_delta=0.1,
+        last_trade_price="99",
+        last_trade_volume="1",
+        last_trade_side="BID",
+        trade_count_1s=2,
+        trade_count_5s=10,
+        trade_count_15s=10,
+        trade_imbalance_1s=0,
+        trade_imbalance_5s=-0.5,
+        trade_imbalance_15s=-0.5,
+        trade_return_1s_bps=1,
+        trade_return_5s_bps=-20,
+        trade_return_15s_bps=-20,
+        ingress_latency_ms=0,
+        ready_for_inference=True,
+        hold_reasons=(),
+    )
+
+    def matches(rule: ScalpingRule, candidate: RealtimeFeatureFrame) -> bool:
+        engine = ScalpingBacktestEngine(
+            plan,
+            market="KRW-T0",
+            rule=rule,
+            cost_scenario="base",
+            fold_id="test-v5",
+            code_version=plan.source_revision,
+        )
+        return engine._entry_matches(candidate)
+
+    assert matches(ScalpingRule.SELL_SHOCK_EXHAUSTION, frame) is True
+    assert matches(ScalpingRule.BID_REPLENISHMENT_REVERSAL, frame) is True
+    assert matches(ScalpingRule.CONFIRMED_REVERSAL, frame) is True
+
+    no_replenishment = frame.model_copy(update={"book_flow_delta": -0.1})
+    assert matches(ScalpingRule.SELL_SHOCK_EXHAUSTION, no_replenishment) is True
+    assert matches(ScalpingRule.BID_REPLENISHMENT_REVERSAL, no_replenishment) is False
+    assert matches(ScalpingRule.CONFIRMED_REVERSAL, no_replenishment) is False
+
+    no_recovery = frame.model_copy(update={"trade_return_1s_bps": -1})
+    assert matches(ScalpingRule.SELL_SHOCK_EXHAUSTION, no_recovery) is False
+    assert matches(ScalpingRule.BID_REPLENISHMENT_REVERSAL, no_recovery) is True
+    assert matches(ScalpingRule.CONFIRMED_REVERSAL, no_recovery) is False
 
 
 def test_neutral_baseline_has_no_orders_or_fills() -> None:

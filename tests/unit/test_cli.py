@@ -10,13 +10,19 @@ from quantforge.cli import app
 from quantforge.config import get_settings
 from quantforge.operations import read_dashboard_snapshot
 from quantforge.readiness import ReadinessStatus, read_readiness_report
+from quantforge.research.scalping import load_scalping_experiment_plan
 from quantforge.runtime import DataQualitySnapshot
 from quantforge.runtime.paper_supervisor import (
     PaperRuntimeSnapshot,
     PaperRuntimeState,
     write_paper_runtime_snapshot,
 )
-from quantforge.storage import ParquetRawEventWriter
+from quantforge.storage import (
+    ParquetRawEventWriter,
+    RawEventMarketInventory,
+    RawEventResearchInventory,
+    write_raw_event_research_inventory,
+)
 
 runner = CliRunner()
 SCALPING_PLAN = (
@@ -27,6 +33,7 @@ SCALPING_PLAN = (
 )
 SCALPING_V2_PLAN = SCALPING_PLAN.with_name("2026-08-27-scalping-challenger-v2.json")
 SCALPING_V2_LEDGER = SCALPING_V2_PLAN.with_suffix(".ledger.json")
+SCALPING_V4_PLAN = SCALPING_PLAN.with_name("2026-08-28-scalping-challenger-v4.json")
 
 
 def test_safety_status_json_is_fail_closed() -> None:
@@ -63,6 +70,61 @@ def test_finalize_scalping_trials_rejects_non_utc_timestamp(tmp_path: Path) -> N
 
     assert result.exit_code != 0
     assert "ISO-8601 UTC timestamp" in result.output
+
+
+def test_snapshot_scalping_data_rejects_non_utc_timestamp(tmp_path: Path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "snapshot-scalping-data",
+            "--destination",
+            str(tmp_path / "snapshot"),
+            "--snapshot-id",
+            "qf-scalp-test",
+            "--created-at-utc",
+            "2026-09-02T00:00:00",
+            "--input-root",
+            str(tmp_path / "raw"),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "ISO-8601 UTC timestamp" in result.output
+
+
+def test_snapshot_scalping_data_freezes_public_raw_files(tmp_path: Path) -> None:
+    raw_root = tmp_path / "raw"
+    snapshot_root = tmp_path / "snapshot"
+    writer = ParquetRawEventWriter(raw_root, max_rows=10)
+    writer.append(make_orderbook_event(sequence=1, received_offset_ms=0))
+    writer.append(make_trade_event(sequence=2, exchange_offset_ms=100, received_offset_ms=100))
+    writer.close()
+
+    result = runner.invoke(
+        app,
+        [
+            "snapshot-scalping-data",
+            "--destination",
+            str(snapshot_root),
+            "--snapshot-id",
+            "qf-scalp-test",
+            "--created-at-utc",
+            "2026-09-02T00:00:00Z",
+            "--input-root",
+            str(raw_root),
+            "--source-label",
+            "pytest:raw",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "SNAPSHOTTED"
+    assert payload["active_manifest_count"] == 2
+    assert payload["hard_links_used"] is True
+    assert payload["source_mutated"] is False
+    assert payload["real_orders_executed"] is False
+    assert (snapshot_root / "snapshot.json").is_file()
 
 
 def test_replay_raw_verifies_storage_and_writes_runtime_snapshot(tmp_path: Path) -> None:
@@ -207,6 +269,58 @@ def test_scalping_trial_planning_fails_before_scan_on_incomplete_registration(
     assert payload["trial_count"] == 0
     assert payload["final_holdout_used"] is False
     assert not output_path.exists()
+
+
+def test_scalping_registration_cli_writes_one_immutable_seed(tmp_path: Path) -> None:
+    plan = load_scalping_experiment_plan(SCALPING_V4_PLAN)
+    cutoff = plan.dataset_selection.maximum_received_at_utc
+    assert cutoff is not None
+    markets = tuple(
+        RawEventMarketInventory(
+            market=market,
+            trade_events=20_000,
+            orderbook_events=20_000,
+            first_received_at_utc=cutoff - timedelta(hours=24),
+            last_received_at_utc=cutoff,
+        )
+        for market in sorted(f"KRW-T{index}" for index in range(15))
+    )
+    inventory = RawEventResearchInventory(
+        dataset_hash="a" * 64,
+        manifest_set_sha256=plan.dataset_selection.manifest_set_sha256,
+        maximum_exchange_timestamp_utc=plan.dataset_selection.maximum_exchange_timestamp_utc,
+        maximum_received_at_utc=cutoff,
+        exclude_marked_duplicates=True,
+        exclude_quality_flagged_events=True,
+        selected_file_count=30,
+        selected_event_count=600_000,
+        markets=markets,
+    )
+    inventory_path = write_raw_event_research_inventory(
+        inventory,
+        tmp_path / "inventory.json",
+    )
+    ledger_path = tmp_path / "registration.json"
+    arguments = [
+        "register-scalping-trials",
+        "--inventory-path",
+        str(inventory_path),
+        "--output-ledger-path",
+        str(ledger_path),
+        "--plan-path",
+        str(SCALPING_V4_PLAN),
+        "--source-revision",
+        plan.source_revision,
+    ]
+
+    first = runner.invoke(app, arguments)
+    second = runner.invoke(app, arguments)
+
+    assert first.exit_code == 0
+    assert second.exit_code == 0
+    assert json.loads(first.stdout)["record_count"] == 1
+    assert json.loads(second.stdout) == json.loads(first.stdout)
+    assert ledger_path.is_file()
 
 
 def test_realtime_benchmark_is_verified_hold_only(tmp_path: Path) -> None:

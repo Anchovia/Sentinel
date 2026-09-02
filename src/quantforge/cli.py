@@ -46,7 +46,7 @@ from quantforge.readiness import (
     write_readiness_report,
 )
 from quantforge.replay import ReplayEngine, VirtualClock
-from quantforge.research import TrialStatus, read_experiment_ledger
+from quantforge.research import TrialStatus, read_experiment_ledger, write_experiment_ledger
 from quantforge.research.scalping import (
     ScalpingResearchError,
     blocked_experiment_ledger,
@@ -58,6 +58,7 @@ from quantforge.research.scalping import (
 from quantforge.research.scalping_finalization import finalize_scalping_trial_experiment
 from quantforge.research.scalping_trials import (
     create_scalping_trial_execution_plan,
+    create_scalping_trial_registration_seed,
     load_scalping_trial_execution_plan,
     run_next_scalping_trial,
     validate_scalping_trial_registration_seed,
@@ -93,9 +94,12 @@ from quantforge.storage import (
     RawResearchInventoryTimeout,
     RawStoragePolicy,
     cleanup_orphan_temp_files,
+    create_raw_research_snapshot,
+    load_raw_event_research_inventory,
     read_raw_events,
     scan_raw_event_research_inventory,
     update_raw_data_quality_index,
+    write_raw_event_research_inventory,
 )
 
 app = typer.Typer(no_args_is_help=True, help="QuantForge research and operations CLI")
@@ -113,6 +117,16 @@ DEFAULT_SCALPING_PLAN = Path("research/experiments/2026-08-24-scalping-challenge
 DEFAULT_SCALPING_CURRENT_PLAN = Path("research/experiments/2026-08-28-scalping-challenger-v4.json")
 DEFAULT_SCALPING_CURRENT_LEDGER = DEFAULT_SCALPING_CURRENT_PLAN.with_suffix(".ledger.json")
 DEFAULT_CODEX_RESEARCH_OUTPUT = Path("reports/codex/research")
+
+
+def _parse_explicit_utc(value: str, *, option_name: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise typer.BadParameter(f"{option_name} must be an ISO-8601 UTC timestamp") from error
+    if parsed.tzinfo is None or parsed.utcoffset() != UTC.utcoffset(parsed):
+        raise typer.BadParameter(f"{option_name} must be an ISO-8601 UTC timestamp")
+    return parsed
 
 
 async def _run_paper_with_signals(
@@ -820,6 +834,10 @@ def assess_scalping_research(
         float,
         typer.Option(min=1.0, help="Fail-closed inventory wall-time budget"),
     ] = 900.0,
+    inventory_output_path: Annotated[
+        Path | None,
+        typer.Option(help="Optional immutable verified inventory output"),
+    ] = None,
 ) -> None:
     """Fingerprint detailed public data and retain an insufficient-data result."""
 
@@ -847,7 +865,13 @@ def assess_scalping_research(
     try:
         inventory = scan_raw_event_research_inventory(
             input_root,
+            markets=(
+                frozenset(plan.dataset_selection.fixed_markets)
+                if plan.dataset_selection.fixed_markets is not None
+                else None
+            ),
             maximum_exchange_timestamp_utc=(plan.dataset_selection.maximum_exchange_timestamp_utc),
+            minimum_received_at_utc=plan.dataset_selection.minimum_received_at_utc,
             maximum_received_at_utc=plan.dataset_selection.maximum_received_at_utc,
             exclude_marked_duplicates=plan.dataset_selection.exclude_marked_duplicates,
             exclude_quality_flagged_events=(plan.dataset_selection.exclude_quality_flagged_events),
@@ -874,6 +898,11 @@ def assess_scalping_research(
         )
         raise typer.Exit(code=2) from exc
     sufficiency = evaluate_scalping_data_sufficiency(plan, inventory)
+    inventory_path = (
+        write_raw_event_research_inventory(inventory, inventory_output_path)
+        if inventory_output_path is not None
+        else None
+    )
     if sufficiency.meets_requirements:
         typer.echo(
             json.dumps(
@@ -881,6 +910,7 @@ def assess_scalping_research(
                     "dataset_hash": inventory.dataset_hash,
                     "detailed_public_events": inventory.selected_event_count,
                     "eligible_markets": list(sufficiency.eligible_markets),
+                    "inventory": str(inventory_path.resolve()) if inventory_path else None,
                     "meets_preregistered_minimum": True,
                     "report_written": False,
                     "final_holdout_used": False,
@@ -918,12 +948,66 @@ def assess_scalping_research(
                 "dataset_hash": inventory.dataset_hash,
                 "detailed_public_events": inventory.selected_event_count,
                 "eligible_markets": list(sufficiency.eligible_markets),
+                "inventory": str(inventory_path.resolve()) if inventory_path else None,
                 "meets_preregistered_minimum": False,
                 "report": str(markdown_path.resolve()),
                 "manifest": str(json_path.resolve()),
                 "ledger": str(ledger_path.resolve()),
                 "trial_count": 0,
                 "final_holdout_used": False,
+                "authentication_used": False,
+                "order_network_used": False,
+                "real_orders_executed": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("snapshot-scalping-data")
+def snapshot_scalping_data(
+    destination: Annotated[
+        Path,
+        typer.Option(help="New immutable local research snapshot directory"),
+    ],
+    snapshot_id: Annotated[
+        str,
+        typer.Option(help="Stable lowercase research snapshot identifier"),
+    ],
+    created_at_utc: Annotated[
+        str,
+        typer.Option(help="Explicit reproducible ISO-8601 UTC snapshot timestamp"),
+    ],
+    input_root: Annotated[
+        Path,
+        typer.Option(help="Active checksummed public raw Parquet root"),
+    ] = DEFAULT_PAPER_RAW_OUTPUT,
+    source_label: Annotated[
+        str,
+        typer.Option(help="Non-sensitive source storage label"),
+    ] = "workspace:data/paper/raw",
+) -> None:
+    """Freeze active public raw objects without pausing or mutating the collector."""
+
+    snapshot = create_raw_research_snapshot(
+        input_root,
+        destination,
+        snapshot_id=snapshot_id,
+        source_label=source_label,
+        created_at_utc=_parse_explicit_utc(created_at_utc, option_name="created-at-utc"),
+    )
+    typer.echo(
+        json.dumps(
+            {
+                "status": "SNAPSHOTTED",
+                "snapshot": str(destination.resolve()),
+                "snapshot_id": snapshot.snapshot_id,
+                "manifest_set_sha256": snapshot.manifest_set_sha256,
+                "active_manifest_count": snapshot.active_manifest_count,
+                "detailed_manifest_count": snapshot.detailed_manifest_count,
+                "total_bytes": snapshot.total_bytes,
+                "hard_links_used": True,
+                "source_mutated": False,
                 "authentication_used": False,
                 "order_network_used": False,
                 "real_orders_executed": False,
@@ -1013,7 +1097,13 @@ def plan_scalping_trials(
     try:
         inventory = scan_raw_event_research_inventory(
             input_root,
+            markets=(
+                frozenset(plan.dataset_selection.fixed_markets)
+                if plan.dataset_selection.fixed_markets is not None
+                else None
+            ),
             maximum_exchange_timestamp_utc=(plan.dataset_selection.maximum_exchange_timestamp_utc),
+            minimum_received_at_utc=plan.dataset_selection.minimum_received_at_utc,
             maximum_received_at_utc=plan.dataset_selection.maximum_received_at_utc,
             exclude_marked_duplicates=plan.dataset_selection.exclude_marked_duplicates,
             exclude_quality_flagged_events=(plan.dataset_selection.exclude_quality_flagged_events),
@@ -1056,6 +1146,58 @@ def plan_scalping_trials(
                 "dataset_hash": execution_plan.dataset_hash,
                 "eligible_markets": list(execution_plan.eligible_markets),
                 "planned_trial_count": len(execution_plan.trials),
+                "final_holdout_used": False,
+                "authentication_used": False,
+                "order_network_used": False,
+                "real_orders_executed": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("register-scalping-trials")
+def register_scalping_trials(
+    inventory_path: Annotated[
+        Path,
+        typer.Option(help="Immutable verified raw research inventory"),
+    ],
+    output_ledger_path: Annotated[
+        Path,
+        typer.Option(help="New immutable registration-only experiment ledger"),
+    ],
+    plan_path: Annotated[
+        Path,
+        typer.Option(help="Committed scalping experiment plan"),
+    ],
+    source_revision: Annotated[
+        str,
+        typer.Option(help="Exact committed bounded-runner revision"),
+    ],
+) -> None:
+    """Create a registration-only seed after the preregistered data scan."""
+
+    plan = load_scalping_experiment_plan(plan_path)
+    inventory = load_raw_event_research_inventory(inventory_path)
+    snapshot = create_scalping_trial_registration_seed(
+        plan,
+        inventory,
+        source_revision=source_revision,
+    )
+    if output_ledger_path.exists():
+        if read_experiment_ledger(output_ledger_path) != snapshot:
+            raise typer.BadParameter("existing registration ledger is immutable")
+    else:
+        write_experiment_ledger(snapshot, output_ledger_path)
+    typer.echo(
+        json.dumps(
+            {
+                "status": "PREREGISTERED",
+                "ledger": str(output_ledger_path.resolve()),
+                "ledger_chain_hash": snapshot.chain_hash,
+                "record_count": len(snapshot.records),
+                "dataset_hash": inventory.dataset_hash,
+                "planned_trial_count": plan.validation.planned_trial_count,
                 "final_holdout_used": False,
                 "authentication_used": False,
                 "order_network_used": False,
@@ -1167,12 +1309,7 @@ def finalize_scalping_trials_command(
 
     if working_ledger_path.resolve() == registration_ledger_path.resolve():
         raise typer.BadParameter("working ledger must not overwrite the registration seed")
-    try:
-        decision_time = datetime.fromisoformat(closed_at_utc.replace("Z", "+00:00"))
-    except ValueError as error:
-        raise typer.BadParameter("closed-at-utc must be an ISO-8601 UTC timestamp") from error
-    if decision_time.tzinfo is None or decision_time.utcoffset() != UTC.utcoffset(decision_time):
-        raise typer.BadParameter("closed-at-utc must be an ISO-8601 UTC timestamp")
+    decision_time = _parse_explicit_utc(closed_at_utc, option_name="closed-at-utc")
     plan = load_scalping_experiment_plan(plan_path)
     execution_plan = load_scalping_trial_execution_plan(execution_plan_path)
     registration_snapshot = read_experiment_ledger(registration_ledger_path)

@@ -105,6 +105,38 @@ def test_conservative_market_order_waits_for_latency_and_partially_fills() -> No
     assert updates[-1].fills[0].fee > 0
 
 
+def test_market_fill_never_exceeds_its_fail_closed_cash_reservation() -> None:
+    policy = PaperExecutionPolicy(order_latency_ms=100, depth_haircut="1")
+    broker = PaperBroker(policy)
+    initial_book = make_orderbook_event(
+        sequence=1,
+        received_offset_ms=0,
+        asks=((101, 10),),
+        bids=((99, 10),),
+    )
+    broker.on_item(initial_book, now=BASE_TIME)
+    intent = _intent(requested_notional=None, requested_quantity="1")
+    submitted = broker.submit(
+        intent,
+        _decision(intent, approved_notional=None, approved_quantity="1"),
+        submitted_at=BASE_TIME,
+    )
+    reserved_cash = broker.reservation_cash(submitted.order)
+    jumped_book = make_orderbook_event(
+        sequence=2,
+        received_offset_ms=100,
+        asks=((200, 10),),
+        bids=((199, 10),),
+    )
+
+    update = broker.on_item(jumped_book, now=jumped_book.received_at_utc)[-1]
+    filled_cash = sum((fill.notional + fill.fee for fill in update.fills), start=Decimal(0))
+
+    assert update.order.status is OrderStatus.CANCELED
+    assert update.order.remaining_quantity > 0
+    assert filled_cash <= reserved_cash
+
+
 def test_naive_model_fills_full_quantity_at_midpoint() -> None:
     broker = PaperBroker(PaperExecutionPolicy(model=PaperFillModel.NAIVE, order_latency_ms=0))
     book = make_orderbook_event(sequence=1, received_offset_ms=0, asks=((101, 1),), bids=((99, 1),))

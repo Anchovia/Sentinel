@@ -532,6 +532,7 @@ class PaperBroker:
         if order.order_type is PaperOrderType.BEST:
             levels = levels[:1]
         remaining = order.remaining_quantity
+        remaining_cash = self.reservation_cash(order) if order.side == "bid" else None
         candidates: list[tuple[Decimal, Decimal, Decimal, Decimal, Decimal]] = []
         for raw_price, raw_size in levels:
             adjusted, slippage, adverse = self._adjusted_taker_price(order.side, raw_price)
@@ -539,11 +540,16 @@ class PaperBroker:
                 continue
             available = raw_size * self.policy.depth_haircut
             quantity = min(remaining, available)
+            if remaining_cash is not None:
+                unit_cost = adjusted * (Decimal(1) + self.policy.taker_fee_rate)
+                quantity = min(quantity, remaining_cash / unit_cost)
             if quantity <= 0:
                 continue
             spread = quantity * abs(raw_price - book.mid)
             candidates.append((quantity, adjusted, spread, quantity * slippage, quantity * adverse))
             remaining -= quantity
+            if remaining_cash is not None:
+                remaining_cash -= quantity * adjusted * (Decimal(1) + self.policy.taker_fee_rate)
             if remaining == 0:
                 break
         if order.time_in_force is TimeInForce.FOK and remaining > 0:

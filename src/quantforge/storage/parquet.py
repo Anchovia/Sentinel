@@ -193,14 +193,20 @@ class RawEventResearchInventory(BaseModel):
     dataset_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     manifest_set_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     maximum_exchange_timestamp_utc: datetime | None = None
+    minimum_received_at_utc: datetime | None = None
     maximum_received_at_utc: datetime | None = None
+    selected_markets: tuple[str, ...] | None = None
     exclude_marked_duplicates: bool = False
     exclude_quality_flagged_events: bool = False
     selected_file_count: Annotated[int, Field(ge=0)]
     selected_event_count: Annotated[int, Field(ge=0)]
     markets: tuple[RawEventMarketInventory, ...]
 
-    @field_validator("maximum_exchange_timestamp_utc", "maximum_received_at_utc")
+    @field_validator(
+        "maximum_exchange_timestamp_utc",
+        "minimum_received_at_utc",
+        "maximum_received_at_utc",
+    )
     @classmethod
     def require_utc_cutoff(cls, value: datetime | None) -> datetime | None:
         if value is not None and (
@@ -218,7 +224,48 @@ class RawEventResearchInventory(BaseModel):
             item.trade_events + item.orderbook_events for item in self.markets
         ):
             raise ValueError("raw research inventory counts do not reconcile")
+        if (
+            self.minimum_received_at_utc is not None
+            and self.maximum_received_at_utc is not None
+            and self.minimum_received_at_utc >= self.maximum_received_at_utc
+        ):
+            raise ValueError("raw research inventory receive interval is empty or reversed")
+        if self.selected_markets is not None:
+            if self.selected_markets != tuple(sorted(set(self.selected_markets))):
+                raise ValueError("raw research selected markets must be sorted and unique")
+            if any(not market.startswith("KRW-") for market in self.selected_markets):
+                raise ValueError("raw research selected markets must remain in the KRW universe")
+            if any(market not in self.selected_markets for market in names):
+                raise ValueError("raw research inventory contains an unselected market")
         return self
+
+
+class RawResearchSnapshot(BaseModel):
+    """Immutable same-volume hard-link view of one active public-data manifest set."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    schema_version: Literal["raw-research-snapshot-1"] = "raw-research-snapshot-1"
+    snapshot_id: str = Field(pattern=r"^[a-z0-9-]+$")
+    created_at_utc: datetime
+    source_label: str = Field(min_length=1)
+    manifest_set_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    active_manifest_count: Annotated[int, Field(gt=0)]
+    detailed_manifest_count: Annotated[int, Field(gt=0)]
+    total_bytes: Annotated[int, Field(gt=0)]
+    hard_links_used: Literal[True] = True
+    source_mutated: Literal[False] = False
+    authentication_used: Literal[False] = False
+    private_network_used: Literal[False] = False
+    order_network_used: Literal[False] = False
+    real_orders_executed: Literal[False] = False
+
+    @field_validator("created_at_utc")
+    @classmethod
+    def require_created_utc(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() != UTC.utcoffset(value):
+            raise ValueError("raw research snapshot timestamp must be UTC-aware")
+        return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -254,6 +301,95 @@ def _active_manifest_records(root: Path) -> tuple[_ManifestRecord, ...]:
     records = _manifest_records(root)
     superseded = {data_file for record in records for data_file in record.manifest.supersedes}
     return tuple(record for record in records if record.manifest.data_file not in superseded)
+
+
+def _manifest_set_sha256(records: tuple[_ManifestRecord, ...]) -> str:
+    digest = sha256()
+    for record in sorted(records, key=lambda item: item.manifest.data_file):
+        manifest_sha256 = sha256(
+            orjson.dumps(record.manifest.model_dump(mode="json"), option=orjson.OPT_SORT_KEYS)
+        ).hexdigest()
+        digest.update(f"{record.manifest.data_file}|{manifest_sha256}\n".encode())
+    return digest.hexdigest()
+
+
+def create_raw_research_snapshot(
+    source_root: Path,
+    destination: Path,
+    *,
+    snapshot_id: str,
+    source_label: str,
+    created_at_utc: datetime,
+) -> RawResearchSnapshot:
+    """Freeze active immutable raw objects with verified same-volume hard links."""
+
+    if source_root.is_symlink() or destination.is_symlink():
+        raise RawDataIntegrityError("research snapshot roots cannot be symbolic links")
+    source = source_root.resolve()
+    target = destination.resolve()
+    if not source.is_dir():
+        raise RawDataIntegrityError("research snapshot source must be a directory")
+    if target.exists():
+        raise RawDataIntegrityError("research snapshot destination already exists")
+    if target == source or target.is_relative_to(source):
+        raise RawDataIntegrityError("research snapshot cannot be nested inside its source")
+    records = tuple(
+        sorted(_active_manifest_records(source), key=lambda item: item.manifest.data_file)
+    )
+    if not records:
+        raise RawDataIntegrityError("research snapshot source has no active manifests")
+    temporary = target.with_name(f".{target.name}.{uuid4().hex}.tmp")
+    temporary.mkdir(parents=True)
+    try:
+        linked_data: set[str] = set()
+        for record in records:
+            manifest = record.manifest
+            if not verify_manifest_checksum(source, manifest):
+                raise RawDataIntegrityError(f"raw checksum mismatch: {manifest.data_file}")
+            source_data = _safe_data_path(source, manifest.data_file)
+            target_data = temporary / manifest.data_file
+            target_manifest = temporary / record.path.relative_to(source)
+            target_data.parent.mkdir(parents=True, exist_ok=True)
+            target_manifest.parent.mkdir(parents=True, exist_ok=True)
+            if manifest.data_file in linked_data:
+                raise RawDataIntegrityError("active manifests contain a duplicate data target")
+            os.link(source_data, target_data)
+            linked_data.add(manifest.data_file)
+            shutil.copyfile(record.path, target_manifest, follow_symlinks=False)
+            if not verify_manifest_checksum(temporary, manifest):
+                raise RawDataIntegrityError(
+                    f"research snapshot checksum mismatch: {manifest.data_file}"
+                )
+        copied_records = tuple(
+            sorted(_active_manifest_records(temporary), key=lambda item: item.manifest.data_file)
+        )
+        if tuple(item.manifest for item in copied_records) != tuple(
+            item.manifest for item in records
+        ):
+            raise RawDataIntegrityError("research snapshot manifest set changed during creation")
+        snapshot = RawResearchSnapshot(
+            snapshot_id=snapshot_id,
+            created_at_utc=created_at_utc,
+            source_label=source_label,
+            manifest_set_sha256=_manifest_set_sha256(copied_records),
+            active_manifest_count=len(copied_records),
+            detailed_manifest_count=sum(
+                item.manifest.event_type in {"trade", "orderbook"} for item in copied_records
+            ),
+            total_bytes=sum(item.manifest.byte_size for item in copied_records),
+        )
+        (temporary / "snapshot.json").write_bytes(
+            orjson.dumps(
+                snapshot.model_dump(mode="json"),
+                option=orjson.OPT_INDENT_2 | orjson.OPT_SORT_KEYS,
+            )
+            + b"\n"
+        )
+        os.replace(temporary, target)
+    except Exception:
+        shutil.rmtree(temporary, ignore_errors=True)
+        raise
+    return snapshot
 
 
 def _validate_record_sizes(root: Path, records: tuple[_ManifestRecord, ...]) -> None:
@@ -975,7 +1111,9 @@ def _merge_identity_runs(
 def scan_raw_event_research_inventory(
     root: Path,
     *,
+    markets: frozenset[str] | None = None,
     maximum_exchange_timestamp_utc: datetime | None = None,
+    minimum_received_at_utc: datetime | None = None,
     maximum_received_at_utc: datetime | None = None,
     exclude_marked_duplicates: bool = False,
     exclude_quality_flagged_events: bool = False,
@@ -985,11 +1123,25 @@ def scan_raw_event_research_inventory(
 ) -> RawEventResearchInventory:
     """Verify and externally fingerprint detailed public rows with bounded memory."""
 
-    for cutoff in (maximum_exchange_timestamp_utc, maximum_received_at_utc):
+    for cutoff in (
+        maximum_exchange_timestamp_utc,
+        minimum_received_at_utc,
+        maximum_received_at_utc,
+    ):
         if cutoff is not None and (
             cutoff.tzinfo is None or cutoff.utcoffset() != UTC.utcoffset(cutoff)
         ):
             raise ValueError("research inventory cutoffs must be UTC-aware")
+    if (
+        minimum_received_at_utc is not None
+        and maximum_received_at_utc is not None
+        and minimum_received_at_utc >= maximum_received_at_utc
+    ):
+        raise ValueError("research inventory receive interval is empty or reversed")
+    if markets is not None and (
+        not markets or any(not market.startswith("KRW-") for market in markets)
+    ):
+        raise ValueError("research inventory market selection must contain KRW markets")
     if maximum_elapsed_seconds is not None and maximum_elapsed_seconds <= 0:
         raise ValueError("research inventory wall-time budget must be positive")
 
@@ -1013,12 +1165,7 @@ def scan_raw_event_research_inventory(
     active_records = tuple(
         sorted(_active_manifest_records(root), key=lambda item: item.manifest.data_file)
     )
-    manifest_digest = sha256()
-    for record in active_records:
-        manifest_sha256 = sha256(
-            orjson.dumps(record.manifest.model_dump(mode="json"), option=orjson.OPT_SORT_KEYS)
-        ).hexdigest()
-        manifest_digest.update(f"{record.manifest.data_file}|{manifest_sha256}\n".encode())
+    manifest_set_sha256 = _manifest_set_sha256(active_records)
 
     detailed_records = tuple(
         record for record in active_records if record.manifest.event_type in {"trade", "orderbook"}
@@ -1057,9 +1204,9 @@ def scan_raw_event_research_inventory(
                 selected = _selected_research_batch(
                     batch,
                     event_type=manifest.event_type,
-                    markets=None,
+                    markets=markets,
                     maximum_exchange_timestamp_utc=maximum_exchange_timestamp_utc,
-                    minimum_received_at_utc=None,
+                    minimum_received_at_utc=minimum_received_at_utc,
                     maximum_received_at_utc=maximum_received_at_utc,
                     exclude_marked_duplicates=exclude_marked_duplicates,
                     exclude_quality_flagged_events=exclude_quality_flagged_events,
@@ -1130,7 +1277,7 @@ def scan_raw_event_research_inventory(
             progress=progress,
         )
 
-    markets = tuple(
+    inventory_markets = tuple(
         RawEventMarketInventory(
             market=market,
             trade_events=cast(int, values["trade"]),
@@ -1142,15 +1289,48 @@ def scan_raw_event_research_inventory(
     )
     return RawEventResearchInventory(
         dataset_hash=dataset_hash,
-        manifest_set_sha256=manifest_digest.hexdigest(),
+        manifest_set_sha256=manifest_set_sha256,
         maximum_exchange_timestamp_utc=maximum_exchange_timestamp_utc,
+        minimum_received_at_utc=minimum_received_at_utc,
         maximum_received_at_utc=maximum_received_at_utc,
+        selected_markets=tuple(sorted(markets)) if markets is not None else None,
         exclude_marked_duplicates=exclude_marked_duplicates,
         exclude_quality_flagged_events=exclude_quality_flagged_events,
         selected_file_count=selected_files,
         selected_event_count=selected_events,
-        markets=markets,
+        markets=inventory_markets,
     )
+
+
+def write_raw_event_research_inventory(
+    inventory: RawEventResearchInventory,
+    destination: Path,
+) -> Path:
+    """Write one immutable content-addressed research inventory."""
+
+    payload = (
+        orjson.dumps(
+            inventory.model_dump(mode="json", exclude_none=True),
+            option=orjson.OPT_INDENT_2 | orjson.OPT_SORT_KEYS,
+        )
+        + b"\n"
+    )
+    if destination.exists():
+        if destination.read_bytes() != payload:
+            raise RawDataIntegrityError("existing research inventory is immutable")
+        return destination
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_name(f".{destination.name}.{uuid4().hex}.tmp")
+    try:
+        temporary.write_bytes(payload)
+        os.replace(temporary, destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return destination
+
+
+def load_raw_event_research_inventory(source: Path) -> RawEventResearchInventory:
+    return RawEventResearchInventory.model_validate_json(source.read_bytes())
 
 
 def read_raw_events(

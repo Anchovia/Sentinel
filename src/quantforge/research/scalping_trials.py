@@ -44,6 +44,21 @@ _HYPOTHESIS_RULES = {
     "H-SCALP-001": ScalpingRule.TRADE_CONTINUATION,
     "H-SCALP-002": ScalpingRule.SNAPSHOT_BOOK_PRESSURE,
     "H-SCALP-003": ScalpingRule.CONFIRMED_CONTINUATION,
+    "H-SCALP-004": ScalpingRule.SELL_SHOCK_EXHAUSTION,
+    "H-SCALP-005": ScalpingRule.BID_REPLENISHMENT_REVERSAL,
+    "H-SCALP-006": ScalpingRule.CONFIRMED_REVERSAL,
+}
+_PLAN_HYPOTHESES = {
+    "scalping-experiment-plan-1": (
+        "H-SCALP-001",
+        "H-SCALP-002",
+        "H-SCALP-003",
+    ),
+    "scalping-experiment-plan-2": (
+        "H-SCALP-004",
+        "H-SCALP-005",
+        "H-SCALP-006",
+    ),
 }
 _PLANNED_METRICS = (
     "adverse_selection_cost",
@@ -303,6 +318,67 @@ class ScalpingTrialRunOutcome:
     planned_trial_count: int
 
 
+def create_scalping_trial_registration_seed(
+    plan: ScalpingExperimentPlan,
+    inventory: RawEventResearchInventory,
+    *,
+    source_revision: str,
+) -> ExperimentLedgerSnapshot:
+    """Preregister the exact dataset, hypotheses, folds, costs, metrics, and markets."""
+
+    if source_revision != plan.source_revision:
+        raise ScalpingResearchError("registration source revision differs from the plan")
+    _validate_inventory_selection(plan, inventory)
+    sufficiency = evaluate_scalping_data_sufficiency(plan, inventory)
+    if not sufficiency.meets_requirements:
+        raise ScalpingResearchError("registration requires every fixed data requirement")
+    base_parameters: tuple[tuple[str, tuple[str, ...]], ...] = (
+        ("cost_scenario", tuple(sorted(plan.cost_scenarios))),
+        (
+            "fold",
+            tuple(str(index + 1) for index in range(plan.validation.walk_forward_folds)),
+        ),
+        ("hypothesis", plan.hypothesis_ids),
+    )
+    base_trial_count = (
+        len(plan.hypothesis_ids) * len(plan.cost_scenarios) * plan.validation.walk_forward_folds
+    )
+    partition_count = plan.validation.planned_trial_count // base_trial_count
+    if partition_count == 1:
+        hyperparameter_space = base_parameters
+    else:
+        if partition_count != len(sufficiency.eligible_markets):
+            raise ScalpingResearchError("planned trials do not cover every eligible market")
+        hyperparameter_space = (
+            *base_parameters,
+            ("market", sufficiency.eligible_markets),
+        )
+    registration = ExperimentRegistration(
+        experiment_id=new_experiment_id(
+            plan.experiment_id,
+            inventory.dataset_hash,
+            plan.registered_at_utc,
+        ),
+        hypothesis_id="+".join(plan.hypothesis_ids),
+        created_at_utc=plan.registered_at_utc,
+        researcher=plan.researcher,
+        code_version=source_revision,
+        dataset_hash=inventory.dataset_hash,
+        feature_set=plan.feature_and_entry_rules.feature_contract,
+        label_version="cost-inclusive-round-trip-v1",
+        model_family="preregistered-deterministic-rules",
+        hyperparameter_space=hyperparameter_space,
+        planned_metrics=_PLANNED_METRICS,
+        planned_splits=(SplitRole.VALIDATION, SplitRole.TEST, SplitRole.FINAL_HOLDOUT),
+        planned_cost_model=f"conservative_l2 base and stress; plan_sha256={plan.digest}",
+        final_holdout_planned=True,
+    )
+    ledger = ExperimentLedger()
+    ledger.preregister(registration)
+    ledger.verify()
+    return ledger.snapshot()
+
+
 def create_scalping_trial_execution_plan(
     plan: ScalpingExperimentPlan,
     registration_snapshot: ExperimentLedgerSnapshot,
@@ -316,6 +392,8 @@ def create_scalping_trial_execution_plan(
 ) -> ScalpingTrialExecutionPlan:
     """Close the exact preregistered trial space without reading holdout event content."""
 
+    if source_revision != plan.source_revision:
+        raise ScalpingResearchError("execution source revision differs from the plan")
     registration = validate_scalping_trial_registration_seed(plan, registration_snapshot)
     expected_experiment_id = registration.experiment_id
     _validate_registration_contract(plan, registration, inventory)
@@ -326,7 +404,7 @@ def create_scalping_trial_execution_plan(
         raise ScalpingResearchError("trial execution plan requires sufficient registered data")
     if inventory.manifest_set_sha256 is None:
         raise ScalpingResearchError("trial execution plan requires manifest lineage")
-    if tuple(plan.hypothesis_ids) != tuple(_HYPOTHESIS_RULES):
+    if plan.hypothesis_ids != _PLAN_HYPOTHESES[plan.schema_version]:
         raise ScalpingResearchError("trial execution requires the exact registered hypotheses")
 
     inventory_by_market = {item.market: item for item in inventory.markets}
@@ -509,6 +587,8 @@ def validate_scalping_trial_registration_seed(
     expected_splits = (SplitRole.VALIDATION, SplitRole.TEST, SplitRole.FINAL_HOLDOUT)
     if registration.feature_set != plan.feature_and_entry_rules.feature_contract:
         raise ScalpingResearchError("registered feature contract does not match the plan")
+    if registration.code_version != plan.source_revision:
+        raise ScalpingResearchError("registered source revision does not match the plan")
     if registration.hyperparameter_space != expected_parameters:
         raise ScalpingResearchError("registered hyperparameter space does not match the plan")
     if registration.planned_splits != expected_splits or not registration.final_holdout_planned:
@@ -727,14 +807,28 @@ def _validate_registration_contract(
 ) -> None:
     if registration.dataset_hash != inventory.dataset_hash:
         raise ScalpingResearchError("registered dataset hash does not match the inventory")
+    _validate_inventory_selection(plan, inventory)
+
+
+def _validate_inventory_selection(
+    plan: ScalpingExperimentPlan,
+    inventory: RawEventResearchInventory,
+) -> None:
     selection = plan.dataset_selection
     if (
         inventory.maximum_exchange_timestamp_utc != selection.maximum_exchange_timestamp_utc
+        or inventory.minimum_received_at_utc != selection.minimum_received_at_utc
         or inventory.maximum_received_at_utc != selection.maximum_received_at_utc
+        or inventory.selected_markets != selection.fixed_markets
         or inventory.exclude_marked_duplicates != selection.exclude_marked_duplicates
         or inventory.exclude_quality_flagged_events != selection.exclude_quality_flagged_events
     ):
         raise ScalpingResearchError("inventory selection does not match the experiment plan")
+    if (
+        plan.schema_version == "scalping-experiment-plan-2"
+        and inventory.manifest_set_sha256 != selection.manifest_set_sha256
+    ):
+        raise ScalpingResearchError("immutable snapshot manifest set differs from the plan")
 
 
 def _validate_execution_plan(

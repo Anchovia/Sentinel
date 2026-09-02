@@ -557,16 +557,21 @@ def _build_report_values(
             )
         )
     simple = {item.hypothesis_id: item.metrics.net_pnl_sum for item in hypotheses}
+    combined_comparison = {
+        "H-SCALP-003": ("H-SCALP-001", "H-SCALP-002"),
+        "H-SCALP-006": ("H-SCALP-004", "H-SCALP-005"),
+    }
     hypotheses = [
         item.model_copy(
             update={
                 "comparison_to_simple_rules_passed": (
-                    item.metrics.net_pnl_sum > simple["H-SCALP-001"]
-                    and item.metrics.net_pnl_sum > simple["H-SCALP-002"]
+                    item.metrics.net_pnl_sum > simple[combined_comparison[item.hypothesis_id][0]]
+                    and item.metrics.net_pnl_sum
+                    > simple[combined_comparison[item.hypothesis_id][1]]
                 )
             }
         )
-        if item.hypothesis_id == "H-SCALP-003"
+        if item.hypothesis_id in combined_comparison
         else item
         for item in hypotheses
     ]

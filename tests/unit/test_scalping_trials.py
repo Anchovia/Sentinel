@@ -20,6 +20,7 @@ from quantforge.research.scalping import (
     ScalpingExperimentPlan,
     ScalpingResearchDecision,
     ScalpingResearchError,
+    ScalpingRule,
     ScalpingTrialLimitError,
     load_scalping_experiment_plan,
 )
@@ -31,6 +32,7 @@ from quantforge.research.scalping_trials import (
     ScalpingTrialExecutionPlan,
     ScalpingWalkForwardWindow,
     create_scalping_trial_execution_plan,
+    create_scalping_trial_registration_seed,
     load_scalping_trial_execution_plan,
     run_next_scalping_trial,
     validate_scalping_trial_registration_seed,
@@ -49,7 +51,7 @@ V4_LEDGER_PATH = V4_PLAN_PATH.with_suffix(".ledger.json")
 V4_EXECUTION_PATH = V4_PLAN_PATH.with_suffix(".execution.json")
 DATASET_HASH = "a" * 64
 MANIFEST_HASH = "b" * 64
-SOURCE_REVISION = "2" * 40
+SOURCE_REVISION = "1" * 40
 PLANNED_METRICS = (
     "adverse_selection_cost",
     "average_holding_seconds",
@@ -84,6 +86,77 @@ def _plan() -> ScalpingExperimentPlan:
             "source_revision": "1" * 40,
             "dataset_selection": selection,
         }
+    )
+
+
+def _v5_plan() -> ScalpingExperimentPlan:
+    payload = orjson.loads(V4_PLAN_PATH.read_bytes())
+    cutoff = BASE_TIME + timedelta(hours=24)
+    payload.update(
+        {
+            "schema_version": "scalping-experiment-plan-2",
+            "experiment_id": "qf-scalp-test-v5",
+            "registered_at_utc": BASE_TIME + timedelta(hours=25),
+            "source_revision": SOURCE_REVISION,
+            "hypothesis_ids": ["H-SCALP-004", "H-SCALP-005", "H-SCALP-006"],
+        }
+    )
+    payload["dataset_selection"].update(
+        {
+            "manifest_set_sha256": MANIFEST_HASH,
+            "maximum_exchange_timestamp_utc": cutoff,
+            "minimum_received_at_utc": BASE_TIME,
+            "maximum_received_at_utc": cutoff,
+            "fixed_markets": ["KRW-T0", "KRW-T1", "KRW-T2"],
+        }
+    )
+    payload["feature_and_entry_rules"] = {
+        "feature_contract": "realtime-feature-frame-1",
+        "sell_shock_exhaustion": {
+            "maximum_trade_return_5s_bps": "-15",
+            "maximum_trade_imbalance_5s": "-0.25",
+            "minimum_recovery_return_1s_bps": "0",
+            "minimum_recovery_trade_imbalance_1s": "-0.05",
+            "minimum_trade_count_5s": 8,
+        },
+        "bid_replenishment_reversal": {
+            "maximum_trade_return_5s_bps": "-15",
+            "minimum_top_book_imbalance": "0.20",
+            "minimum_total_book_imbalance": "0.10",
+            "minimum_snapshot_derived_ofi": "0.02",
+        },
+        "confirmed_reversal": "sell_shock_exhaustion AND bid_replenishment_reversal",
+        "maximum_spread_bps": "8",
+        "order_notional_krw": "10000",
+        "long_only": True,
+    }
+    payload["validation"].update({"minimum_eligible_markets": 3, "planned_trial_count": 54})
+    return ScalpingExperimentPlan.model_validate(payload)
+
+
+def _v5_inventory(plan: ScalpingExperimentPlan) -> RawEventResearchInventory:
+    markets = tuple(
+        RawEventMarketInventory(
+            market=market,
+            trade_events=20_000,
+            orderbook_events=20_000,
+            first_received_at_utc=BASE_TIME,
+            last_received_at_utc=BASE_TIME + timedelta(hours=24),
+        )
+        for market in plan.dataset_selection.fixed_markets or ()
+    )
+    return RawEventResearchInventory(
+        dataset_hash=DATASET_HASH,
+        manifest_set_sha256=MANIFEST_HASH,
+        maximum_exchange_timestamp_utc=plan.dataset_selection.maximum_exchange_timestamp_utc,
+        minimum_received_at_utc=plan.dataset_selection.minimum_received_at_utc,
+        maximum_received_at_utc=plan.dataset_selection.maximum_received_at_utc,
+        selected_markets=plan.dataset_selection.fixed_markets,
+        exclude_marked_duplicates=True,
+        exclude_quality_flagged_events=True,
+        selected_file_count=6,
+        selected_event_count=120_000,
+        markets=markets,
     )
 
 
@@ -264,6 +337,77 @@ def test_market_partitioned_plan_closes_one_market_per_work_unit() -> None:
     assert execution.maximum_total_events_per_trial == 100
 
 
+def test_v5_registration_and_execution_close_exact_reversal_market_space() -> None:
+    plan = _v5_plan()
+    inventory = _v5_inventory(plan)
+
+    registration = create_scalping_trial_registration_seed(
+        plan,
+        inventory,
+        source_revision=plan.source_revision,
+    )
+    payload = validate_scalping_trial_registration_seed(plan, registration)
+    execution = create_scalping_trial_execution_plan(
+        plan,
+        registration,
+        inventory,
+        source_revision=plan.source_revision,
+        created_at_utc=plan.registered_at_utc + timedelta(minutes=1),
+        maximum_events_per_market=100,
+        maximum_elapsed_seconds_per_trial=30,
+    )
+
+    assert len(registration.records) == 1
+    assert dict(payload.hyperparameter_space)["market"] == (
+        "KRW-T0",
+        "KRW-T1",
+        "KRW-T2",
+    )
+    assert len(execution.trials) == 54
+    assert {trial.rule for trial in execution.trials} == {
+        ScalpingRule.SELL_SHOCK_EXHAUSTION,
+        ScalpingRule.BID_REPLENISHMENT_REVERSAL,
+        ScalpingRule.CONFIRMED_REVERSAL,
+    }
+    assert execution.source_revision == plan.source_revision
+    assert execution.final_holdout_access is False
+    assert execution.real_orders_executed is False
+
+
+def test_v5_registration_rejects_source_or_snapshot_drift() -> None:
+    plan = _v5_plan()
+    inventory = _v5_inventory(plan)
+
+    with pytest.raises(ScalpingResearchError, match="source revision"):
+        create_scalping_trial_registration_seed(
+            plan,
+            inventory,
+            source_revision="f" * 40,
+        )
+
+    changed = inventory.model_copy(update={"manifest_set_sha256": "d" * 64})
+    with pytest.raises(ScalpingResearchError, match="manifest set"):
+        create_scalping_trial_registration_seed(
+            plan,
+            changed,
+            source_revision=plan.source_revision,
+        )
+
+    registration = create_scalping_trial_registration_seed(
+        plan,
+        inventory,
+        source_revision=plan.source_revision,
+    )
+    with pytest.raises(ScalpingResearchError, match="execution source revision"):
+        create_scalping_trial_execution_plan(
+            plan,
+            registration,
+            inventory,
+            source_revision="f" * 40,
+            created_at_utc=plan.registered_at_utc + timedelta(minutes=1),
+        )
+
+
 def test_market_partitioned_runner_checkpoints_exactly_one_market(tmp_path: Path) -> None:
     plan, registration, execution = _market_partitioned_execution_fixture()
     loaded_markets: list[str] = []
@@ -323,7 +467,7 @@ def test_execution_plan_rejects_incomplete_v2_metric_registration() -> None:
             plan,
             registration,
             inventory,
-            source_revision=SOURCE_REVISION,
+            source_revision=plan.source_revision,
             created_at_utc=plan.registered_at_utc + timedelta(minutes=1),
         )
 

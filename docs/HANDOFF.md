@@ -7,7 +7,7 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 
 ## Current state
 
-- Date: 2026-08-30 KST
+- Date: 2026-09-02 KST
 - Completed phases: 0–10; Phase 11.1–11.10 checkpoints complete
 - Current checkpoint: durable continuity plus storage-acceptance, local-clock, and audit-evidence
   stabilization
@@ -60,6 +60,29 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - Finalizer validation passed Ruff/format on 244 files, strict mypy on 119 source files, 408 tests
   including the primary-checkout-only boundary case, Secret scanning on 609 text files, and
   dependency audit with no known vulnerabilities.
+
+## Scalping v5 prospective foundation
+
+- Do not retry or tune H-SCALP-001 through H-SCALP-003. V5 introduces H-SCALP-004 through
+  H-SCALP-006 for sell-shock exhaustion, bid-replenishment reversal, and their conjunction.
+- The eligible interval starts at the recorded v4 decision,
+  `2026-08-30T07:44:05.793957Z`. A v5 plan must bind a later fixed upper cutoff, the exact immutable
+  snapshot manifest hash, all fifteen fixed markets, the committed runner revision, and 270 units.
+- Create the same-volume hard-link snapshot first, then commit the manifest-bound plan before any
+  row-level inventory scan. Keep the snapshot until final experiment closure. Never point v5 at the
+  concurrently compacted active raw root.
+- The inventory and registration commands are immutable and fail closed on selection, source,
+  market, sufficiency, metric, or lineage drift. The registration seed contains one record and no
+  trial, decision, or holdout access.
+- Paper market buys cannot fill beyond their remaining reserved cash, including fee. This is a
+  simulation/accounting stabilization only; it creates no authenticated or real-order capability.
+- Foundation validation passed Ruff/format on 246 files, strict mypy on 119 source files, 424
+  worktree tests plus the primary-checkout boundary test at 85.14% coverage, Secret scanning on 610
+  text files, and dependency audit with no known vulnerabilities.
+- At this checkpoint the foundation and tests exist, but no v5 snapshot, inventory, registration,
+  execution plan, trial, or holdout access has been produced. The next safe sequence is: validate
+  and commit this implementation, snapshot active raw data, commit the exact plan, scan and retain
+  inventory, create the one-record registration ledger, then seal the 270-unit execution plan.
 
 ## 24-hour evidence and version-7 rollout
 

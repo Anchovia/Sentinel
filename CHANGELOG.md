@@ -6,6 +6,12 @@ All notable changes are recorded here. The project follows semantic versioning o
 
 ### Added
 
+- A prospective v5 sell-shock mean-reversion contract with three new fixed hypotheses, exact
+  market partitions, post-v4 receive-time bounds, immutable hard-link raw snapshots, content-bound
+  inventories, and registration-only ledger generation before bounded trials.
+- Conservative paper market-buy fill capping against the exact remaining cash reservation,
+  including taker fees, so price jumps produce partial fills instead of accounting-invariant
+  failures.
 - A deterministic scalping-experiment finalizer that validates the complete fixed-order ledger and
   every successful artifact hash, rejects incomplete or holdout-accessed runs, retains failures,
   writes immutable JSON/Markdown evidence, and appends exactly one reconciled decision record.

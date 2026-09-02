@@ -11,6 +11,7 @@ htmlcov/
 .venv/
 .bootstrap-venv/
 .tools/
+.codex-worktrees/
 dist/
 build/
 *.egg-info/

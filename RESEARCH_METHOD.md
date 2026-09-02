@@ -63,6 +63,21 @@ units. They preserve the global market scope for predetermined aggregation and c
 discard markets from observed performance. Each version-2 unit has one 500,000-event total cap and
 the final holdout remains unavailable.
 
+After a closed hypothesis family has been inspected, a structurally new challenger must use a
+prospective receive-time interval beginning no earlier than the recorded prior decision. It may not
+reuse the inspected interval for threshold tuning. The version-2 reversal plan fixes H-SCALP-004
+through H-SCALP-006, the complete sorted market set, both receive-time bounds, the snapshot manifest
+hash, and exactly one hypothesis/cost/fold/market work unit before selected rows are read.
+
+Long research scans run against an immutable same-volume snapshot, not the concurrently compacted
+active store. Snapshot creation verifies every active checksum, hard-links immutable Parquet data,
+copies and revalidates manifests, writes false-only safety metadata, and atomically publishes the
+new directory without pausing or mutating collection. The hypothesis and plan are committed after
+the manifest-only snapshot step and before row-level inventory computation. The verified inventory
+then closes the dataset hash and registration-only ledger. Keep the snapshot until the experiment is
+closed; any creation race, cross-volume link failure, checksum change, or lineage mismatch blocks
+the run.
+
 The execution preflight requires the ledger metric set to cover the plan, including median closed-
 trade net return, closed-trade count, and non-fill count. An incomplete registration is blocked
 before inventory scanning and is superseded by a new immutable registration rather than edited.
