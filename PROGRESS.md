@@ -78,6 +78,10 @@
   `8dfd7a4f6bedcd9529ecad69d9b254c3cedde8f92c09806cb5c61976bde3ab07`. Do not edit or execute
   v5. A separate availability-only replacement may preserve every hypothesis/threshold/cost and fix
   exactly the eight passing markets before another row scan.
+- ADR-032 records that availability-only decision. The committed v6 plan preserves source,
+  snapshot, interval, rules, exits, costs, folds, multiplicity, and holdout; it changes only the
+  eight fixed qualifying markets and implied 144 units. Its plan digest is
+  `3882fd46638c59f233afc3d6d9d7a3c50685ecc97d69e1e651e374b6d9bf47e9`. No v6 row scan has run.
 - No holdout access, authentication, private/order network call, real order, risk change, model
   promotion, paper-order activation, or live activation occurred.
 

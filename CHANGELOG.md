@@ -15,6 +15,9 @@ All notable changes are recorded here. The project follows semantic versioning o
 - The retained v5 data-readiness result: 8,508,661 post-v4 clean events fingerprinted without an
   integrity race, eight of fifteen fixed markets eligible, decision `BLOCKED`, and zero trials or
   final-holdout access.
+- A separate availability-only v6 replacement that preserves every reversal hypothesis and
+  assumption while fixing the eight markets that passed v5's unchanged readiness criteria and
+  mechanically closes 144 work units before its own row scan.
 - A deterministic scalping-experiment finalizer that validates the complete fixed-order ledger and
   every successful artifact hash, rejects incomplete or holdout-accessed runs, retains failures,
   writes immutable JSON/Markdown evidence, and appends exactly one reconciled decision record.

@@ -99,6 +99,11 @@ file before continuing. Inspect code and evidence; do not infer completion from 
 - A new availability-only replacement may fix exactly those eight passing markets while preserving
   the same hypotheses, thresholds, costs, exits, interval, snapshot, and sealed holdout. It must be
   committed as a new plan before its market-filtered inventory scan.
+- ADR-032 and `research/experiments/2026-09-02-scalping-mean-reversion-v6.json` implement that
+  replacement. V6 fixes 144 units and plan digest
+  `3882fd46638c59f233afc3d6d9d7a3c50685ecc97d69e1e651e374b6d9bf47e9`; all strategy and data
+  assumptions other than the availability-qualified market list are byte-equivalent at the model
+  level. Commit it before scanning, then create a new v6 inventory and registration seed.
 
 ## 24-hour evidence and version-7 rollout
 
